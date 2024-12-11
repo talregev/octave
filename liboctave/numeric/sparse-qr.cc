@@ -216,6 +216,19 @@ sparse_qr<SPARSE_T>::sparse_qr_rep::E () const
 
   return ret;
 
+#elif defined (HAVE_CXSPARSE)
+
+  ColumnVector ret (ncols);
+
+  if (S->q)
+    for (octave_idx_type i = 0; i < ncols; i++)
+      ret(i) = from_suitesparse_long (S->q[i]) + 1;
+  else
+    for (octave_idx_type i = 0; i < ncols; i++)
+      ret(i) = i + 1;
+
+  return ret;
+
 #else
 
   return ColumnVector ();
