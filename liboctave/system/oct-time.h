@@ -31,17 +31,6 @@
 #include <iosfwd>
 #include <string>
 
-#if defined (OCTAVE_USE_WINDOWS_API)
-// Some Windows headers must be included in a certain order.
-// Don't include "windows.h" here to avoid potential issues due to that.
-// Instead just define the one type we need for the interface of one function.
-struct OCTAVE_WIN_FILETIME
-{
-  uint32_t dwLowDateTime;
-  uint32_t dwHighDateTime;
-};
-#endif
-
 
 static inline double
 as_double (OCTAVE_TIME_T sec, long usec)
@@ -482,14 +471,6 @@ public:
     : m_time (t)
   { }
 
-#if defined (OCTAVE_USE_WINDOWS_API)
-  file_time (OCTAVE_WIN_FILETIME& t)
-  {
-    m_time = (static_cast<OCTAVE_TIME_T> (t.dwHighDateTime)) >> 32
-             | t.dwLowDateTime;
-  }
-#endif
-
   file_time (const std::string& filename);
 
   file_time (const file_time& ot)
@@ -511,7 +492,7 @@ public:
   {
 #if defined (OCTAVE_USE_WINDOWS_API)
     // FAT file systems have 2 seconds resolution for the modification time.
-    static OCTAVE_TIME_T time_resolution = 20000;
+    static OCTAVE_TIME_T time_resolution = 20000000;
 #else
     // Assume 1 second (see file_stat)
     static OCTAVE_TIME_T time_resolution = 1;
@@ -573,7 +554,7 @@ private:
 
   // The native file time type differs per platform.
   // On POSIX, this is the number of 1 second intervals since the epoch.
-  // On Windows, this is the number of 0.1 ms intervals since a different epoch.
+  // On Windows, this is the number of 100 ns intervals since a different epoch.
   OCTAVE_TIME_T m_time;
 };
 
