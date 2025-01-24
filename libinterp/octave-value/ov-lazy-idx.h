@@ -143,6 +143,10 @@ public:
   void print (std::ostream& os, bool pr_as_read_syntax = false)
   { make_value ().print (os, pr_as_read_syntax); }
 
+  std::string edit_display (const float_display_format& fmt,
+                            octave_idx_type i, octave_idx_type j) const
+  { return make_value ().edit_display (fmt, i, j); }
+
   void print_info (std::ostream& os, const std::string& prefix) const
   { make_value ().print_info (os, prefix); }
 
