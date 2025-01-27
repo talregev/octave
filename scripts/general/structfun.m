@@ -104,10 +104,24 @@ function varargout = structfun (fcn, S, varargin)
     error ("structfun: invalid options");
   endif
 
-  varargout = cell (max ([nargout, 1]), 1);
-  [varargout{:}] = cellfun (fcn, struct2cell (S), varargin{:});
+  varargout_defined = true;
 
-  if (! uniform_output)
+  if (nargout == 0)
+    ## ANS should not normally be defined here, but just in case someone
+    ## changes the code above so that it could be...
+    clear ("ans");
+    cellfun (fcn, struct2cell (S), varargin{:});
+    if (exist ("ans", "var"))
+      varargout = {ans};
+    else
+      varargout_defined = false;
+    endif
+  else
+    varargout = cell (max ([nargout, 1]), 1);
+    [varargout{:}] = cellfun (fcn, struct2cell (S), varargin{:});
+  endif
+
+  if (! uniform_output && varargout_defined)
     varargout = cellfun ("cell2struct", varargout, {fieldnames(S)}, {1}, ...
                          uo_str, false);
   endif
@@ -148,3 +162,45 @@ endfunction
 %! [aa, bb] = structfun (@__twoouts, s, "UniformOutput", false);
 %! assert (aa, c);
 %! assert (bb, d);
+
+%!function __zeroout(x)
+%!endfunction;
+
+%!test <66617>
+%! s.a = 3;
+%! clear ("ans");
+%! structfun (@__zeroout, s);
+%! assert (! exist ("ans", "var"));
+
+%!test <66617>
+%! s.a = 3;
+%! clear ("ans");
+%! structfun (@__zeroout, s, "UniformOutput", false);
+%! assert (! exist ("ans", "var"));
+
+%!test <66617>
+%! s = struct ("a", 1, "b", 4);
+%! clear ("ans");
+%! structfun (@deal, s);
+%! assert (! exist ("ans", "var"));
+
+%!test
+%! s = struct ("a", 1, "b", 4);
+%! a = structfun (@deal, s);
+%! assert (a, [1; 4]);
+
+%!test
+%! s = struct ("a", 1, "b", 4);
+%! [a, b] = structfun (@deal, s);
+%! assert ([a, b], [1, 1; 4, 4]);
+
+%!test <66617>
+%! s = struct ();
+%! clear ("ans");
+%! structfun (@(z) z, s);
+%! assert (! exist ("ans", "var"));
+
+%!test <66617>
+%! s = struct;
+%! y = structfun (@(z) z, s);
+%! assert (y, zeros (0, 1));
