@@ -1,16 +1,14 @@
 = VERSION.1 Release Checklist =
 
-'''Timeline''' (tentative)
+{{Note|'''Timeline''' (tentative)
 
 * YYYY-MM-DD 🚀 Release Kick-off ⚽ (default branch merged to stable)
 * YYYY-MM-DD 🛠️ 1st release candidate '''VERSION.0.90''' on https://alpha.gnu.org/gnu/octave/
-* YYYY-MM-DD 🏁 Final Release 🎉 '''VERSION.1.0''' on https://ftp.gnu.org/gnu/octave/
+* YYYY-MM-DD 🏁 Final Release 🎉 '''VERSION.1.0''' on https://ftp.gnu.org/gnu/octave/ }}
 
 Please use <code>&lt;strike&gt; &lt;/strike&gt;</code> to mark items below as done.
 
 == 🚀 Kick-off ⚽ ==
-
------
 
 === ⚙️ Update stable and default branch to new version numbers ===
 
@@ -85,9 +83,6 @@ Completion Date:
 
 == 🔃 Repeat until all bugs are resolved ==
 
-
------
-
 Completion Date of first iteration:
 
 === ⚠️ Current state at Savannah ===
@@ -119,9 +114,6 @@ Bug overview at https://octave.space/savannah/.
 * Announce release candidate to [https://octave.discourse.group/ Octave Discourse].
 
 == 🏁 Final Release 🎉 ==
-
-
------
 
 === 📃 Update version information ===
 
@@ -159,3 +151,5 @@ Completion Date:
 Completion Date:
 
 * Remove all deprecated functions scheduled for deletion on default branch. These functions are tagged with <code>OCTAVE_DEPRECATED</code> in C++ or are m-files located in the directory <code>scripts/deprecated</code>. Check file <code>etc/NEWS.VERSION-2.md</code> for list of features that have been deprecated.
+
+[[Category:Releases]]
