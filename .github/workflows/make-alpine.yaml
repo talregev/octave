@@ -1,6 +1,11 @@
 name: make-alpine
-on: [push]
-concurrency: ci-alpine-${{ github.ref }}
+on: 
+  push:
+      branches: [ default, stable ]
+  pull_request: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
 
