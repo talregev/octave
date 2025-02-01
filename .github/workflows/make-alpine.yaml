@@ -1,5 +1,5 @@
 name: make-alpine
-on: [push]
+on: [push, pull_request]
 concurrency: ci-alpine-${{ github.ref }}
 
 jobs:

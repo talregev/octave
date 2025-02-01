@@ -1,5 +1,5 @@
 name: make-cygwin
-on: [push]
+on: [push, pull_request]
 concurrency: ci-cygwin-${{ github.ref }}
 
 jobs:

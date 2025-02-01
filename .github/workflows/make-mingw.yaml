@@ -1,5 +1,5 @@
 name: make-mingw
-on: [push]
+on: [push, pull_request]
 concurrency: ci-mingw-${{ github.ref }}
 
 jobs:
