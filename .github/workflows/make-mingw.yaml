@@ -1,6 +1,11 @@
 name: make-mingw
-on: [push, pull_request]
-concurrency: ci-mingw-${{ github.ref }}
+on: 
+  push:
+      branches: [ default, stable ]
+  pull_request: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
 
