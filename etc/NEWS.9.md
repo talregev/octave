@@ -1,6 +1,6 @@
 For (bug #XXXXX) see https://savannah.gnu.org/bugs/?XXXXX
 
-Summary of bugs fixed for version 9.4.0 (tbd):
+Summary of bugs fixed for version 9.4.0 (2025-02-05):
 -----------------------------------------------------
 
 ### Improvements and fixes
