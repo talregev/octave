@@ -167,7 +167,7 @@ function [nn, xx] = hist (varargin)
       equal_bin_spacing = ! isempty (strfind (typeinfo (x), "range"));
       if (! equal_bin_spacing)
         diffs = diff (x);
-        if (all (diffs == diffs(1)))
+        if (! any ((diffs - diffs(1)) > eps (max (x))))
           equal_bin_spacing = true;
         endif
       endif
