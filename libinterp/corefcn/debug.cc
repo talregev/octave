@@ -185,7 +185,7 @@ debug_on_interrupt}
                                      class_name, lines, condition);
 
       if (lines.size () == 0)
-        lines.insert (1);
+        lines.insert (-1);
 
       if (symbol_name != "")
         {
@@ -592,35 +592,67 @@ is stopped.
   return ovl ();
 }
 
-static void
-do_dbtype (std::ostream& os, const std::string& name, int start, int end)
+static bool
+parse_start_end (const std::string& arg, int& start, int& end, const char *who)
 {
-  std::string ff = octave::fcn_file_in_path (name);
+  start = 0;
+  end = 0;
 
-  if (ff.empty ())
-    os << "dbtype: unknown function " << name << "\n";
-  else
+  std::size_t ind = arg.find (':');
+
+  if (ind != std::string::npos)  // (start:end)
     {
-      std::ifstream fs = octave::sys::ifstream (ff.c_str (), std::ios::in);
+      std::string start_str = arg.substr (0, ind);
+      std::string end_str = arg.substr (ind+1);
 
-      if (! fs)
-        os << "dbtype: unable to open '" << ff << "' for reading!\n";
-      else
+      try
         {
-          int line = 1;
-          std::string text;
+          start = std::stoi (start_str);
 
-          while (std::getline (fs, text) && line <= end)
-            {
-              if (line >= start)
-                os << line << "\t" << text << "\n";
+          if (end_str == "end")
+            end = std::numeric_limits<int>::max ();
+          else
+            end = std::stoi (end_str);
+        }
+      catch (const std::invalid_argument&)
+        {
+          error ("%s: invalid integer conversion while parsing range '%s'", who, arg.c_str ());
+        }
+      catch (const std::out_of_range&)
+        {
+          error ("%s: integer value out of bounds while parsing range '%s'", who, arg.c_str ());
+        }
 
-              line++;
-            }
+      if (std::min (start, end) <= 0)
+        error ("%s: start and end lines must be >= 1\n", who);
+
+      if (start > end)
+        error ("%s: start line must be less than end line\n", who);
+    }
+  else  // (dbtype lineno)
+    {
+      try
+        {
+          int line = std::stoi (arg);
+
+          if (line <= 0)
+            error ("%s: start and end lines must be >= 1\n", who);
+
+          start = line;
+          end = line;
+        }
+      catch (const std::invalid_argument&)
+        {
+          // May be a name instead of a number.
+          return false;
+        }
+      catch (const std::out_of_range&)
+        {
+          error ("%s: integer value out of bounds while parsing '%s'", who, arg.c_str ());
         }
     }
 
-  os.flush ();
+  return true;
 }
 
 DEFMETHOD (dbtype, interp, args, ,
@@ -647,121 +679,34 @@ numbers.
 @seealso{dblist, dbwhere, dbstatus, dbstop}
 @end deftypefn */)
 {
-  octave_user_code *dbg_fcn;
-
   string_vector argv = args.make_argv ("dbtype");
 
-  octave::tree_evaluator& tw = interp.get_evaluator ();
+  // Empty means current function on call stack.
+  std::string fcn_name;
+
+  int start = 0;
+  int end = std::numeric_limits<int>::max ();
 
   switch (args.length ())
     {
     case 0:  // dbtype
-      dbg_fcn = tw.get_user_code ();
-
-      if (! dbg_fcn)
-        error ("dbtype: must be inside a user function to give no arguments to dbtype\n");
-
-      do_dbtype (octave_stdout, dbg_fcn->fcn_file_name (),
-                 0, std::numeric_limits<int>::max ());
-
       break;
 
     case 1:  // (dbtype start:end) || (dbtype fcn) || (dbtype lineno)
       {
         std::string arg = argv[1];
 
-        std::size_t ind = arg.find (':');
-
-        if (ind != std::string::npos)  // (dbtype start:end)
-          {
-            dbg_fcn = tw.get_user_code ();
-
-            if (dbg_fcn)
-              {
-                std::string start_str = arg.substr (0, ind);
-                std::string end_str = arg.substr (ind + 1);
-
-                int start, end;
-                start = atoi (start_str.c_str ());
-                if (end_str == "end")
-                  end = std::numeric_limits<int>::max ();
-                else
-                  end = atoi (end_str.c_str ());
-
-                if (std::min (start, end) <= 0)
-                  error ("dbtype: start and end lines must be >= 1\n");
-
-                if (start > end)
-                  error ("dbtype: start line must be less than end line\n");
-
-                do_dbtype (octave_stdout, dbg_fcn->fcn_file_name (),
-                           start, end);
-              }
-          }
-        else  // (dbtype fcn) || (dbtype lineno)
-          {
-            int line = atoi (arg.c_str ());
-
-            if (line == 0)  // (dbtype fcn)
-              {
-                dbg_fcn = tw.get_user_code (arg);
-
-                if (! dbg_fcn)
-                  error ("dbtype: function <%s> not found\n", arg.c_str ());
-
-                do_dbtype (octave_stdout, dbg_fcn->fcn_file_name (),
-                           0, std::numeric_limits<int>::max ());
-              }
-            else  // (dbtype lineno)
-              {
-                if (line <= 0)
-                  error ("dbtype: start and end lines must be >= 1\n");
-
-                dbg_fcn = tw.get_user_code ();
-
-                if (dbg_fcn)
-                  do_dbtype (octave_stdout, dbg_fcn->fcn_file_name (),
-                             line, line);
-              }
-          }
+        if (! parse_start_end (arg, start, end, "dbtype"))
+          fcn_name = arg;
       }
       break;
 
     case 2:  // (dbtype fcn start:end) || (dbtype fcn start)
       {
-        dbg_fcn = tw.get_user_code (argv[1]);
+        fcn_name = argv[1];
 
-        if (! dbg_fcn)
-          error ("dbtype: function <%s> not found\n", argv[1].c_str ());
-
-        std::string arg = argv[2];
-        int start, end;
-        std::size_t ind = arg.find (':');
-
-        if (ind != std::string::npos)
-          {
-            std::string start_str = arg.substr (0, ind);
-            std::string end_str = arg.substr (ind + 1);
-
-            start = atoi (start_str.c_str ());
-            if (end_str == "end")
-              end = std::numeric_limits<int>::max ();
-            else
-              end = atoi (end_str.c_str ());
-          }
-        else
-          {
-            start = atoi (arg.c_str ());
-            end = start;
-          }
-
-        if (std::min (start, end) <= 0)
-          error ("dbtype: start and end lines must be >= 1\n");
-
-        if (start > end)
-          error ("dbtype: start line must be less than end line\n");
-
-        do_dbtype (octave_stdout, dbg_fcn->fcn_file_name (), start, end);
+        if (! parse_start_end (argv[2], start, end, "dbtype"))
+          error ("dbtype: expecting start:end or location argument, found '%s'", argv[2].c_str ());
       }
       break;
 
@@ -769,7 +714,44 @@ numbers.
       error ("dbtype: expecting zero, one, or two arguments\n");
     }
 
+  if (fcn_name.empty ())
+    {
+      octave::tree_evaluator& tw = interp.get_evaluator ();
+
+      tw.debug_type (octave_stdout, start, end);
+    }
+  else
+    {
+      std::string file_name = octave::fcn_file_in_path (fcn_name);
+
+      if (file_name.empty ())
+        error ("dbtype: unknown function '%s'", fcn_name.c_str ());
+
+      octave::display_file_lines (octave_stdout, file_name, start, end, -1, "", "dbtype");
+    }
+
   return ovl ();
+}
+
+static int
+parse_integer_argument (const std::string& arg, const char *who)
+{
+  int n = 0;
+
+  try
+    {
+      n = std::stoi (arg);
+    }
+  catch (const std::invalid_argument&)
+    {
+      error ("%s: invalid value of N, found '%s'", arg.c_str (), who);
+    }
+  catch (const std::out_of_range&)
+    {
+      error ("%s: value of N ('%s') is out of range", arg.c_str (), who);
+    }
+
+  return n;
 }
 
 DEFMETHOD (dblist, interp, args, ,
@@ -785,16 +767,17 @@ If unspecified @var{n} defaults to 10 (+/- 5 lines)
 {
   int n = 10;
 
-  if (args.length () == 1)
+  int numel = args.length ();
+
+  if (numel > 1)
+    print_usage ();
+
+  if (numel == 1)
     {
       octave_value arg = args(0);
 
       if (arg.is_string ())
-        {
-          std::string s_arg = arg.string_value ();
-
-          n = atoi (s_arg.c_str ());
-        }
+        n = parse_integer_argument (arg.string_value (), "dblist");
       else
         n = args(0).int_value ();
 
@@ -804,44 +787,7 @@ If unspecified @var{n} defaults to 10 (+/- 5 lines)
 
   octave::tree_evaluator& tw = interp.get_evaluator ();
 
-  octave_user_code *dbg_fcn = tw.get_user_code ();
-
-  if (! dbg_fcn)
-    error ("dblist: must be inside a user function to use dblist\n");
-
-  bool have_file = true;
-
-  std::string name = dbg_fcn->fcn_file_name ();
-
-  if (name.empty ())
-    {
-      have_file = false;
-      name = dbg_fcn->name ();
-    }
-
-  int l = tw.debug_user_code_line ();
-
-  if (l > 0)
-    {
-      if (have_file)
-        {
-          int l_min = std::max (l - n/2, 0);
-          int l_max = l + n/2;
-          do_dbtype (octave_stdout, name, l_min, l-1);
-
-          std::string line = dbg_fcn->get_code_line (l);
-
-          if (! line.empty ())
-            octave_stdout << l << "-->\t" << line << std::endl;
-
-          do_dbtype (octave_stdout, name, l+1, l_max);
-        }
-    }
-  else
-    {
-      octave_stdout << "dblist: unable to determine source code line"
-                    << std::endl;
-    }
+  tw.debug_list (octave_stdout, n);
 
   return ovl ();
 }
@@ -877,7 +823,7 @@ do_dbstack (octave::interpreter& interp, const octave_value_list& args,
               if (s_arg == "-completenames")
                 continue;
 
-              n = atoi (s_arg.c_str ());
+              n = parse_integer_argument (s_arg, "dbstack");
             }
           else
             n = arg.int_value ();
@@ -1023,11 +969,7 @@ do_dbupdown (octave::interpreter& interp, const octave_value_list& args,
       octave_value arg = args(0);
 
       if (arg.is_string ())
-        {
-          std::string s_arg = arg.string_value ();
-
-          n = atoi (s_arg.c_str ());
-        }
+        n = parse_integer_argument (arg.string_value (), who.c_str ());
       else
         n = args(0).int_value ();
     }
@@ -1117,10 +1059,10 @@ interchangeably.
         n = -2;
       else
         {
-          n = atoi (arg.c_str ());
+          n = parse_integer_argument (arg, "dbstep");
 
           if (n < 1)
-            error ("dbstep: invalid argument");
+            error ("dbstep: N must be greater than zero");
         }
     }
   else

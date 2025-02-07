@@ -127,7 +127,7 @@ public:
   {
     Matrix retval (m.rows (), m.cols ());
 
-    do_scale (m.data (), retval.fortran_vec (), m.numel ());
+    do_scale (m.data (), retval.rwdata (), m.numel ());
 
     return retval;
   }
@@ -136,7 +136,7 @@ public:
   {
     NDArray retval (m.dims ());
 
-    do_scale (m.data (), retval.fortran_vec (), m.numel ());
+    do_scale (m.data (), retval.rwdata (), m.numel ());
 
     return retval;
   }
@@ -168,7 +168,7 @@ public:
   {
     Matrix retval (m.rows (), m.cols ());
 
-    do_scale (m.data (), retval.fortran_vec (), m.numel ());
+    do_scale (m.data (), retval.rwdata (), m.numel ());
 
     return retval;
   }
@@ -177,7 +177,7 @@ public:
   {
     NDArray retval (m.dims ());
 
-    do_scale (m.data (), retval.fortran_vec (), m.numel ());
+    do_scale (m.data (), retval.rwdata (), m.numel ());
 
     return retval;
   }
@@ -2252,7 +2252,7 @@ public:
 
   virtual void init_integerhandle (const octave_value&)
   {
-    panic_impossible ();
+    error ("unexpected call to base_properties::init_integerhandle - please report this bug");
   }
 
   // Look through DEFAULTS for properties with given CLASS_NAME, and
@@ -2291,7 +2291,8 @@ public:
 
   virtual bool has_property (const caseless_str&) const
   {
-    panic_impossible ();
+    error ("unexpected call to base_properties::has_property - please report this bug");
+
     return false;
   }
 
@@ -4770,7 +4771,9 @@ public:
     { return m_aliminclude.current_value (); }
 
     bool is_climinclude () const
-    { return (m_climinclude.is_on () && m_cdatamapping.is ("scaled")); }
+    { return (m_climinclude.is_on ()
+              && ! (m_cdatamapping.is ("direct")
+                    || m_cdata.get ().ndims () == 3)); }
     std::string get_climinclude () const
     { return m_climinclude.current_value (); }
 
@@ -4891,7 +4894,7 @@ public:
 
     Matrix get_auto_xdata ()
     {
-      dim_vector dv = get_cdata ().dims ();
+      const dim_vector& dv = get_cdata ().dims ();
       Matrix data;
       if (dv(1) > 0.)
         {
@@ -4903,7 +4906,7 @@ public:
 
     Matrix get_auto_ydata ()
     {
-      dim_vector dv = get_cdata ().dims ();
+      const dim_vector& dv = get_cdata ().dims ();
       Matrix data;
       if (dv(0) > 0.)
         {
@@ -5055,7 +5058,9 @@ public:
     { return m_aliminclude.current_value (); }
 
     bool is_climinclude () const
-    { return (m_climinclude.is_on () && m_cdatamapping.is ("scaled")); }
+    { return (m_climinclude.is_on ()
+              && ! (m_cdatamapping.is ("direct")
+                    || m_cdata.get ().ndims () == 3)); }
     std::string get_climinclude () const
     { return m_climinclude.current_value (); }
 
@@ -5558,7 +5563,9 @@ public:
     { return m_aliminclude.current_value (); }
 
     bool is_climinclude () const
-    { return (m_climinclude.is_on () && m_cdatamapping.is ("scaled")); }
+    { return (m_climinclude.is_on ()
+              && ! (m_cdatamapping.is ("direct")
+                    || m_cdata.get ().ndims () == 3)); }
     std::string get_climinclude () const
     { return m_climinclude.current_value (); }
 
@@ -6673,9 +6680,7 @@ set_property_in_handle (double handle, const std::string& property,
 
 class graphics_event;
 
-class
-OCTINTERP_API
-base_graphics_event
+class OCTINTERP_API base_graphics_event
 {
 public:
   enum priority { INTERRUPT, QUEUE, CANCEL };
@@ -6702,9 +6707,7 @@ private:
   int m_busyaction;
 };
 
-class
-OCTINTERP_API
-graphics_event
+class OCTINTERP_API graphics_event
 {
 public:
 

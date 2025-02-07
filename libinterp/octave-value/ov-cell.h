@@ -46,8 +46,9 @@ class octave_value_list;
 
 // Cells.
 
-class
-octave_cell : public octave_base_matrix<Cell>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_matrix<Cell>;
+
+class octave_cell : public octave_base_matrix<Cell>
 {
 public:
 
@@ -190,7 +191,7 @@ private:
 
   mutable std::unique_ptr<Array<std::string>> m_cellstr_cache;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

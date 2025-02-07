@@ -185,7 +185,7 @@ qdockwidget_css (const QString& close_icon, const QString& close_tooltip,
                   ).arg (close_icon).arg (float_icon).arg (icon_size)
                    .arg (close_tooltip).arg (float_tooltip)
                    .arg (titlebar_foreground).arg (titlebar_background)
-                   .arg ((icon_size*2)/3).arg((icon_size*7)/3);
+                   .arg ((icon_size*2)/3).arg ((icon_size*7)/3);
 }
 
 octave_dock_widget::octave_dock_widget (const QString& obj_name, QWidget *p)
@@ -215,7 +215,7 @@ octave_dock_widget::octave_dock_widget (const QString& obj_name, QWidget *p)
   connect (this, &octave_dock_widget::queue_make_window,
            this, &octave_dock_widget::make_window, Qt::QueuedConnection);
   connect (this, &octave_dock_widget::queue_make_widget,
-           this, [=] () { make_widget (); }, Qt::QueuedConnection);
+           this, [this] () { make_widget (); }, Qt::QueuedConnection);
 
   gui_settings settings;
 
@@ -259,7 +259,7 @@ octave_dock_widget::octave_dock_widget (const QString& obj_name, QWidget *p)
 void
 octave_dock_widget::init_window_menu_entry ()
 {
-  emit active_changed (isVisible ());  // emit once for init of window menu
+  Q_EMIT active_changed (isVisible ());  // emit once for init of window menu
 }
 
 // make the widget floating
@@ -331,7 +331,7 @@ octave_dock_widget::make_window (bool widget_was_dragged)
       set_style (true);
     }
 
-  emit topLevelChanged (true);  // Be sure signal is emitted
+  Q_EMIT topLevelChanged (true);  // Be sure signal is emitted
 }
 
 // dock the widget
@@ -429,7 +429,7 @@ octave_dock_widget::set_main_window (main_window *mw)
 void
 octave_dock_widget::closeEvent (QCloseEvent *e)
 {
-  emit active_changed (false);
+  Q_EMIT active_changed (false);
   set_focus_predecessor ();
   save_settings ();
 
@@ -458,7 +458,7 @@ octave_dock_widget::event (QEvent *event)
       if (isFloating () && parent () != 0)
         {
           m_waiting_for_mouse_button_release = false;
-          emit queue_make_window (event->type () != QEvent::MouseButtonDblClick);
+          Q_EMIT queue_make_window (event->type () != QEvent::MouseButtonDblClick);
         }
       return retval;
     }
@@ -513,6 +513,7 @@ octave_dock_widget::handle_settings ()
   QRect default_floating_size = QRect (x+16, y+32, w/3, h/2);
 
   QRect default_dock_size;
+  QString key_ext;
   if (m_main_window)
     {
       // We have a main window, dock size depends on size of main window
@@ -523,11 +524,12 @@ octave_dock_widget::handle_settings ()
     {
       // No main window, default dock size should never be used
       default_dock_size = QRect (0, 0, w/10, h/10);
+      key_ext = settings_no_mainwin;
     }
 
   m_recent_float_geom
-    = settings.value (dw_float_geometry.settings_key ().arg (objectName ()),
-                       default_floating_size).toRect ();
+    = settings.value (dw_float_geometry.settings_key ().arg (objectName ()) + key_ext,
+                      default_floating_size).toRect ();
 
   adjust_to_screen (m_recent_float_geom, default_floating_size);
 
@@ -535,7 +537,7 @@ octave_dock_widget::handle_settings ()
   // saveGeomety to new QRect setting (see comment for restoring size
   // of docked widgets)
   QVariant dock_geom
-    = settings.value (dw_dock_geometry.settings_key ().arg (objectName ()),
+    = settings.value (dw_dock_geometry.settings_key ().arg (objectName ()) + key_ext,
                       default_dock_size);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   if (dock_geom.canConvert (QMetaType (QMetaType::QRect)))
@@ -588,20 +590,25 @@ octave_dock_widget::save_settings ()
 
   store_geometry ();
 
+  QString key_ext;
+  if (! m_main_window)
+    key_ext = settings_no_mainwin;
+
   // conditional needed?
   if (! m_recent_float_geom.isNull ())
-    settings.setValue (dw_float_geometry.settings_key ().arg (name), m_recent_float_geom);
+    settings.setValue (dw_float_geometry.settings_key ().arg (name) + key_ext, m_recent_float_geom);
 
   if (! m_recent_dock_geom.isEmpty ())
-    settings.setValue (dw_dock_geometry.settings_key ().arg (name), m_recent_dock_geom);
-  settings.setValue (dw_is_visible.settings_key ().arg (name), isVisible ()); // store visibility
-  settings.setValue (dw_is_floating.settings_key ().arg (name), isFloating ()); // store floating
-  settings.setValue (dw_is_minimized.settings_key ().arg (name), isMinimized ()); // store minimized
+    settings.setValue (dw_dock_geometry.settings_key ().arg (name) + key_ext, m_recent_dock_geom);
+  settings.setValue (dw_is_visible.settings_key ().arg (name) + key_ext, isVisible ()); // store visibility
+  settings.setValue (dw_is_floating.settings_key ().arg (name) + key_ext, isFloating ()); // store floating
+  settings.setValue (dw_is_minimized.settings_key ().arg (name) + key_ext, isMinimized ()); // store minimized
 
   settings.sync ();
 }
 
-bool octave_dock_widget::eventFilter (QObject *obj, QEvent *e)
+bool
+octave_dock_widget::eventFilter (QObject *obj, QEvent *e)
 {
   // Ignore double clicks into window decoration elements
   if (e->type () == QEvent::NonClientAreaMouseButtonDblClick)
@@ -654,10 +661,11 @@ void
 octave_dock_widget::change_visibility (bool)
 {
   setVisible (false);
-  emit active_changed (false);
+  Q_EMIT active_changed (false);
 }
 
-void octave_dock_widget::activate ()
+void
+octave_dock_widget::activate ()
 {
   if (! isVisible ())
     setVisible (true);
@@ -667,11 +675,12 @@ void octave_dock_widget::activate ()
   raise ();
 }
 
-void octave_dock_widget::handle_visibility (bool visible)
+void
+octave_dock_widget::handle_visibility (bool visible)
 {
   if (visible)
     {
-      emit active_changed (true);
+      Q_EMIT active_changed (true);
       if (! isFloating ())
         setFocus ();
     }
@@ -714,7 +723,7 @@ octave_dock_widget::toplevel_change (bool toplevel)
       // Making into a widget immediately will mangle the double-click
       // status and cause problems on followup button clicks.
       if (parent () == 0)
-        emit queue_make_widget ();
+        Q_EMIT queue_make_widget ();
     }
 }
 

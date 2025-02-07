@@ -52,30 +52,31 @@ class tree_index_expression : public tree_expression
 {
 public:
 
-  tree_index_expression (tree_expression *e = nullptr,
-                         tree_argument_list *lst = nullptr,
-                         int l = -1, int c = -1, char t = '(');
+  tree_index_expression (tree_expression *e, const token& open_delim, tree_argument_list *lst, const token& close_delim, char t);
 
-  tree_index_expression (tree_expression *e, const std::string& n,
-                         int l = -1, int c = -1);
+  tree_index_expression (tree_expression *e, const token& dot_tok, const token& struct_elt_tok);
 
-  tree_index_expression (tree_expression *e, tree_expression *df,
-                         int l = -1, int c = -1);
+  tree_index_expression (tree_expression *e, const token& dot_tok, const token& open_paren, tree_expression *df, const token& close_paren);
 
   OCTAVE_DISABLE_COPY_MOVE (tree_index_expression)
 
   ~tree_index_expression ();
 
   tree_index_expression *
-  append (tree_argument_list *lst = nullptr, char t = '(');
+  append (const token& open_delim, tree_argument_list *lst, const token& close_delim, char t = '(');
 
-  tree_index_expression * append (const std::string& n);
+  tree_index_expression * append (const token& dot_tok, const token& struct_elt_tok);
 
-  tree_index_expression * append (tree_expression *df);
+  tree_index_expression * append (const token& dot_tok, const token& open_paren, tree_expression *df, const token& close_paren);
 
   bool is_index_expression () const { return true; }
 
   std::string name () const;
+
+  comment_list leading_comments () const { return m_expr->leading_comments (); }
+
+  filepos beg_pos () const { return m_expr->beg_pos (); }
+  filepos end_pos () const;
 
   tree_expression * expression () { return m_expr; }
 
@@ -121,13 +122,19 @@ public:
 private:
 
   // The LHS of this index expression.
-  tree_expression *m_expr;
+  tree_expression *m_expr {nullptr};
+
+  // FIXME: maybe all the things in the list should be in a struct or
+  // class so we can more easily ensure that they remain synchronized.
 
   // The indices (only valid if type == paren || type == brace).
   std::list<tree_argument_list *> m_args;
 
   // The type of this index expression.
   std::string m_type;
+
+  // Record dot tokens for position and possible comment info.
+  std::list<token> m_dot_tok;
 
   // The names of the arguments.  Used for constant struct element
   // references.
@@ -137,9 +144,9 @@ private:
   std::list<tree_expression *> m_dyn_field;
 
   // TRUE if this expression was parsed as a word list command.
-  bool m_word_list_cmd;
+  bool m_word_list_cmd {false};
 
-  tree_index_expression (int l, int c);
+  tree_index_expression () = default;
 
   octave_map make_arg_struct () const;
 };

@@ -45,8 +45,7 @@ class octave_value_list;
 
 // Data structures.
 
-class
-octave_struct : public octave_base_value
+class octave_struct : public octave_base_value
 {
 public:
 
@@ -170,11 +169,10 @@ protected:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
-class
-octave_scalar_struct : public octave_base_value
+class octave_scalar_struct : public octave_base_value
 {
 public:
 
@@ -297,7 +295,7 @@ private:
 
   octave_value to_array ();
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

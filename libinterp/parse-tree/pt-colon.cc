@@ -41,10 +41,10 @@ tree_colon_expression::dup (symbol_scope& scope) const
 {
   tree_colon_expression *new_ce
     = new tree_colon_expression (m_base ? m_base->dup (scope) : nullptr,
-                                 m_limit ? m_limit->dup (scope) : nullptr,
-                                 m_increment ? m_increment->dup (scope)
-                                 : nullptr,
-                                 line (), column ());
+                                 m_colon_1_tok,
+                                 m_increment ? m_increment->dup (scope) : nullptr,
+                                 m_colon_2_tok,
+                                 m_limit ? m_limit->dup (scope) : nullptr);
 
   new_ce->copy_base (*this);
 

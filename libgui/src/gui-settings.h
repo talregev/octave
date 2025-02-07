@@ -26,14 +26,9 @@
 #if ! defined (octave_gui_settings_h)
 #define octave_gui_settings_h 1
 
-#include "octave-config.h"
-
 #include <QColor>
 #include <QSettings>
 #include <QString>
-#if defined (HAVE_QSCINTILLA)
-#  include <Qsci/qscilexer.h>
-#endif
 
 class QByteArray;
 class QComboBox;
@@ -41,6 +36,7 @@ class QDateTime;
 class QIcon;
 class QShortcut;
 class QTranslator;
+class QsciLexer;
 
 #include "gui-preferences.h"
 
@@ -138,7 +134,7 @@ public:
     Reading a color from the gui_settings taking possible color modes
     into account. The default value for a second color mode @p mode=1 is
     deterimined from the standard default value @p mode=0 by inverting
-    the lightness (see get_color_value())
+    the lightness (see get_color_value ())
 
     @param pref gui preference (key string, default value); the default
                 value can be given by QColor or QPalette::ColorRole
@@ -194,10 +190,9 @@ public:
   void config_translators (QTranslator *qt_tr, QTranslator *qsci_tr,
                            QTranslator *gui_tr);
 
-#if defined (HAVE_QSCINTILLA)
   int get_valid_lexer_styles (QsciLexer *lexer, int *styles);
+
   void read_lexer_settings (QsciLexer *lexer, int mode = 0, int def = 0);
-#endif
 
   bool update_settings_key (const QString& new_key, const QString& old_key);
 
@@ -221,6 +216,9 @@ OCTAVE_END_NAMESPACE(octave)
 // Some constants used in the preferences of several widgets and therefore
 // defined globally here
 
+// Constants for distinguishing between full GUI and dockwidgets initiated
+// from the command line
+const QString settings_no_mainwin ("__no_mainwin");
 // Constants for handling different color schemes
 const QColor settings_color_no_change (255, 0, 255);
 const QStringList settings_color_modes_ext (QStringList () << "" << "_2");

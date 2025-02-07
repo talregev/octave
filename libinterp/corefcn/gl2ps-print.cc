@@ -40,6 +40,7 @@
 #include <gl2ps.h>
 
 #include "file-ops.h"
+#include "filepos-wrappers.h"
 #include "lo-mappers.h"
 #include "oct-locbuf.h"
 #include "oct-env.h"
@@ -57,9 +58,7 @@
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
-class
-OCTINTERP_API
-gl2ps_renderer : public opengl_renderer
+class OCTINTERP_API gl2ps_renderer : public opengl_renderer
 {
 public:
 
@@ -406,7 +405,7 @@ gl2ps_renderer::draw (const graphics_object& go, const std::string& print_cmd)
       if (! tmpf)
         error ("gl2ps_renderer::draw: couldn't open temporary file for printing");
 
-      frame.add ([=] () { std::fclose (tmpf); });
+      frame.add ([tmpf] () { std::fclose (tmpf); });
 
       // Reset buffsize, unless this is 2nd pass of a texstandalone print.
       if (m_term.find ("tex") == std::string::npos)
@@ -421,7 +420,7 @@ gl2ps_renderer::draw (const graphics_object& go, const std::string& print_cmd)
           m_buffer_overflow = false;
           buffsize *= 2;
 
-          std::fseek (tmpf, 0, SEEK_SET);
+          octave_fseeko_wrapper (tmpf, 0, SEEK_SET);
           octave_ftruncate_wrapper (fileno (tmpf), 0);
 
           // For LaTeX output the print process uses 2 drawnow() commands.
@@ -495,7 +494,7 @@ gl2ps_renderer::draw (const graphics_object& go, const std::string& print_cmd)
         }
 
       // Copy temporary file to pipe
-      std::fseek (tmpf, 0, SEEK_SET);
+      octave_fseeko_wrapper (tmpf, 0, SEEK_SET);
       char str[8192];  // 8 kB is a common kernel buffersize
       std::size_t nread, nwrite;
       nread = 1;
@@ -1236,7 +1235,7 @@ void
 gl2ps_renderer::draw_image (const image::properties& props)
 {
   octave_value cdata = props.get_color_data ();
-  dim_vector dv (cdata.dims ());
+  const dim_vector& dv = cdata.dims ();
   int h = dv(0);
   int w = dv(1);
 
@@ -1522,10 +1521,10 @@ gl2ps_renderer::draw_pixels (int w, int h, const uint8_t *data)
 
   OCTAVE_LOCAL_BUFFER (float, tmp_data, static_cast<size_t> (3)*w*h);
 
-  static const float maxval = std::numeric_limits<uint8_t>::max ();
+  static constexpr float MAXVAL = std::numeric_limits<uint8_t>::max ();
 
   for (int i = 0; i < 3*w*h; i++)
-    tmp_data[i] = data[i] / maxval;
+    tmp_data[i] = data[i] / MAXVAL;
 
   draw_pixels (w, h, tmp_data);
 }
@@ -1537,10 +1536,10 @@ gl2ps_renderer::draw_pixels (int w, int h, const uint16_t *data)
 
   OCTAVE_LOCAL_BUFFER (float, tmp_data, static_cast<size_t> (3)*w*h);
 
-  static const float maxval = std::numeric_limits<uint16_t>::max ();
+  static constexpr float MAXVAL = std::numeric_limits<uint16_t>::max ();
 
   for (int i = 0; i < 3*w*h; i++)
-    tmp_data[i] = data[i] / maxval;
+    tmp_data[i] = data[i] / MAXVAL;
 
   draw_pixels (w, h, tmp_data);
 }
@@ -1623,7 +1622,7 @@ gl2ps_print (opengl_functions& glfcns, const graphics_object& fig,
         error (R"(print: failed to open pipe "%s")", stream.c_str ());
 
       // Need octave:: qualifier here to avoid ambiguity.
-      frame.add ([=] () { octave::pclose (m_fp); });
+      frame.add ([m_fp] () { octave::pclose (m_fp); });
     }
   else
     {
@@ -1634,7 +1633,7 @@ gl2ps_print (opengl_functions& glfcns, const graphics_object& fig,
       if (! m_fp)
         error (R"(gl2ps_print: failed to create file "%s")", stream.c_str ());
 
-      frame.add ([=] () { std::fclose (m_fp); });
+      frame.add ([m_fp] () { std::fclose (m_fp); });
     }
 
   gl2ps_renderer rend (glfcns, m_fp, term);

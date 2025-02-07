@@ -47,8 +47,7 @@ OCTAVE_END_NAMESPACE(octave)
 
 // Dynamically-linked functions.
 
-class
-octave_mex_function : public octave_function
+class octave_mex_function : public octave_function
 {
 public:
 
@@ -122,7 +121,7 @@ private:
   // on the file to see if it has changed.
   bool m_is_system_fcn_file;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

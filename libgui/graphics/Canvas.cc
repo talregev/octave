@@ -184,8 +184,8 @@ Canvas::updateCurrentPoint (const graphics_object& fig,
 
   octave::autolock guard (gh_mgr.graphics_lock ());
 
-  emit gh_set_event (fig.get_handle (), "currentpoint",
-                     Utils::figureCurrentPoint (fig, event), false);
+  Q_EMIT gh_set_event (fig.get_handle (), "currentpoint",
+                       Utils::figureCurrentPoint (fig, event), false);
 
   Matrix children = obj.get_properties ().get_children ();
   octave_idx_type num_children = children.numel ();
@@ -213,7 +213,7 @@ Canvas::updateCurrentPoint (const graphics_object& fig,
           cp(0, 0) = p1(0); cp(0, 1) = p1(1); cp(0, 2) = p1(2);
           cp(1, 0) = p2(0); cp(1, 1) = p2(1); cp(1, 2) = p2(2);
 
-          emit gh_set_event (childObj.get_handle (), "currentpoint", cp,
+          Q_EMIT gh_set_event (childObj.get_handle (), "currentpoint", cp,
                              false);
         }
     }
@@ -227,8 +227,8 @@ Canvas::updateCurrentPoint (const graphics_object& fig,
 
   octave::autolock guard (gh_mgr.graphics_lock ());
 
-  emit gh_set_event (fig.get_handle (), "currentpoint",
-                     Utils::figureCurrentPoint (fig), false);
+  Q_EMIT gh_set_event (fig.get_handle (), "currentpoint",
+                       Utils::figureCurrentPoint (fig), false);
 
   Matrix children = obj.get_properties ().get_children ();
   octave_idx_type num_children = children.numel ();
@@ -255,8 +255,8 @@ Canvas::updateCurrentPoint (const graphics_object& fig,
           cp(0, 0) = p1(0); cp(0, 1) = p1(1); cp(0, 2) = p1(2);
           cp(1, 0) = p2(0); cp(1, 1) = p2(1); cp(1, 2) = p2(2);
 
-          emit gh_set_event (childObj.get_handle (), "currentpoint", cp,
-                             false);
+          Q_EMIT gh_set_event (childObj.get_handle (), "currentpoint", cp,
+                               false);
         }
     }
 }
@@ -522,8 +522,8 @@ Canvas::canvasMouseMoveEvent (QMouseEvent *event)
               && ! figObj.get ("windowbuttonmotionfcn").isempty ())
             {
               updateCurrentPoint (figObj, obj, event);
-              emit gh_callback_event (figObj.get_handle (),
-                                      "windowbuttonmotionfcn");
+              Q_EMIT gh_callback_event (figObj.get_handle (),
+                                        "windowbuttonmotionfcn");
             }
         }
     }
@@ -670,24 +670,24 @@ Canvas::canvasMousePressEvent (QMouseEvent *event)
               fprop.set_currentobject (Matrix ());
 
             // Update figure "selectiontype" and "currentpoint"
-            emit gh_set_event (figObj.get_handle (), "selectiontype",
-                               Utils::figureSelectionType (event, isdblclick),
-                               false);
+            Q_EMIT gh_set_event (figObj.get_handle (), "selectiontype",
+                                 Utils::figureSelectionType (event, isdblclick),
+                                 false);
 
             updateCurrentPoint (figObj, obj, event);
 
-            emit gh_callback_event (figObj.get_handle (),
+            Q_EMIT gh_callback_event (figObj.get_handle (),
                                     "windowbuttondownfcn",
                                     button_number (event));
 
             // Execute the "buttondownfcn" of the selected object.  If the
             // latter is empty then execute the figure "buttondownfcn"
             if (currentObj && ! currentObj.get ("buttondownfcn").isempty ())
-              emit gh_callback_event (currentObj.get_handle (),
-                                      "buttondownfcn", button_number (event));
+              Q_EMIT gh_callback_event (currentObj.get_handle (),
+                                        "buttondownfcn", button_number (event));
             else if (figObj && ! figObj.get ("buttondownfcn").isempty ())
-              emit gh_callback_event (figObj.get_handle (),
-                                      "buttondownfcn", button_number (event));
+              Q_EMIT gh_callback_event (figObj.get_handle (),
+                                        "buttondownfcn", button_number (event));
 
             // Show context menu of the selected object
             if (currentObj && event->button () == Qt::RightButton)
@@ -870,7 +870,7 @@ Canvas::canvasMouseReleaseEvent (QMouseEvent *event)
           graphics_object figObj (obj.get_ancestor ("figure"));
 
           updateCurrentPoint (figObj, obj, event);
-          emit gh_callback_event (figObj.get_handle (), "windowbuttonupfcn");
+          Q_EMIT gh_callback_event (figObj.get_handle (), "windowbuttonupfcn");
         }
     }
   else if (m_mouseMode == TextMode)
@@ -901,8 +901,8 @@ Canvas::canvasMouseReleaseEvent (QMouseEvent *event)
                   props = anno_dlg.get_properties ();
                   props.prepend (figObj.get_handle ().as_octave_value ());
 
-                  emit interpreter_event
-                    ([=] (octave::interpreter& interp)
+                  Q_EMIT interpreter_event
+                    ([this, props] (octave::interpreter& interp)
                      {
                        // INTERPRETER THREAD
 
@@ -946,7 +946,7 @@ Canvas::canvasWheelEvent (QWheelEvent *event)
           if (childObj.isa ("axes"))
             {
 #if defined (HAVE_QWHEELEVENT_POSITION)
-              QPoint pos = event->position().toPoint ();
+              QPoint pos = event->position ().toPoint ();
 #else
               QPoint pos = event->pos ();
 #endif
@@ -976,7 +976,7 @@ Canvas::canvasWheelEvent (QWheelEvent *event)
 
               if (zoom_enabled (figObj))
                 {
-                  if (event->angleDelta().y () > 0)
+                  if (event->angleDelta ().y () > 0)
                     newMouseMode = ZoomInMode;
                   else
                     newMouseMode = ZoomOutMode;
@@ -1018,7 +1018,7 @@ Canvas::canvasWheelEvent (QWheelEvent *event)
               {
                 axes::properties& ap = Utils::properties<axes> (axesObj);
 
-                double factor = (event->angleDelta().y () > 0 ? 0.1 : -0.1);
+                double factor = (event->angleDelta ().y () > 0 ? 0.1 : -0.1);
 
                 if (event->modifiers () == Qt::NoModifier
                     && mode != "horizontal")
@@ -1041,8 +1041,8 @@ Canvas::canvasWheelEvent (QWheelEvent *event)
       if (! figObj.get ("windowscrollwheelfcn").isempty ())
         {
           octave_scalar_map eventData = Utils::makeScrollEventStruct (event);
-          emit gh_callback_event (m_handle, "windowscrollwheelfcn",
-                                  eventData);
+          Q_EMIT gh_callback_event (m_handle, "windowscrollwheelfcn",
+                                    eventData);
         }
     }
 }
@@ -1066,10 +1066,10 @@ Canvas::canvasKeyPressEvent (QKeyEvent *event)
 
           octave_scalar_map eventData = Utils::makeKeyEventStruct (event);
 
-          emit gh_set_event (figObj.get_handle (), "currentcharacter",
-                             eventData.getfield ("Character"), false);
-          emit gh_callback_event (figObj.get_handle (), "keypressfcn",
-                                  eventData);
+          Q_EMIT gh_set_event (figObj.get_handle (), "currentcharacter",
+                               eventData.getfield ("Character"), false);
+          Q_EMIT gh_callback_event (figObj.get_handle (), "keypressfcn",
+                                    eventData);
         }
 
       return true;
@@ -1092,8 +1092,8 @@ Canvas::canvasKeyReleaseEvent (QKeyEvent *event)
       if (obj.valid_object ())
         {
           graphics_object figObj (obj.get_ancestor ("figure"));
-          emit gh_callback_event (figObj.get_handle (), "keyreleasefcn",
-                                  Utils::makeKeyEventStruct (event));
+          Q_EMIT gh_callback_event (figObj.get_handle (), "keyreleasefcn",
+                                    Utils::makeKeyEventStruct (event));
         }
 
       return true;

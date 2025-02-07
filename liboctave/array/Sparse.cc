@@ -27,7 +27,6 @@
 // C++ source files that should have included config.h before including
 // this file.
 
-#include <cassert>
 #include <cinttypes>
 
 #include <algorithm>
@@ -150,9 +149,9 @@ Sparse<T, Alloc>::SparseRep::change_length (octave_idx_type nz)
   // Always preserve space for 1 element.
   nz = (nz > 0 ? nz : 1);
 
-  // Skip reallocation if we have less than 1/frac extra elements to discard.
-  static const int frac = 5;
-  if (nz > m_nzmax || nz < m_nzmax - m_nzmax/frac)
+  // Skip reallocation if we have less than 1/FRAC extra elements to discard.
+  static const int FRAC = 5;
+  if (nz > m_nzmax || nz < m_nzmax - m_nzmax/FRAC)
     {
       // Reallocate.
       octave_idx_type min_nzmax = std::min (nz, m_nzmax);
@@ -271,7 +270,7 @@ Sparse<T, Alloc>::Sparse (const Sparse<T, Alloc>& a, const dim_vector& dv)
     (*current_liboctave_error_handler)
       ("Sparse::Sparse (const Sparse&, const dim_vector&): dimension mismatch");
 
-  dim_vector old_dims = a.dims ();
+  const dim_vector& old_dims = a.dims ();
   octave_idx_type new_nzmax = a.nnz ();
   octave_idx_type new_nr = dv(0);
   octave_idx_type new_nc = dv(1);
@@ -1139,7 +1138,7 @@ OCTAVE_API
 Sparse<T, Alloc>
 Sparse<T, Alloc>::transpose () const
 {
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = rows ();
   octave_idx_type nc = cols ();
@@ -1165,7 +1164,7 @@ Sparse<T, Alloc>::transpose () const
         retval.xridx (q) = j;
         retval.xdata (q) = data (k);
       }
-  assert (nnz () == retval.xcidx (nr));
+  liboctave_panic_unless (nnz () == retval.xcidx (nr));
   // retval.xcidx[1:nr] holds row entry *end* offsets for rows 0:(nr-1)
   // and retval.xcidx[0:(nr-1)] holds their row entry *start* offsets
 
@@ -1199,7 +1198,7 @@ Sparse<T, Alloc>::delete_elements (const octave::idx_vector& idx)
 {
   Sparse<T, Alloc> retval;
 
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -1300,7 +1299,7 @@ void
 Sparse<T, Alloc>::delete_elements (const octave::idx_vector& idx_i,
                                    const octave::idx_vector& idx_j)
 {
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -1435,7 +1434,7 @@ Sparse<T, Alloc>::index (const octave::idx_vector& idx, bool resize_ok) const
 {
   Sparse<T, Alloc> retval;
 
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -1638,7 +1637,7 @@ Sparse<T, Alloc>::index (const octave::idx_vector& idx_i,
 {
   Sparse<T, Alloc> retval;
 
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -1883,7 +1882,7 @@ Sparse<T, Alloc>::assign (const octave::idx_vector& idx,
 {
   Sparse<T, Alloc> retval;
 
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -1998,10 +1997,10 @@ Sparse<T, Alloc>::assign (const octave::idx_vector& idx,
               // Disassembly our matrix...
               Array<octave_idx_type> new_ri (dim_vector (new_nz, 1));
               Array<T> new_data (dim_vector (new_nz, 1));
-              std::copy_n (tmp.ridx (), nz, new_ri.fortran_vec ());
-              std::copy_n (tmp.data (), nz, new_data.fortran_vec ());
+              std::copy_n (tmp.ridx (), nz, new_ri.rwdata ());
+              std::copy_n (tmp.data (), nz, new_data.rwdata ());
               // ... insert new data (densified) ...
-              idx.copy_data (new_ri.fortran_vec () + nz);
+              idx.copy_data (new_ri.rwdata () + nz);
               new_data.assign (octave::idx_vector (nz, new_nz), rhs.array_value ());
               // ... reassembly.
               *this = Sparse<T, Alloc> (new_data, new_ri, 0, nr, nc, false);
@@ -2048,7 +2047,7 @@ Sparse<T, Alloc>::assign (const octave::idx_vector& idx_i,
 {
   Sparse<T, Alloc> retval;
 
-  assert (ndims () == 2);
+  liboctave_panic_unless (ndims () == 2);
 
   octave_idx_type nr = dim1 ();
   octave_idx_type nc = dim2 ();
@@ -2142,7 +2141,7 @@ Sparse<T, Alloc>::assign (const octave::idx_vector& idx_i,
                   mx_inline_add (ub - lb, cidx () + lb + 1, rhs.cidx () + 1,
                                  li);
 
-                  assert (nnz () == new_nz);
+                  liboctave_panic_unless (nnz () == new_nz);
                 }
               else
                 {
@@ -2170,7 +2169,7 @@ Sparse<T, Alloc>::assign (const octave::idx_vector& idx_i,
                   mx_inline_add (nc - ub, cidx () + ub + 1,
                                  tmp.cidx () + ub + 1, new_nz - nz);
 
-                  assert (nnz () == new_nz);
+                  liboctave_panic_unless (nnz () == new_nz);
                 }
             }
           else if (idx_j.is_range () && idx_j.increment () == -1)
@@ -2755,7 +2754,7 @@ Sparse<T, Alloc>::cat (int dim, octave_idx_type n,
         break;
       }
     default:
-      assert (false);
+      (*current_liboctave_error_handler) ("Sparse<T, Alloc>::cat: invalid dimension = %d - please report this bug", dim);
     }
 
   return retval;

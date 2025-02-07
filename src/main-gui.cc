@@ -46,6 +46,8 @@
 
 #include "liboctgui-build-info.h"
 
+#include "liboctmex-build-info.h"
+
 #include "oct-env.h"
 
 #include "octave.h"
@@ -68,6 +70,7 @@ check_hg_versions ()
   std::string liboctave_id = liboctave_hg_id ();
   std::string liboctinterp_id = liboctinterp_hg_id ();
   std::string liboctgui_id = liboctgui_hg_id ();
+  std::string liboctmex_id = liboctmex_hg_id ();
 
   if (octave_id != liboctave_id)
     {
@@ -95,6 +98,16 @@ check_hg_versions ()
                 << octave_id
                 << ") does not match liboctgui hg id ("
                 << liboctgui_id
+                << ')' << std::endl;
+      ok = false;
+    }
+
+  if (octave_id != liboctmex_id)
+    {
+      std::cerr << "octave hg id ("
+                << octave_id
+                << ") does not match liboctmex hg id ("
+                << liboctmex_id
                 << ')' << std::endl;
       ok = false;
     }
@@ -144,7 +157,12 @@ main (int argc, char **argv)
 
   octave::sys::env::set_program_name (argv[0]);
 
-  octave::qt_application app ("octave", "octave-gui", OCTAVE_VERSION,
+  std::string app_name ("octave-gui");
+  std::string settings_file = octave::sys::env::getenv ("OCTAVE_GUI_SETTINGS");
+  if (! settings_file.empty ())
+    app_name = settings_file;
+
+  octave::qt_application app ("octave", app_name, OCTAVE_VERSION,
                               argc, argv);
 
   int ret = app.execute ();

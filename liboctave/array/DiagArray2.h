@@ -28,7 +28,6 @@
 
 #include "octave-config.h"
 
-#include <cassert>
 #include <cstdlib>
 
 #include "Array.h"
@@ -37,9 +36,7 @@
 // produce unexpected results.
 
 template <typename T>
-class
-OCTAVE_API
-DiagArray2 : protected Array<T>
+class OCTAVE_API DiagArray2 : protected Array<T>
 {
 protected:
   octave_idx_type m_d1, m_d2;
@@ -168,7 +165,8 @@ public:
 
   const T * data () const { return Array<T>::data (); }
 
-  T * fortran_vec () { return Array<T>::fortran_vec (); }
+  T * rwdata () { return Array<T>::rwdata (); }
+  inline T * fortran_vec () { return rwdata (); }
 
   void print_info (std::ostream& os, const std::string& prefix) const
   { Array<T>::print_info (os, prefix); }

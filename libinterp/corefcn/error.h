@@ -35,6 +35,10 @@
 #include "unwind-prot.h"
 
 #include "oct-map.h"
+// Include panic.h here for backward compatibility with previous
+// versions of Octave that declared the global panic functions and
+// macros here.
+#include "panic.h"
 
 class octave_value_list;
 
@@ -489,46 +493,23 @@ OCTAVE_NORETURN
 extern OCTINTERP_API void
 parse_error_with_id (const char *id, const char *fmt, ...);
 
-OCTAVE_NORETURN
-extern OCTINTERP_API void vpanic (const char *fmt, va_list args);
-
-OCTAVE_FORMAT_PRINTF (1, 2)
-OCTAVE_NORETURN
-extern OCTINTERP_API void panic (const char *fmt, ...);
-
-// To allow the __FILE__ and __LINE__ macros to work as expected, the
-// panic_impossible, panic_if, panic_unless, error_impossible, error_if,
-// and error_unless symbols must be defined as macros.
-
-#define panic_impossible()                                              \
-  ::panic ("impossible state reached in file '%s' at line %d", __FILE__, __LINE__)
-
-#if defined (NDEBUG)
-#  define panic_if(cond)
-#else
-#  define panic_if(cond) do { if (cond) panic_impossible (); } while (0)
-#endif
-
-#if defined (NDEBUG)
-#  define panic_unless(cond)
-#else
-#  define panic_unless(cond) panic_if (! (cond))
-#endif
+// Use of the following macros (error_impossible, error_if, and
+// error_unless) is discouraged.  All of these will only display a
+// generic error of the form
+//
+//   impossible state reached in file 'FILE' at line 'N'
+//
+// If the state really is "impossible" to reach, then it is better to
+// use one of the corresponding panic* functions instead (see panic.h).
+//
+// See also the discussion here: https://octave.discourse.group/t/assert-panic-error-and-ndebug/5409
 
 #define error_impossible()                                              \
   ::error ("impossible state reached in file '%s' at line %d", __FILE__, __LINE__)
 
-#if defined (NDEBUG)
-#  define error_if(cond)
-#else
-#  define error_if(cond) do { if (cond) error_impossible (); } while (0)
-#endif
+#define error_if(cond) do { if (cond) error_impossible (); } while (0)
 
-#if defined (NDEBUG)
-#  define error_unless(cond)
-#else
-#  define error_unless(cond) error_if (! (cond))
-#endif
+#define error_unless(cond) error_if (! (cond))
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

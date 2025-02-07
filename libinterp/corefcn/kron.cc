@@ -55,8 +55,8 @@ template <typename R, typename T>
 static MArray<T>
 kron (const MArray<R>& a, const MArray<T>& b)
 {
-  error_unless (a.ndims () == 2);
-  error_unless (b.ndims () == 2);
+  panic_unless (a.ndims () == 2);
+  panic_unless (b.ndims () == 2);
 
   octave_idx_type nra = a.rows ();
   octave_idx_type nrb = b.rows ();
@@ -64,7 +64,7 @@ kron (const MArray<R>& a, const MArray<T>& b)
   octave_idx_type ncb = b.cols ();
 
   MArray<T> c (dim_vector (nra*nrb, nca*ncb));
-  T *cv = c.fortran_vec ();
+  T *cv = c.rwdata ();
 
   for (octave_idx_type ja = 0; ja < nca; ja++)
     {
@@ -86,7 +86,7 @@ template <typename R, typename T>
 static MArray<T>
 kron (const MDiagArray2<R>& a, const MArray<T>& b)
 {
-  error_unless (b.ndims () == 2);
+  panic_unless (b.ndims () == 2);
 
   octave_idx_type nra = a.rows ();
   octave_idx_type nrb = b.rows ();

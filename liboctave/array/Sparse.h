@@ -28,7 +28,6 @@
 
 #include "octave-config.h"
 
-#include <cassert>
 #include <cstddef>
 
 #include <algorithm>
@@ -43,9 +42,7 @@
 // all the derived classes.
 
 template <typename T, typename Alloc>
-class
-OCTAVE_API
-Sparse
+class OCTAVE_API Sparse
 {
 public:
 

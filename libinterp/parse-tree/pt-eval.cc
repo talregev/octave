@@ -75,6 +75,12 @@
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
+OCTAVE_NORETURN static void
+error_unexpected (const char *name)
+{
+  error ("unexpected call to %s - please report this bug", name);
+}
+
 // Normal evaluator.
 
 class quit_debug_exception
@@ -675,7 +681,7 @@ tree_evaluator::get_line_and_eval ()
       exiting = false;
 
       evmgr.post_event
-        ([&] (interpreter& interp)
+        ([this, input, &mtx, &incomplete_parse, &evaluation_pending, &cv, &exiting] (interpreter& interp)
          {
            // INTERPRETER THREAD
 
@@ -694,14 +700,14 @@ tree_evaluator::get_line_and_eval ()
              }
            catch (const execution_exception& ee)
              {
-               error_system& es = m_interpreter.get_error_system ();
+               error_system& es = interp.get_error_system ();
 
                es.save_exception (ee);
                es.display_exception (ee);
 
-               if (m_interpreter.interactive ())
+               if (interp.interactive ())
                  {
-                   m_interpreter.recover_from_exception ();
+                   interp.recover_from_exception ();
                    m_parser->reset ();
                    evaluation_pending = false;
                    cv.notify_all ();
@@ -727,7 +733,7 @@ tree_evaluator::get_line_and_eval ()
       // Wait until evaluation is finished before prompting for input
       // again.
 
-      cv.wait (lock, [&] { return ! evaluation_pending; });
+      cv.wait (lock, [&evaluation_pending] { return ! evaluation_pending; });
 
       if (exiting)
         break;
@@ -1050,7 +1056,7 @@ tree_evaluator::eval_string (const std::string& eval_str, bool silent,
             {
               tree_statement *stmt = nullptr;
 
-              if (stmt_list->length () == 1
+              if (stmt_list->size () == 1
                   && (stmt = stmt_list->front ())
                   && stmt->is_expression ())
                 {
@@ -1177,7 +1183,7 @@ tree_evaluator::evalin (const std::string& context,
                         const std::string& try_code,
                         int nargout)
 {
-  unwind_action act ([=] (std::size_t frm)
+  unwind_action act ([this] (std::size_t frm)
                      {
                        m_call_stack.restore_frame (frm);
                      }, m_call_stack.current_frame ());
@@ -1202,7 +1208,7 @@ tree_evaluator::evalin (const std::string& context,
 {
   octave_value_list retval;
 
-  unwind_action act1 ([=] (std::size_t frm)
+  unwind_action act1 ([this] (std::size_t frm)
                       {
                         m_call_stack.restore_frame (frm);
                       }, m_call_stack.current_frame ());
@@ -1258,13 +1264,13 @@ tree_evaluator::evalin (const std::string& context,
 void
 tree_evaluator::visit_anon_fcn_handle (tree_anon_fcn_handle&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_anon_fcn_handle");
 }
 
 void
 tree_evaluator::visit_argument_list (tree_argument_list&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_argument_list");
 }
 
 void
@@ -1276,49 +1282,49 @@ tree_evaluator::visit_arguments_block (tree_arguments_block&)
 void
 tree_evaluator::visit_args_block_attribute_list (tree_args_block_attribute_list&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_args_block_attribute_list");
 }
 
 void
 tree_evaluator::visit_args_block_validation_list (tree_args_block_validation_list&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_args_block_validation_list");
 }
 
 void
 tree_evaluator::visit_arg_validation (tree_arg_validation&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_arg_validation");
 }
 
 void
 tree_evaluator::visit_arg_size_spec (tree_arg_size_spec&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_arg_size_spec");
 }
 
 void
 tree_evaluator::visit_arg_validation_fcns (tree_arg_validation_fcns&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_arg_validation_fcns");
 }
 
 void
 tree_evaluator::visit_binary_expression (tree_binary_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_binary_expression");
 }
 
 void
 tree_evaluator::visit_boolean_expression (tree_boolean_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_boolean_expression");
 }
 
 void
 tree_evaluator::visit_compound_binary_expression (tree_compound_binary_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_compound_binary_expression");
 }
 
 void
@@ -1345,7 +1351,7 @@ tree_evaluator::visit_break_command (tree_break_command& cmd)
 void
 tree_evaluator::visit_colon_expression (tree_colon_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_colon_expression");
 }
 
 void
@@ -1417,6 +1423,14 @@ tree_evaluator::enter_debugger (const std::string& prompt)
 
   // Go up to the nearest user code frame.
 
+  tree_evaluator& tw = m_interpreter.get_evaluator ();
+
+  frame.add ([&tw, saved_frame = m_debug_frame] ()
+  {
+    if (! tw.dbstep_flag ())
+      tw.debug_frame (saved_frame);
+  });
+
   m_debug_frame = m_call_stack.dbupdown (0);
 
   // FIXME: probably we just want to print one line, not the
@@ -1429,7 +1443,7 @@ tree_evaluator::enter_debugger (const std::string& prompt)
 
   m_debugger_stack.push (dbgr);
 
-  frame.add ([=] ()
+  frame.add ([this] ()
              {
                delete m_debugger_stack.top ();
                m_debugger_stack.pop ();
@@ -1449,6 +1463,13 @@ void
 tree_evaluator::dbupdown (int n, bool verbose)
 {
   m_debug_frame = m_call_stack.dbupdown (n, verbose);
+}
+
+std::string tree_evaluator::inputname (int n, bool ids_only) const
+{
+  std::shared_ptr<stack_frame> frame = m_call_stack.current_user_frame ();
+
+  return frame->inputname (n, ids_only);
 }
 
 Matrix
@@ -2010,7 +2031,7 @@ tree_evaluator::assignin (const std::string& context,
   // by getting a reference to the caller or base stack frame and
   // calling assign on that?
 
-  unwind_action act ([=] (std::size_t frm)
+  unwind_action act ([this] (std::size_t frm)
                      {
                        m_call_stack.restore_frame (frm);
                      }, m_call_stack.current_frame ());
@@ -2163,8 +2184,12 @@ tree_evaluator::source_file (const std::string& file_name,
         }
       catch (execution_exception& ee)
         {
-          error (ee, "source: error sourcing file '%s'",
-                 file_full_name.c_str ());
+          std::string error_message = ee.message ();
+          if (error_message.empty ())
+            error (ee, "source: error sourcing file '%s'",
+                   file_full_name.c_str ());
+          else
+            error (ee, "%s", error_message.c_str ());
         }
     }
 
@@ -2187,7 +2212,10 @@ tree_evaluator::source_file (const std::string& file_name,
   code->call (*this, 0, octave_value_list ());
 
   if (verbose)
-    octave_stdout << "done." << std::endl;
+    {
+      octave_stdout << "done." << std::endl;
+      octave_stdout.flush ();
+    }
 }
 
 void
@@ -2358,7 +2386,7 @@ tree_evaluator::convert_return_list_to_const_vector
 (tree_parameter_list *ret_list, int nargout, const Cell& varargout)
 {
   octave_idx_type vlen = varargout.numel ();
-  int len = ret_list->length ();
+  int len = ret_list->size ();
 
   // Special case.  Will do a shallow copy.
   if (len == 0)
@@ -2537,6 +2565,28 @@ tree_evaluator::debug_where (std::ostream& os) const
   std::shared_ptr<stack_frame> frm = m_call_stack.current_user_frame ();
 
   frm->display_stopped_in_message (os);
+}
+
+void
+tree_evaluator::debug_list (std::ostream& os, int num_lines) const
+{
+  std::shared_ptr<stack_frame> frm = m_call_stack.current_user_frame ();
+
+  if (! (frm->is_user_script_frame () || frm->is_user_fcn_frame ()))
+    error ("dblist: must be inside a user function or script to use dblist\n");
+
+  frm->debug_list (os, num_lines);
+}
+
+void
+tree_evaluator::debug_type (std::ostream& os, int start_line, int end_line) const
+{
+  std::shared_ptr<stack_frame> frm = m_call_stack.current_user_frame ();
+
+  if (! (frm->is_user_script_frame () || frm->is_user_fcn_frame ()))
+    error ("dbtype: must be inside a user function or script to use dbtype\n");
+
+  frm->debug_type (os, start_line, end_line);
 }
 
 octave_user_code *
@@ -2990,11 +3040,42 @@ tree_evaluator::get_user_code (const std::string& fname)
           cdef_class cls = cdm.find_class (dispatch_type, false);
           if (cls.ok () && cls.get_name () == dispatch_type)
             {
-              cdef_method meth = cls.find_method (method);
-              if (meth.ok () && meth.get_name () == method)
-                fcn = meth.get_function ();
+              if (! method.compare (0, 4, "get."))
+                {
+                  // find get method of classdef property
+                  std::string prop_name = method.substr (4);
+                  cdef_property prop = cls.find_property (prop_name);
+                  if (prop.ok () && prop.get_name () == prop_name)
+                    {
+                      const octave_value& get_meth = prop.get ("GetMethod");
+                      if (get_meth.is_function_handle ())
+                        return get_meth.user_function_value ()->user_code_value ();
+                      else
+                        return nullptr;
+                    }
+                }
+              else if (! method.compare (0, 4, "set."))
+                {
+                  // find set method of classdef property
+                  std::string prop_name = method.substr (4);
+                  cdef_property prop = cls.find_property (prop_name);
+                  if (prop.ok () && prop.get_name () == prop_name)
+                    {
+                      const octave_value& set_meth = prop.get ("SetMethod");
+                      if (set_meth.is_function_handle ())
+                        return set_meth.user_function_value ()->user_code_value ();
+                      else
+                        return nullptr;
+                    }
+                }
               else
-                return nullptr;
+                {
+                  cdef_method meth = cls.find_method (method);
+                  if (meth.ok () && meth.get_name () == method)
+                    fcn = meth.get_function ();
+                  else
+                    return nullptr;
+                }
             }
 
           // If there is no classdef method, then try legacy classes.
@@ -3208,7 +3289,7 @@ tree_evaluator::visit_simple_for_command (tree_simple_for_command& cmd)
       // A matrix or cell is reshaped to 2 dimensions and iterated by
       // columns.
 
-      dim_vector dv = rhs.dims ().redim (2);
+      const dim_vector& dv = rhs.dims ().redim (2);
 
       octave_idx_type nrows = dv(0);
       octave_idx_type steps = dv(1);
@@ -3217,7 +3298,7 @@ tree_evaluator::visit_simple_for_command (tree_simple_for_command& cmd)
       if (rhs.ndims () > 2)
         arg = arg.reshape (dv);
 
-      if (nrows > 0 && steps > 0)
+      if (steps > 0)
         {
           octave_value_list idx;
           octave_idx_type iidx;
@@ -3379,7 +3460,7 @@ tree_evaluator::evaluate_anon_fcn_handle (tree_anon_fcn_handle& afh)
   if (expr)
     {
       tree_expression *expr_dup = expr->dup (new_scope);
-      tree_statement *stmt = new tree_statement (expr_dup, nullptr);
+      tree_statement *stmt = new tree_statement (expr_dup);
       stmt_list = new tree_statement_list (stmt);
     }
 
@@ -3400,9 +3481,7 @@ tree_evaluator::evaluate_anon_fcn_handle (tree_anon_fcn_handle& afh)
         local_vars[name] = val;
     }
 
-  octave_user_function *af
-    = new octave_user_function (new_scope, param_list_dup, ret_list,
-                                stmt_list);
+  octave_user_function *af = new octave_user_function (new_scope, nullptr, param_list_dup, ret_list, stmt_list);
 
   octave_function *curr_fcn = m_call_stack.current_function ();
 
@@ -3566,7 +3645,7 @@ void
 tree_evaluator::visit_octave_user_script (octave_user_script&)
 {
   // ??
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_octave_user_script");
 }
 
 octave_value_list
@@ -3610,7 +3689,7 @@ tree_evaluator::execute_user_function (octave_user_function& user_function,
           args = args.slice (1, nargin, true);
         }
       else
-        panic_impossible ();
+        error ("invalid call to classdef constructor in tree_evaluator::execute_user_function - please report this bug");
     }
 
   tree_parameter_list *param_list = user_function.parameter_list ();
@@ -3621,7 +3700,7 @@ tree_evaluator::execute_user_function (octave_user_function& user_function,
   if (param_list)
     {
       takes_varargs = param_list->takes_varargs ();
-      max_inputs = param_list->length ();
+      max_inputs = param_list->size ();
     }
 
   if (! takes_varargs && nargin > max_inputs)
@@ -3642,7 +3721,7 @@ tree_evaluator::execute_user_function (octave_user_function& user_function,
 
   if (ret_list && ! ret_list->takes_varargs ())
     {
-      int max_outputs = ret_list->length ();
+      int max_outputs = ret_list->size ();
 
       if (nargout > max_outputs)
         {
@@ -3697,7 +3776,7 @@ tree_evaluator::execute_user_function (octave_user_function& user_function,
 
       if (user_function.is_special_expr ())
         {
-          panic_if (cmd_list->length () != 1);
+          panic_if (cmd_list->size () != 1);
 
           tree_statement *stmt = cmd_list->front ();
 
@@ -3749,19 +3828,19 @@ void
 tree_evaluator::visit_octave_user_function (octave_user_function&)
 {
   // ??
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_octave_user_function");
 }
 
 void
 tree_evaluator::visit_octave_user_function_header (octave_user_function&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_octave_user_function_header");
 }
 
 void
 tree_evaluator::visit_octave_user_function_trailer (octave_user_function&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_octave_user_function_trailer");
 }
 
 void
@@ -3789,13 +3868,13 @@ tree_evaluator::visit_function_def (tree_function_def& cmd)
 void
 tree_evaluator::visit_identifier (tree_identifier&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_identifier");
 }
 
 void
 tree_evaluator::visit_if_clause (tree_if_clause&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_if_clause");
 }
 
 void
@@ -3848,25 +3927,25 @@ tree_evaluator::visit_if_command_list (tree_if_command_list& lst)
 void
 tree_evaluator::visit_index_expression (tree_index_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_index_expression");
 }
 
 void
 tree_evaluator::visit_matrix (tree_matrix&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_matrix");
 }
 
 void
 tree_evaluator::visit_cell (tree_cell&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_cell");
 }
 
 void
 tree_evaluator::visit_multi_assignment (tree_multi_assignment&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_multi_assignment");
 }
 
 void
@@ -3888,31 +3967,31 @@ tree_evaluator::visit_no_op_command (tree_no_op_command& cmd)
 void
 tree_evaluator::visit_constant (tree_constant&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_constant");
 }
 
 void
 tree_evaluator::visit_fcn_handle (tree_fcn_handle&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_fcn_handle");
 }
 
 void
 tree_evaluator::visit_parameter_list (tree_parameter_list&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_parameter_list");
 }
 
 void
 tree_evaluator::visit_postfix_expression (tree_postfix_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_postfix_expression");
 }
 
 void
 tree_evaluator::visit_prefix_expression (tree_prefix_expression&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_prefix_expression");
 }
 
 void
@@ -3943,7 +4022,7 @@ tree_evaluator::visit_return_command (tree_return_command& cmd)
 void
 tree_evaluator::visit_simple_assignment (tree_simple_assignment&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_simple_assignment");
 }
 
 void
@@ -4109,13 +4188,13 @@ tree_evaluator::visit_statement_list (tree_statement_list& lst)
 void
 tree_evaluator::visit_switch_case (tree_switch_case&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_switch_case");
 }
 
 void
 tree_evaluator::visit_switch_case_list (tree_switch_case_list&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_switch_case_list");
 }
 
 void
@@ -4388,7 +4467,7 @@ tree_evaluator::visit_while_command (tree_while_command& cmd)
   tree_expression *expr = cmd.condition ();
 
   if (! expr)
-    panic_impossible ();
+    error ("unexpected: while condition is nullptr - please report this bug");
 
   for (;;)
     {
@@ -4431,7 +4510,7 @@ tree_evaluator::visit_do_until_command (tree_do_until_command& cmd)
   tree_expression *expr = cmd.condition ();
 
   if (! expr)
-    panic_impossible ();
+    error ("unexpected: do-until condition is nullptr - please report this bug");
 
   for (;;)
     {
@@ -4457,13 +4536,13 @@ tree_evaluator::visit_do_until_command (tree_do_until_command& cmd)
 void
 tree_evaluator::visit_superclass_ref (tree_superclass_ref&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_superclass_ref");
 }
 
 void
 tree_evaluator::visit_metaclass_query (tree_metaclass_query&)
 {
-  panic_impossible ();
+  error_unexpected ("tree_evaluator::visit_metaclass_query");
 }
 
 void
@@ -4790,7 +4869,7 @@ tree_evaluator::make_value_list (tree_argument_list *args,
       unwind_protect_var<const std::list<octave_lvalue> *>
         upv (m_lvalue_list, nullptr);
 
-      int len = args->length ();
+      int len = args->size ();
 
       unwind_protect_var<int> upv2 (m_index_position);
       unwind_protect_var<int> upv3 (m_num_indices);
@@ -5092,13 +5171,13 @@ tree_evaluator::evaluate_end_expression (const octave_value_list& args)
   if (nargin == 3)
     {
       octave_idx_type index_position
-        = args(1).xidx_type_value ("end: K must be integer value");
+        = args(1).strict_idx_type_value ("end: K must be integer value");
 
       if (index_position < 1)
         error ("end: K must be greater than zero");
 
       octave_idx_type num_indices
-        = args(2).xidx_type_value ("end: N must be integer value");
+        = args(2).strict_idx_type_value ("end: N must be integer value");
 
       if (num_indices < 1)
         error ("end: N must be greater than zero");
@@ -5130,7 +5209,7 @@ tree_evaluator::evaluate_end_expression (const octave_value_list& args)
           // evaluate the partial expression that the special "end"
           // token applies to in the calling stack frame.
 
-          unwind_action act ([=] (std::size_t frm)
+          unwind_action act ([this] (std::size_t frm)
                              {
                                m_call_stack.restore_frame (frm);
                              }, m_call_stack.current_frame ());
@@ -5587,6 +5666,118 @@ With no arguments, @code{echo} toggles the current echo state.
 %!error echo ("off", "invalid")
 %!error echo ("on", "invalid")
 %!error echo ("on", "all", "all")
+*/
+
+/*
+FIXME: Actually, it probably *isn't* worth fixing, but there is one small
+difference between Octave and Matlab.
+
+If inputname is not called from a function, Matlab walks up the stack until it
+finds some valid code and then works from there.  This could be relevant for
+mex files or anonymous functions.
+
+fcn = @(x) inputname (x);
+a = 1:4;
+arrayfun (fcn, a, 'uniformoutput', false)
+% output is {'fcn', 'a', '', ''}
+*/
+DEFMETHOD (inputname, interp, args, ,
+           doc: /* -*- texinfo -*-
+@deftypefn  {} {@var{namestr} =} inputname (@var{n})
+@deftypefnx {} {@var{namestr} =} inputname (@var{n}, @var{ids_only})
+Return the name of the @var{n}-th argument to the calling function.
+
+If the argument is not a simple variable name, return an empty string.
+Examples which will return @qcode{""} are numbers (@code{5.1}), expressions
+(@code{@var{y}/2}), and cell or structure indexing (@code{@var{c}@{1@}} or
+@code{@var{s}.@var{field}}).
+
+@code{inputname} is only useful within a function.  When used at the command
+line or within a script it always returns an empty string.
+
+By default, return an empty string if the @var{n}-th argument is not a valid
+variable name.  If the optional argument @var{ids_only} is false, return the
+text of the argument even if it is not a valid variable name.  This is an
+Octave extension that allows the programmer to view exactly how the function
+was invoked even when the inputs are complex expressions.
+@seealso{nargin, narginchk}
+@end deftypefn */)
+{
+  int nargin = args.length ();
+
+  if (nargin < 1)
+    print_usage ();
+
+  dim_vector dims = args(0).dims ();
+  if (! dims.all_ones ())
+    error ("inputname: N must be a scalar index");
+
+  int n = args(0).strict_int_value ("inputname: N must be a scalar index");
+
+  if (n < 1)
+    error ("inputname: N must be a scalar index");
+
+  bool ids_only = true;
+
+  if (nargin == 2)
+    ids_only = args(1).strict_bool_value ("inputname: IDS_ONLY must be a logical value");
+
+  // Use zero-based indexing internally.
+  return ovl (interp.inputname (n-1, ids_only));
+}
+
+/*
+%!function name = __iname1__ (arg1, arg2, arg3)
+%!  name = inputname (1);
+%!endfunction
+
+%!function name = __iname1_ID__ (arg1, arg2, arg3)
+%!  name = inputname (1, false);
+%!endfunction
+
+%!function name = __iname2__ (arg1, arg2, arg3)
+%!  name = inputname (2);
+%!endfunction
+
+%!function names = __iname3__ (arg1, arg2, arg3)
+%!  names = cell (1, 3);
+%!  for i = 1:3
+%!    names{i} = inputname (i);
+%!  endfor
+%!endfunction
+
+%!test
+%! assert (__iname1__ ('xvar'), "");
+%! xvar = 1;
+%! assert (__iname1__ (xvar), "xvar");
+
+%!test
+%! xvar = 1;  yvar = 2;
+%! assert (__iname2__ (xvar), "");
+%! assert (__iname2__ (xvar, yvar), "yvar");
+
+%!test
+%! xvar = 1;  yvar = 2;
+%! assert (__iname3__ (xvar), {"xvar", "", ""});
+%! assert (__iname3__ (xvar, yvar), {"xvar", "yvar", ""});
+%! assert (__iname3__ (xvar, 3, yvar), {"xvar", "", "yvar"});
+
+## Test numbers, expressions, indexing operations
+%!test
+%! assert (__iname1__ (1.0), "");
+%! x = 1;
+%! assert (__iname1__ (x / 2), "");
+%! assert (__iname1__ (Inf), "");
+
+%!test
+%! assert (__iname1_ID__ (1.0), "1.0");
+%! x = 1;
+%! assert (__iname1_ID__ (x / 2), "x / 2");
+%! assert (__iname1_ID__ (Inf), "Inf");
+
+%!error <Invalid call> inputname ()
+%!error <N must be a scalar> inputname (ones (2,2))
+%!error <N must be a scalar index> inputname (-1)
 */
 
 OCTAVE_END_NAMESPACE(octave)

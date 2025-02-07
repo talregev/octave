@@ -28,9 +28,9 @@
 
 #include "octave-config.h"
 
+#include <list>
+#include <memory>
 #include <string>
-
-#include "base-list.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
@@ -40,8 +40,7 @@ extern char * get_comment_text_c_str ();
 
 extern void save_comment_text (const std::string& text);
 
-class
-comment_elt
+class comment_elt
 {
 public:
 
@@ -107,20 +106,45 @@ private:
   bool m_uses_hash_char;
 };
 
-class
-comment_list : public base_list<comment_elt>
+class comment_list
 {
 public:
 
   OCTAVE_DEFAULT_CONSTRUCT_COPY_MOVE_DELETE (comment_list)
 
+  typedef std::list<comment_elt>::reference reference;
+  typedef std::list<comment_elt>::const_reference const_reference;
+
+  typedef std::list<comment_elt>::iterator iterator;
+  typedef std::list<comment_elt>::const_iterator const_iterator;
+
   void append (const comment_elt& elt)
-  { base_list<comment_elt>::append (elt); }
+  {
+    m_list.push_back (elt);
+  }
 
   void append (const std::string& s,
                comment_elt::comment_type t = comment_elt::unknown,
                bool uses_hash_char = false)
-  { append (comment_elt (s, t, uses_hash_char)); }
+  {
+    m_list.push_back (comment_elt (s, t, uses_hash_char));
+  }
+
+  void clear () { m_list.clear (); }
+
+  bool empty () const { return m_list.empty (); }
+
+  reference front () { return m_list.front (); }
+  reference back () { return m_list.back (); }
+
+  const_reference front () const { return m_list.front (); }
+  const_reference back () const { return m_list.back (); }
+
+  iterator begin () { return m_list.begin (); }
+  iterator end () { return m_list.end (); }
+
+  const_iterator begin () const { return m_list.begin (); }
+  const_iterator end () const { return m_list.end (); }
 
   comment_list * dup () const;
 
@@ -128,7 +152,7 @@ public:
   // comments that doesn't look like a copyright statement.
   comment_elt find_doc_comment () const
   {
-    for (const auto& elt : *this)
+    for (const auto& elt : m_list)
       {
         // FIXME: should we also omit end-of-line comments?
         if (! elt.is_copyright ())
@@ -142,6 +166,10 @@ public:
   {
     return find_doc_comment().text ();
   }
+
+private:
+
+  std::list<comment_elt> m_list;
 };
 
 OCTAVE_END_NAMESPACE(octave)

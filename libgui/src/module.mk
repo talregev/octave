@@ -266,6 +266,7 @@ OCTAVE_GUI_SRC_M_EDITOR_MOC = \
 $(OCTAVE_GUI_SRC_M_EDITOR_MOC): | %reldir%/m-editor/$(octave_dirstamp)
 
 OCTAVE_GUI_SRC_COMMAND_WIDGET_MOC = \
+  %reldir%/moc-console-lexer.cc \
   %reldir%/moc-command-widget.cc
 
 $(OCTAVE_GUI_SRC_COMMAND_WIDGET_MOC): | %reldir%/$(octave_dirstamp)
@@ -288,6 +289,7 @@ OCTAVE_GUI_SRC_MOC = \
   %reldir%/moc-documentation-bookmarks.cc \
   %reldir%/moc-dw-main-window.cc \
   %reldir%/moc-files-dock-widget.cc \
+  %reldir%/moc-find-widget.cc \
   %reldir%/moc-gui-settings.cc \
   %reldir%/moc-history-dock-widget.cc \
   %reldir%/moc-interpreter-qobject.cc \
@@ -296,6 +298,7 @@ OCTAVE_GUI_SRC_MOC = \
   %reldir%/moc-news-reader.cc \
   %reldir%/moc-octave-qobject.cc \
   %reldir%/moc-release-notes.cc \
+  %reldir%/moc-self-listener.cc \
   %reldir%/moc-settings-dialog.cc \
   %reldir%/moc-terminal-dock-widget.cc \
   %reldir%/moc-color-picker.cc \
@@ -314,8 +317,7 @@ OCTAVE_GUI_SRC_MOC = \
   %reldir%/moc-set-path-model.cc
 
 octave_gui_MOC += \
-  $(OCTAVE_GUI_SRC_MOC) \
-  $(OCTAVE_GUI_EDITOR_MOC)
+  $(OCTAVE_GUI_SRC_MOC)
 
 octave_gui_RC = %reldir%/qrc-resource.cc
 
@@ -336,6 +338,7 @@ BUILT_SOURCES += $(octave_gui_UI_H)
 noinst_HEADERS += \
   %reldir%/command-widget.h \
   %reldir%/community-news.h \
+  %reldir%/console-lexer.h \
   %reldir%/dialog.h \
   %reldir%/octave-dock-widget.h \
   %reldir%/documentation-dock-widget.h \
@@ -363,6 +366,7 @@ noinst_HEADERS += \
   %reldir%/gui-settings.h \
   %reldir%/external-editor-interface.h \
   %reldir%/files-dock-widget.h \
+  %reldir%/find-widget.h \
   %reldir%/graphics-init.h \
   %reldir%/history-dock-widget.h \
   %reldir%/interpreter-qobject.h \
@@ -381,6 +385,7 @@ noinst_HEADERS += \
   %reldir%/qt-interpreter-events.h \
   %reldir%/qt-utils.h \
   %reldir%/release-notes.h \
+  %reldir%/self-listener.h \
   %reldir%/settings-dialog.h \
   %reldir%/shortcuts-tree-widget.h \
   %reldir%/tab-bar.h \
@@ -401,6 +406,7 @@ noinst_HEADERS += \
 %canon_reldir%_%canon_reldir%_la_SOURCES = \
   %reldir%/command-widget.cc \
   %reldir%/community-news.cc \
+  %reldir%/console-lexer.cc \
   %reldir%/dialog.cc \
   %reldir%/documentation-dock-widget.cc \
   %reldir%/documentation.cc \
@@ -408,6 +414,7 @@ noinst_HEADERS += \
   %reldir%/dw-main-window.cc \
   %reldir%/external-editor-interface.cc \
   %reldir%/files-dock-widget.cc \
+  %reldir%/find-widget.cc \
   %reldir%/graphics-init.cc \
   %reldir%/gui-preferences-cs.cc \
   %reldir%/gui-preferences-dc.cc \
@@ -443,6 +450,7 @@ noinst_HEADERS += \
   %reldir%/qt-interpreter-events.cc \
   %reldir%/qt-application.cc \
   %reldir%/release-notes.cc \
+  %reldir%/self-listener.cc \
   %reldir%/settings-dialog.cc \
   %reldir%/shortcuts-tree-widget.cc \
   %reldir%/tab-bar.cc \

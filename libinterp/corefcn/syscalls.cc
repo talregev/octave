@@ -124,25 +124,34 @@ error message.
   if (args.length () != 2)
     print_usage ();
 
-  stream_list& streams = interp.get_stream_list ();
-
-  stream old_stream = streams.lookup (args(0), "dup2");
-
-  stream new_stream = streams.lookup (args(1), "dup2");
-
-  int i_old = old_stream.file_number ();
-  int i_new = new_stream.file_number ();
-
-  if (i_old >= 0 && i_new >= 0)
+  int i_old, i_new;
+  try
     {
-      std::string msg;
+      // Look up FID in Octave's list of open streams.
+      stream_list& streams = interp.get_stream_list ();
 
-      int status = sys::dup2 (i_old, i_new, msg);
+      stream old_stream = streams.lookup (args(0), "dup2");
+      stream new_stream = streams.lookup (args(1), "dup2");
 
-      return ovl (status, msg);
+      i_old = old_stream.file_number ();
+      i_new = new_stream.file_number ();
     }
-  else
+  catch (execution_exception& ee)
+    {
+      // If the FIDs are not known to Octave, try the provided FIDs directly.
+      i_old = args(0).int_value (true);
+      i_new = args(1).int_value (true);
+    }
+
+  if (i_old < 0 || i_new < 0)
+    // Bad FIDs, return error immediately
     return ovl (-1, "");
+
+  std::string msg;
+
+  int status = sys::dup2 (i_old, i_new, msg);
+
+  return ovl (status, msg);
 }
 
 DEFMETHODX ("exec", Fexec, interp, args, ,
@@ -439,20 +448,25 @@ message.
   if (args.length () != 3)
     print_usage ();
 
-  stream_list& streams = interp.get_stream_list ();
+  int fid;
+  try
+    {
+      // Look up FID in Octave's list of open streams.
+      stream_list& streams = interp.get_stream_list ();
+      stream strm = streams.lookup (args(0), "fcntl");
+      fid = strm.file_number ();
+    }
+  catch (execution_exception& ee)
+    {
+      // If the file is not known to Octave, try the provided file ID directly.
+      fid = args(0).int_value (true);
+    }
 
-  stream strm = streams.lookup (args(0), "fcntl");
-
-  int fid = strm.file_number ();
-
-  // FIXME: Do we want to use xint_value and throw a warning message
-  //        if input validation fails?
-  int req = args(1).int_value (true);
-  int arg = args(2).int_value (true);
-
-  // FIXME: Need better checking here?
   if (fid < 0)
-    error ("fcntl: invalid file id");
+    error ("fcntl: invalid file id FID");
+
+  int req = args(1).strict_int_value ("fcntl: REQUEST must be an integer");
+  int arg = args(2).strict_int_value ("fcntl: ARG must be an integer");
 
   octave_value_list retval;
   std::string msg;
@@ -469,7 +483,7 @@ message.
       if (status < 0)
         retval = ovl (-1.0, msg);
       else
-        retval = ovl (0.0, "");
+        retval = ovl (status, "");
     }
 
   return retval;
@@ -727,7 +741,7 @@ error message.
 
   std::string name = args(0).xstring_value ("mkfifo: FILE must be a string");
 
-  int octal_mode = args(1).xint_value ("mkfifo: MODE must be an integer");
+  int octal_mode = args(1).strict_int_value ("mkfifo: MODE must be an integer");
 
   if (octal_mode < 0)
     error ("mkfifo: MODE must be a positive integer value");
@@ -908,9 +922,21 @@ For example:
 
   if (args(0).is_scalar_type ())
     {
-      stream_list& streams = interp.get_stream_list ();
+      int fid;
+      try
+        {
+          // Look up FID in Octave's list of open streams.
+          stream_list& streams = interp.get_stream_list ();
+          fid = streams.get_file_number (args(0));
+        }
+      catch (execution_exception& ee)
+        {
+          // If the file is not known to Octave, try provided file ID directly.
+          fid = args(0).int_value (true);
+        }
 
-      int fid = streams.get_file_number (args(0));
+      if (fid < 0)
+        error ("stat: invalid file id FID");
 
       sys::file_fstat fs (fid);
 
@@ -1232,12 +1258,12 @@ WIFSTOPPED, WNOHANG, WSTOPSIG, WTERMSIG, WUNTRACED}
   if (nargin != 1 && nargin != 2)
     print_usage ();
 
-  pid_t pid = args(0).xint_value ("waitpid: OPTIONS must be an integer");
+  pid_t pid = args(0).strict_int_value ("waitpid: OPTIONS must be an integer");
 
   int options = 0;
 
   if (nargin == 2)
-    options = args(1).xint_value ("waitpid: PID must be an integer value");
+    options = args(1).strict_int_value ("waitpid: PID must be an integer value");
 
   std::string msg;
   int status;
@@ -1259,7 +1285,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WIFEXITED: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WIFEXITED: STATUS must be an integer");
 
   return ovl (sys::wifexited (status));
 }
@@ -1278,7 +1304,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WEXITSTATUS: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WEXITSTATUS: STATUS must be an integer");
 
   return ovl (sys::wexitstatus (status));
 }
@@ -1295,7 +1321,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WIFSIGNALED: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WIFSIGNALED: STATUS must be an integer");
 
   return ovl (sys::wifsignaled (status));
 }
@@ -1314,7 +1340,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WTERMSIG: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WTERMSIG: STATUS must be an integer");
 
   return ovl (sys::wtermsig (status));
 }
@@ -1335,7 +1361,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WCOREDUMP: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WCOREDUMP: STATUS must be an integer");
 
   return ovl (sys::wcoredump (status));
 }
@@ -1355,7 +1381,7 @@ WSTOPSIG, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WIFSTOPPED: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WIFSTOPPED: STATUS must be an integer");
 
   return ovl (sys::wifstopped (status));
 }
@@ -1374,7 +1400,7 @@ WIFSTOPPED, WIFCONTINUED}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WSTOPSIG: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WSTOPSIG: STATUS must be an integer");
 
   return ovl (sys::wstopsig (status));
 }
@@ -1391,7 +1417,7 @@ WIFSTOPPED, WSTOPSIG}
   if (args.length () != 1)
     print_usage ();
 
-  int status = args(0).xint_value ("WIFCONTINUED: STATUS must be an integer");
+  int status = args(0).strict_int_value ("WIFCONTINUED: STATUS must be an integer");
 
   return ovl (sys::wifcontinued (status));
 }

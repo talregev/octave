@@ -84,8 +84,8 @@
 ## @var{nn} (numbers of elements) and @var{xx} (bin centers) such that
 ## @code{bar (@var{xx}, @var{nn})} will plot the histogram.  If @var{y} is a
 ## vector, @var{nn} and @var{xx} will be row vectors.  If @var{y} is an array,
-## @var{nn} will be an array with one column of element counts for each column
-## in @var{y}, and @var{xx} will be a column vector of bin centers.
+## @var{nn} will be a 2-D array with one column of element counts for each
+## column in @var{y}, and @var{xx} will be a column vector of bin centers.
 ##
 ## @seealso{histc, bar, pie, rose}
 ## @end deftypefn
@@ -104,10 +104,6 @@ function [nn, xx] = hist (varargin)
 
   if (! isreal (y))
     error ("hist: Y must be real-valued");
-  endif
-
-  if (ndims (y) > 2)
-    error ("hist: Y must be a 2-D array");
   endif
 
   arg_is_vector = isvector (y);
@@ -168,10 +164,10 @@ function [nn, xx] = hist (varargin)
       endif
       x = x.';  # Convert to matrix
     elseif (isvector (x))
-      equal_bin_spacing = strcmp (typeinfo (x), "range");
+      equal_bin_spacing = ! isempty (strfind (typeinfo (x), "range"));
       if (! equal_bin_spacing)
         diffs = diff (x);
-        if (all (diffs == diffs(1)))
+        if (! any (abs ((diffs - diffs(1))) > eps (max (abs (x)))))
           equal_bin_spacing = true;
         endif
       endif
@@ -197,6 +193,11 @@ function [nn, xx] = hist (varargin)
       error ("hist: NORM must be scalar or vector of length 'columns (Y)'");
     endif
     norm = norm (:).';  # Ensure vector orientation.
+  endif
+
+  ## Flatten y from N-D to 2-D array
+  if (ndims (y) > 2)
+    y = y(:,:);
   endif
 
   ## Perform histogram calculation
@@ -414,6 +415,21 @@ endfunction
 %! assert (isa (xx, "double"));
 %! [nn, xx] = hist (double (1:10), single ([1, 5, 10]));
 %! assert (isa (xx, "single"));
+
+## Test N-D arrays produce the same result as 2-D arrays
+%!test <*65478>  # Small n
+%! a = magic (4);
+%! b = permute (a, [1, 3, 2]);
+%! [na, xa] = hist (a);
+%! [nb, xb] = hist (b);
+%! assert ({na, xa}, {nb, xb});
+
+%!test <*65478>  # Large n
+%! a = magic (4);
+%! b = permute (a, [1, 3, 2]);
+%! [na, xa] = hist (a, 30);
+%! [nb, xb] = hist (b, 30);
+%! assert ({na, xa}, {nb, xb});
 
 %!test <*65714> # Avoid error if diff(y) is very small.
 %! a = [1, 1+eps, 1+ 15*eps];

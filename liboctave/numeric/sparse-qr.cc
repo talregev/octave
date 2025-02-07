@@ -43,15 +43,22 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 
 OCTAVE_BEGIN_NAMESPACE(math)
 
+#if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))
+// Decide once at runtime whether Octave must workaround SuiteSparse library.
+static constexpr bool octave_suitesparse_ptr_size_mismatch
+  = (sizeof (octave_idx_type) != sizeof (SuiteSparse_long));
+
+static constexpr bool suitesparse_integer_long_mismatch
+  = (sizeof (suitesparse_integer) != sizeof (SuiteSparse_long));
+#endif
+
 #if defined (HAVE_CXSPARSE)
 template <typename SPARSE_T>
-class
-cxsparse_types
+class cxsparse_types
 { };
 
 template <>
-class
-cxsparse_types<SparseMatrix>
+class cxsparse_types<SparseMatrix>
 {
 public:
   typedef CXSPARSE_DNAME (s) symbolic_type;
@@ -59,8 +66,7 @@ public:
 };
 
 template <>
-class
-cxsparse_types<SparseComplexMatrix>
+class cxsparse_types<SparseComplexMatrix>
 {
 public:
   typedef CXSPARSE_ZNAME (s) symbolic_type;
@@ -210,6 +216,19 @@ sparse_qr<SPARSE_T>::sparse_qr_rep::E () const
 
   return ret;
 
+#elif defined (HAVE_CXSPARSE)
+
+  ColumnVector ret (ncols);
+
+  if (S->q)
+    for (octave_idx_type i = 0; i < ncols; i++)
+      ret(i) = from_suitesparse_long (S->q[i]) + 1;
+  else
+    for (octave_idx_type i = 0; i < ncols; i++)
+      ret(i) = i + 1;
+
+  return ret;
+
 #else
 
   return ColumnVector ();
@@ -219,10 +238,10 @@ sparse_qr<SPARSE_T>::sparse_qr_rep::E () const
 
 #if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))
 
-// Convert real sparse octave matrix to real sparse cholmod matrix.
+// Convert octave real sparse matrix to cholmod real sparse matrix.
 // Returns a "shallow" copy of a.
 static cholmod_sparse
-ros2rcs (const SparseMatrix& a)
+ors2crs (const SparseMatrix& a)
 {
   cholmod_sparse A;
 
@@ -240,7 +259,7 @@ ros2rcs (const SparseMatrix& a)
   A.dtype = CHOLMOD_DOUBLE;
   A.nz = nullptr;
   A.z = nullptr;
-  if (sizeof (octave_idx_type) == sizeof (SuiteSparse_long))
+  if (! octave_suitesparse_ptr_size_mismatch)
     {
       A.p = reinterpret_cast<SuiteSparse_long *> (a.cidx ());
       A.i = reinterpret_cast<SuiteSparse_long *> (a.ridx ());
@@ -263,10 +282,10 @@ ros2rcs (const SparseMatrix& a)
   return A;
 }
 
-// Convert complex sparse octave matrix to complex sparse cholmod matrix.
+// Convert octave complex sparse matrix to cholmod complex sparse matrix.
 // Returns a "shallow" copy of a.
 static cholmod_sparse
-cos2ccs (const SparseComplexMatrix& a)
+ocs2ccs (const SparseComplexMatrix& a)
 {
   cholmod_sparse A;
 
@@ -284,7 +303,7 @@ cos2ccs (const SparseComplexMatrix& a)
   A.dtype = CHOLMOD_DOUBLE;
   A.nz = nullptr;
   A.z = nullptr;
-  if (sizeof (octave_idx_type) == sizeof (SuiteSparse_long))
+  if (! octave_suitesparse_ptr_size_mismatch)
     {
       A.p = reinterpret_cast<SuiteSparse_long *> (a.cidx ());
       A.i = reinterpret_cast<SuiteSparse_long *> (a.ridx ());
@@ -308,10 +327,10 @@ cos2ccs (const SparseComplexMatrix& a)
   return A;
 }
 
-// Convert real dense octave matrix to complex dense cholmod matrix.
+// Convert octave real dense matrix to cholmod complex dense matrix.
 // Returns a "deep" copy of a.
 static cholmod_dense *
-rod2ccd (const MArray<double>& a, cholmod_common *cc1)
+ord2ccd (const MArray<double>& a, cholmod_common *cc1)
 {
   cholmod_dense *A
     = cholmod_l_allocate_dense (a.rows (), a.cols (), a.rows(),
@@ -326,10 +345,10 @@ rod2ccd (const MArray<double>& a, cholmod_common *cc1)
   return A;
 }
 
-// Convert real dense octave matrix to real dense cholmod matrix.
+// Convert octave real dense matrix to cholmod real dense matrix.
 // Returns a "shallow" copy of a.
 static cholmod_dense
-rod2rcd (const MArray<double>& a)
+ord2crd (const MArray<double>& a)
 {
   cholmod_dense A;
 
@@ -345,10 +364,10 @@ rod2rcd (const MArray<double>& a)
   return A;
 }
 
-// Convert complex dense octave matrix to complex dense cholmod matrix.
+// Convert octave complex dense matrix to cholmod complex dense matrix.
 // Returns a "shallow" copy of a.
 static cholmod_dense
-cod2ccd (const ComplexMatrix& a)
+ocd2ccd (const ComplexMatrix& a)
 {
   cholmod_dense A;
 
@@ -364,10 +383,10 @@ cod2ccd (const ComplexMatrix& a)
   return A;
 }
 
-// Convert real sparse cholmod matrix to real sparse octave matrix.
+// Convert cholmod real sparse matrix to octave real sparse matrix.
 // Returns a "shallow" copy of y.
 static SparseMatrix
-rcs2ros (cholmod_sparse *y, const cholmod_common *cc1)
+crs2ors (cholmod_sparse *y, const cholmod_common *cc1)
 {
   octave_idx_type nrow = from_size_t (y->nrow);
   octave_idx_type ncol = from_size_t (y->ncol);
@@ -391,10 +410,10 @@ rcs2ros (cholmod_sparse *y, const cholmod_common *cc1)
   return ret;
 }
 
-// Convert complex sparse cholmod matrix to complex sparse octave matrix.
+// Convert cholmod complex sparse matrix to octave complex sparse matrix.
 // Returns a "deep" copy of a.
 static SparseComplexMatrix
-ccs2cos (cholmod_sparse *a, cholmod_common *cc1)
+ccs2ocs (cholmod_sparse *a, cholmod_common *cc1)
 {
   octave_idx_type nrow = from_size_t (a->nrow);
   octave_idx_type ncol = from_size_t (a->ncol);
@@ -416,10 +435,10 @@ ccs2cos (cholmod_sparse *a, cholmod_common *cc1)
   return ret;
 }
 
-// Convert real sparse octave matrix to complex sparse cholmod matrix.
+// Convert octave real sparse matrix to cholmod complex sparse matrix.
 // Returns a "deep" copy of a.
 static cholmod_sparse *
-ros2ccs (const SparseMatrix& a, cholmod_common *cc)
+ors2ccs (const SparseMatrix& a, cholmod_common *cc)
 {
   cholmod_sparse *A
     = cholmod_l_allocate_sparse (a.rows (), a.cols (), a.nnz (), 0, 1, 0,
@@ -516,14 +535,14 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::sparse_qr_rep
       ("ordering %d is not supported by SPQR", order);
 
   cholmod_l_start (&m_cc);
-  cholmod_sparse A = ros2rcs (a);
+  cholmod_sparse A = ors2crs (a);
 
   SuiteSparseQR<double> (order, static_cast<double> (SPQR_DEFAULT_TOL),
                          static_cast<SuiteSparse_long> (A.nrow),
                          &A, &m_R, &m_E, &m_H, &m_HPinv, &m_Htau, &m_cc);
   spqr_error_handler (&m_cc);
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -593,7 +612,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::V () const
 {
 #if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))
 
-  return rcs2ros (m_H, &m_cc);
+  return crs2ors (m_H, &m_cc);
 
 #elif defined (HAVE_CXSPARSE)
 
@@ -712,7 +731,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::C (const Matrix& b, bool econ)
       ("sparse_qr: matrix dimension with negative size");
 
   cholmod_dense *QTB;  // Q' * B
-  cholmod_dense B = rod2rcd (b);
+  cholmod_dense B = ord2crd (b);
 
   QTB = SuiteSparseQR_qmult<double> (SPQR_QTX, m_H, m_Htau, m_HPinv, &B,
                                      &m_cc);
@@ -720,7 +739,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::C (const Matrix& b, bool econ)
 
   // copy QTB into ret
   double *QTB_x = reinterpret_cast<double *> (QTB->x);
-  double *ret_vec = reinterpret_cast<double *> (ret.fortran_vec ());
+  double *ret_vec = reinterpret_cast<double *> (ret.rwdata ());
   for (octave_idx_type j = 0; j < b_nc; j++)
     for (octave_idx_type i = 0; i < nr; i++)
       ret_vec[j * nr + i] = QTB_x[j * b_nr + i];
@@ -744,7 +763,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::C (const Matrix& b, bool econ)
   const double *bvec = b.data ();
 
   Matrix ret (b_nr, b_nc);
-  double *vec = ret.fortran_vec ();
+  double *vec = ret.rwdata ();
 
   if (nr < 0 || nc < 0 || nr != b_nr)
     (*current_liboctave_error_handler) ("matrix dimension mismatch");
@@ -755,7 +774,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::C (const Matrix& b, bool econ)
     {
       OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-      for (volatile octave_idx_type j = 0, idx = 0;
+      for (octave_idx_type j = 0, idx = 0;
            j < b_nc;
            j++, idx += b_nr)
         {
@@ -764,11 +783,11 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::C (const Matrix& b, bool econ)
           for (octave_idx_type i = nr; i < S->m2; i++)
             buf[i] = 0.;
 
-          volatile octave_idx_type nm = (nr < nc ? nr : nc);
+          octave_idx_type nm = (nr < nc ? nr : nc);
 
           CXSPARSE_DNAME (_ipvec) (S->pinv, bvec + idx, buf, b_nr);
 
-          for (volatile octave_idx_type i = 0; i < nm; i++)
+          for (octave_idx_type i = 0; i < nm; i++)
             {
               octave_quit ();
 
@@ -819,7 +838,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::Q (bool econ)
   spqr_error_handler (&m_cc);
 
   double *q_x = reinterpret_cast<double *> (q->x);
-  double *ret_vec = const_cast<double *> (ret.fortran_vec ());
+  double *ret_vec = const_cast<double *> (ret.rwdata ());
   for (octave_idx_type j = 0; j < nc; j++)
     for (octave_idx_type i = 0; i < nrows; i++)
       ret_vec[j * nrows + i] = q_x[j * nrows + i];
@@ -838,7 +857,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::Q (bool econ)
   octave_idx_type nc = N->L->n;
   octave_idx_type nr = nrows;
   Matrix ret (nr, nr);
-  double *ret_vec = ret.fortran_vec ();
+  double *ret_vec = ret.rwdata ();
 
   if (nr < 0 || nc < 0)
     (*current_liboctave_error_handler) ("matrix dimension mismatch");
@@ -854,7 +873,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::Q (bool econ)
 
       OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-      for (volatile octave_idx_type j = 0, idx = 0; j < nr; j++, idx += nr)
+      for (octave_idx_type j = 0, idx = 0; j < nr; j++, idx += nr)
         {
           octave_quit ();
 
@@ -862,11 +881,11 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::Q (bool econ)
           for (octave_idx_type i = nr; i < S->m2; i++)
             buf[i] = 0.;
 
-          volatile octave_idx_type nm = (nr < nc ? nr : nc);
+          octave_idx_type nm = (nr < nc ? nr : nc);
 
           CXSPARSE_DNAME (_ipvec) (S->pinv, bvec, buf, nr);
 
-          for (volatile octave_idx_type i = 0; i < nm; i++)
+          for (octave_idx_type i = 0; i < nm; i++)
             {
               octave_quit ();
 
@@ -913,12 +932,11 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
     (*current_liboctave_error_handler) ("matrix dimension mismatch");
 
   cholmod_dense *QTB;  // Q' * B
-  cholmod_dense B = rod2rcd (b);
+  cholmod_dense B = ord2crd (b);
 
   // FIXME: Process b column by column as in the CXSPARSE version below.
   // This avoids a large dense matrix Q' * B in memory.
-  QTB = SuiteSparseQR_qmult<double> (SPQR_QTX, m_H, m_Htau, m_HPinv, &B,
-                                     &m_cc);
+  QTB = SuiteSparseQR_qmult<double> (SPQR_QTX, m_H, m_Htau, m_HPinv, &B, &m_cc);
 
   spqr_error_handler (&m_cc);
 
@@ -930,7 +948,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
   R2.x = reinterpret_cast<double *> (m_R->x);
   suitesparse_integer *R2_p;
   suitesparse_integer *R2_i;
-  if (sizeof (suitesparse_integer) == sizeof (SuiteSparse_long))
+  if (! suitesparse_integer_long_mismatch)
     {
       R2.p = reinterpret_cast<suitesparse_integer *> (m_R->p);
       R2.i = reinterpret_cast<suitesparse_integer *> (m_R->i);
@@ -950,9 +968,9 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
       R2.i = R2_i;
     }
   R2.nz = -1;
-  double *x_vec = const_cast<double *> (x.fortran_vec ());
+  double *x_vec = const_cast<double *> (x.rwdata ());
   suitesparse_integer *E;
-  if (sizeof (suitesparse_integer) != sizeof (SuiteSparse_long))
+  if (suitesparse_integer_long_mismatch)
     {
       E = new suitesparse_integer [ncols];
       for (octave_idx_type i = 0; i < ncols; i++)
@@ -960,7 +978,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
     }
   else
     E = reinterpret_cast<suitesparse_integer *> (m_E);
-  for (volatile octave_idx_type j = 0; j < b_nc; j++)
+  for (octave_idx_type j = 0; j < b_nc; j++)
     {
       // fill x(:,j)
       // solve (m_R\(Q'*B(:,j)) and store result in QTB(:,j)
@@ -972,7 +990,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
        &x_vec[j * ncols], ncols);
     }
 
-  if (sizeof (suitesparse_integer) != sizeof (SuiteSparse_long))
+  if (suitesparse_integer_long_mismatch)
     {
       delete [] R2_p;
       delete [] R2_i;
@@ -995,11 +1013,11 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
   const double *bvec = b.data ();
 
   Matrix x (nc, b_nc);
-  double *vec = x.fortran_vec ();
+  double *vec = x.rwdata ();
 
   OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
+  for (octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
        i++, idx+=nc, bidx+=b_nr)
     {
       octave_quit ();
@@ -1009,7 +1027,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<double>, Matrix>
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, bvec + bidx, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1054,13 +1072,13 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<MArray<double>, Matrix>
   const double *bvec = b.data ();
 
   Matrix x (nc, b_nc);
-  double *vec = x.fortran_vec ();
+  double *vec = x.rwdata ();
 
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (double, buf, nbuf);
 
-  for (volatile octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
+  for (octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
        i++, idx+=nc, bidx+=b_nr)
     {
       octave_quit ();
@@ -1071,7 +1089,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<MArray<double>, Matrix>
       CXSPARSE_DNAME (_pvec) (S->q, bvec + bidx, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -1112,13 +1130,13 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<SparseMatrix, SparseMatrix>
   SparseMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1130,7 +1148,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<SparseMatrix, SparseMatrix>
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, Xx, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1198,14 +1216,14 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<SparseMatrix, SparseMatrix>
   SparseMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, nbuf);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1218,7 +1236,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<SparseMatrix, SparseMatrix>
       CXSPARSE_DNAME (_pvec) (S->q, Xx, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -1282,13 +1300,13 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<Complex>, ComplexMatri
   octave_idx_type b_nr = b.rows ();
 
   ComplexMatrix x (nc, b_nc);
-  Complex *vec = x.fortran_vec ();
+  Complex *vec = x.rwdata ();
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, Xz, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1304,7 +1322,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<Complex>, ComplexMatri
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, Xx, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1319,7 +1337,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<MArray<Complex>, ComplexMatri
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, Xz, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1366,15 +1384,15 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>, ComplexMatri
   octave_idx_type b_nr = b.rows ();
 
   ComplexMatrix x (nc, b_nc);
-  Complex *vec = x.fortran_vec ();
+  Complex *vec = x.rwdata ();
 
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, Xz, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, nbuf);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1391,7 +1409,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>, ComplexMatri
       CXSPARSE_DNAME (_pvec) (S->q, Xx, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -1406,7 +1424,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>, ComplexMatri
       CXSPARSE_DNAME (_pvec) (S->q, Xz, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -1454,7 +1472,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::sparse_qr_rep
       ("ordering %d is not supported by SPQR", order);
 
   cholmod_l_start (&m_cc);
-  cholmod_sparse A = cos2ccs (a);
+  cholmod_sparse A = ocs2ccs (a);
 
   SuiteSparseQR<Complex> (order, static_cast<double> (SPQR_DEFAULT_TOL),
                           static_cast<SuiteSparse_long> (A.nrow),
@@ -1462,7 +1480,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::sparse_qr_rep
                           &m_HPinv, &m_Htau, &m_cc);
   spqr_error_handler (&m_cc);
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -1651,7 +1669,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::C
       ("matrix dimension with negative size");
 
   cholmod_dense *QTB;  // Q' * B
-  cholmod_dense B = cod2ccd (b);
+  cholmod_dense B = ocd2ccd (b);
 
   QTB = SuiteSparseQR_qmult<Complex> (SPQR_QTX, m_H, m_Htau, m_HPinv, &B,
                                       &m_cc);
@@ -1659,7 +1677,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::C
 
   // copy QTB into ret
   Complex *QTB_x = reinterpret_cast<Complex *> (QTB->x);
-  Complex *ret_vec = reinterpret_cast<Complex *> (ret.fortran_vec ());
+  Complex *ret_vec = reinterpret_cast<Complex *> (ret.rwdata ());
   for (octave_idx_type j = 0; j < b_nc; j++)
     for (octave_idx_type i = 0; i < nr; i++)
       ret_vec[j * nr + i] = QTB_x[j * b_nr + i];
@@ -1681,7 +1699,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::C
   const cs_complex_t *bvec
     = reinterpret_cast<const cs_complex_t *> (b.data ());
   ComplexMatrix ret (b_nr, b_nc);
-  Complex *vec = ret.fortran_vec ();
+  Complex *vec = ret.rwdata ();
 
   if (nr < 0 || nc < 0 || nr != b_nr)
     (*current_liboctave_error_handler) ("matrix dimension mismatch");
@@ -1692,19 +1710,19 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::C
     {
       OCTAVE_LOCAL_BUFFER (Complex, buf, S->m2);
 
-      for (volatile octave_idx_type j = 0, idx = 0;
+      for (octave_idx_type j = 0, idx = 0;
            j < b_nc;
            j++, idx += b_nr)
         {
           octave_quit ();
 
-          volatile octave_idx_type nm = (nr < nc ? nr : nc);
+          octave_idx_type nm = (nr < nc ? nr : nc);
 
           CXSPARSE_ZNAME (_ipvec) (S->pinv, bvec + idx,
                                    reinterpret_cast<cs_complex_t *> (buf),
                                    b_nr);
 
-          for (volatile octave_idx_type i = 0; i < nm; i++)
+          for (octave_idx_type i = 0; i < nm; i++)
             {
               octave_quit ();
 
@@ -1757,7 +1775,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::Q (bool econ)
   spqr_error_handler (&m_cc);
 
   Complex *q_x = reinterpret_cast<Complex *> (q->x);
-  Complex *ret_vec = const_cast<Complex *> (ret.fortran_vec ());
+  Complex *ret_vec = const_cast<Complex *> (ret.rwdata ());
 
   for (octave_idx_type j = 0; j < nc; j++)
     for (octave_idx_type i = 0; i < nrows; i++)
@@ -1777,7 +1795,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::Q (bool econ)
   octave_idx_type nc = N->L->n;
   octave_idx_type nr = nrows;
   ComplexMatrix ret (nr, nr);
-  Complex *vec = ret.fortran_vec ();
+  Complex *vec = ret.rwdata ();
 
   if (nr < 0 || nc < 0)
     (*current_liboctave_error_handler) ("matrix dimension mismatch");
@@ -1793,19 +1811,19 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::Q (bool econ)
 
       OCTAVE_LOCAL_BUFFER (Complex, buf, S->m2);
 
-      for (volatile octave_idx_type j = 0, idx = 0; j < nr; j++, idx+=nr)
+      for (octave_idx_type j = 0, idx = 0; j < nr; j++, idx+=nr)
         {
           octave_quit ();
 
           bvec[j] = 1.0;
 
-          volatile octave_idx_type nm = (nr < nc ? nr : nc);
+          octave_idx_type nm = (nr < nc ? nr : nc);
 
           CXSPARSE_ZNAME (_ipvec) (S->pinv, bvec,
                                    reinterpret_cast<cs_complex_t *> (buf),
                                    nr);
 
-          for (volatile octave_idx_type i = 0; i < nm; i++)
+          for (octave_idx_type i = 0; i < nm; i++)
             {
               octave_quit ();
 
@@ -1851,14 +1869,14 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<SparseComplexMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, Xz, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1874,7 +1892,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<SparseComplexMatrix,
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, Xx, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1889,7 +1907,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::tall_solve<SparseComplexMatrix,
 
       CXSPARSE_DNAME (_ipvec) (S->pinv, Xz, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -1958,15 +1976,15 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (double, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, Xz, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (double, buf, nbuf);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -1983,7 +2001,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
       CXSPARSE_DNAME (_pvec) (S->q, Xx, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -1998,7 +2016,7 @@ sparse_qr<SparseMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
       CXSPARSE_DNAME (_pvec) (S->q, Xz, buf, nr);
       CXSPARSE_DNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -2063,12 +2081,12 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<MArray<double>,
   octave_idx_type b_nr = b.rows ();
 
   ComplexMatrix x (nc, b_nc);
-  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.fortran_vec ());
+  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.rwdata ());
 
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, S->m2);
   OCTAVE_LOCAL_BUFFER (Complex, Xx, b_nr);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2082,7 +2100,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<MArray<double>,
                                reinterpret_cast<cs_complex_t *> (Xx),
                                buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -2127,9 +2145,9 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<double>,
   octave_idx_type b_nr = b.rows ();
 
   ComplexMatrix x (nc, b_nc);
-  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.fortran_vec ());
+  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.rwdata ());
 
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, nbuf);
   OCTAVE_LOCAL_BUFFER (Complex, Xx, b_nr);
@@ -2138,7 +2156,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<double>,
   for (octave_idx_type i = 0; i < nr; i++)
     B[i] = N->B[i];
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2152,7 +2170,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<double>,
                               buf, nr);
       CXSPARSE_ZNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -2195,13 +2213,13 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<SparseMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
 
   OCTAVE_LOCAL_BUFFER (Complex, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2215,7 +2233,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<SparseMatrix,
                                reinterpret_cast<cs_complex_t *> (Xx),
                                buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -2288,9 +2306,9 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (Complex, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, nbuf);
@@ -2299,7 +2317,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseMatrix,
   for (octave_idx_type i = 0; i < nr; i++)
     B[i] = N->B[i];
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2314,7 +2332,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseMatrix,
                               buf, nr);
       CXSPARSE_ZNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -2385,11 +2403,11 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<MArray<Complex>,
 
   ComplexMatrix x (nc, b_nc);
   cs_complex_t *vec = reinterpret_cast<cs_complex_t *>
-                      (x.fortran_vec ());
+                      (x.rwdata ());
 
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
+  for (octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
        i++, idx+=nc, bidx+=b_nr)
     {
       octave_quit ();
@@ -2399,7 +2417,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<MArray<Complex>,
 
       CXSPARSE_ZNAME (_ipvec) (S->pinv, bvec + bidx, buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -2447,9 +2465,9 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>,
                              (b.data ());
 
   ComplexMatrix x (nc, b_nc);
-  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.fortran_vec ());
+  cs_complex_t *vec = reinterpret_cast<cs_complex_t *> (x.rwdata ());
 
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, nbuf);
   OCTAVE_LOCAL_BUFFER (double, B, nr);
@@ -2457,7 +2475,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>,
   for (octave_idx_type i = 0; i < nr; i++)
     B[i] = N->B[i];
 
-  for (volatile octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
+  for (octave_idx_type i = 0, idx = 0, bidx = 0; i < b_nc;
        i++, idx+=nc, bidx+=b_nr)
     {
       octave_quit ();
@@ -2468,7 +2486,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<MArray<Complex>,
       CXSPARSE_ZNAME (_pvec) (S->q, bvec + bidx, buf, nr);
       CXSPARSE_ZNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -2511,13 +2529,13 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<SparseComplexMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
 
   OCTAVE_LOCAL_BUFFER (Complex, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, S->m2);
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2531,7 +2549,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::tall_solve<SparseComplexMatrix,
                                reinterpret_cast<cs_complex_t *> (Xx),
                                buf, nr);
 
-      for (volatile octave_idx_type j = 0; j < nc; j++)
+      for (octave_idx_type j = 0; j < nc; j++)
         {
           octave_quit ();
 
@@ -2604,9 +2622,9 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
   SparseComplexMatrix x (nc, b_nc, b.nnz ());
   x.xcidx (0) = 0;
 
-  volatile octave_idx_type x_nz = b.nnz ();
-  volatile octave_idx_type ii = 0;
-  volatile octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
+  octave_idx_type x_nz = b.nnz ();
+  octave_idx_type ii = 0;
+  octave_idx_type nbuf = (nc > S->m2 ? nc : S->m2);
 
   OCTAVE_LOCAL_BUFFER (Complex, Xx, (b_nr > nc ? b_nr : nc));
   OCTAVE_LOCAL_BUFFER (cs_complex_t, buf, nbuf);
@@ -2615,7 +2633,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
   for (octave_idx_type i = 0; i < nr; i++)
     B[i] = N->B[i];
 
-  for (volatile octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
+  for (octave_idx_type i = 0, idx = 0; i < b_nc; i++, idx+=nc)
     {
       octave_quit ();
 
@@ -2629,7 +2647,7 @@ sparse_qr<SparseComplexMatrix>::sparse_qr_rep::wide_solve<SparseComplexMatrix,
                               buf, nr);
       CXSPARSE_ZNAME (_utsolve) (N->U, buf);
 
-      for (volatile octave_idx_type j = nr-1; j >= 0; j--)
+      for (octave_idx_type j = nr-1; j >= 0; j--)
         {
           octave_quit ();
 
@@ -2774,19 +2792,19 @@ sparse_qr<SparseMatrix>::min2norm_solve<MArray<double>, Matrix>
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = ros2rcs (a);
-  cholmod_dense B = rod2rcd (b);
+  cholmod_sparse A = ors2crs (a);
+  cholmod_dense B = ord2crd (b);
   cholmod_dense *X;
 
   X = SuiteSparseQR_min2norm<double> (order, SPQR_DEFAULT_TOL, &A, &B, &cc);
   spqr_error_handler (&cc);
 
-  double *xdata = x.fortran_vec ();
-  for (volatile octave_idx_type i = 0; i < nc * b_nc; i++)
+  double *xdata = x.rwdata ();
+  for (octave_idx_type i = 0; i < nc * b_nc; i++)
     xdata[i] = reinterpret_cast<double *> (X->x)[i];
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -2809,17 +2827,17 @@ sparse_qr<SparseMatrix>::min2norm_solve<SparseMatrix, SparseMatrix>
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = ros2rcs (a);
-  cholmod_sparse B = ros2rcs (b);
+  cholmod_sparse A = ors2crs (a);
+  cholmod_sparse B = ors2crs (b);
   cholmod_sparse *X;
 
   X = SuiteSparseQR_min2norm<double> (order, SPQR_DEFAULT_TOL, &A, &B, &cc);
   spqr_error_handler (&cc);
 
-  x = rcs2ros (X, &cc);
+  x = crs2ors (X, &cc);
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -2846,15 +2864,15 @@ sparse_qr<SparseMatrix>::min2norm_solve<MArray<Complex>, ComplexMatrix>
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse *A = ros2ccs (a, &cc);
-  cholmod_dense B = cod2ccd (b);
+  cholmod_sparse *A = ors2ccs (a, &cc);
+  cholmod_dense B = ocd2ccd (b);
   cholmod_dense *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, A, &B, &cc);
   spqr_error_handler (&cc);
 
-  Complex *xdata = x.fortran_vec ();
-  for (volatile octave_idx_type i = 0; i < nc * b_nc; i++)
+  Complex *xdata = x.rwdata ();
+  for (octave_idx_type i = 0; i < nc * b_nc; i++)
     xdata[i] = reinterpret_cast<Complex *> (X->x)[i];
   info = 0;
 
@@ -2876,17 +2894,17 @@ sparse_qr<SparseMatrix>::min2norm_solve<SparseComplexMatrix, SparseComplexMatrix
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse *A = ros2ccs (a, &cc);
-  cholmod_sparse B = cos2ccs (b);
+  cholmod_sparse *A = ors2ccs (a, &cc);
+  cholmod_sparse B = ocs2ccs (b);
   cholmod_sparse *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, A, &B, &cc);
   spqr_error_handler (&cc);
 
-  SparseComplexMatrix ret = ccs2cos (X, &cc);
+  SparseComplexMatrix ret = ccs2ocs (X, &cc);
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (B.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (B.i);
@@ -2912,19 +2930,19 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<MArray<Complex>, ComplexMatrix>
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = cos2ccs (a);
-  cholmod_dense B = cod2ccd (b);
+  cholmod_sparse A = ocs2ccs (a);
+  cholmod_dense B = ocd2ccd (b);
   cholmod_dense *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, &A, &B, &cc);
   spqr_error_handler (&cc);
 
-  Complex *xdata = x.fortran_vec ();
-  for (volatile octave_idx_type i = 0; i < nc * b_nc; i++)
+  Complex *xdata = x.rwdata ();
+  for (octave_idx_type i = 0; i < nc * b_nc; i++)
     xdata[i] = reinterpret_cast<Complex *> (X->x)[i];
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -2937,6 +2955,8 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<MArray<Complex>, ComplexMatrix>
 
 // FIXME: 2024/01/07: This template specialization does not appear to be
 // reachable from current Octave code calling qrsolve from sparse-dmsolve.cc.
+// It remains because liboctave may be used by other C++ code besides the
+// Octave interpreter.
 template <>
 template <>
 OCTAVE_API ComplexMatrix
@@ -2951,19 +2971,19 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<MArray<double>, ComplexMatrix>
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = cos2ccs (a);
-  cholmod_dense *B = rod2ccd (b, &cc);
+  cholmod_sparse A = ocs2ccs (a);
+  cholmod_dense *B = ord2ccd (b, &cc);
   cholmod_dense *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, &A, B, &cc);
   spqr_error_handler (&cc);
 
-  Complex *xdata = x.fortran_vec ();
-  for (volatile octave_idx_type i = 0; i < nc * b_nc; i++)
+  Complex *xdata = x.rwdata ();
+  for (octave_idx_type i = 0; i < nc * b_nc; i++)
     xdata[i] = reinterpret_cast<Complex *> (X->x)[i];
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -2986,17 +3006,17 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<SparseComplexMatrix, SparseComple
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = cos2ccs (a);
-  cholmod_sparse B = cos2ccs (b);
+  cholmod_sparse A = ocs2ccs (a);
+  cholmod_sparse B = ocs2ccs (b);
   cholmod_sparse *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, &A, &B, &cc);
   spqr_error_handler (&cc);
 
-  SparseComplexMatrix ret = ccs2cos (X, &cc);
+  SparseComplexMatrix ret = ccs2ocs (X, &cc);
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -3011,6 +3031,8 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<SparseComplexMatrix, SparseComple
 
 // FIXME: 2024/01/07: This template specialization does not appear to be
 // reachable from current Octave code calling qrsolve from sparse-dmsolve.cc.
+// It remains because liboctave may be used by other C++ code besides the
+// Octave interpreter.
 template <>
 template <>
 OCTAVE_API SparseComplexMatrix
@@ -3022,17 +3044,17 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<SparseMatrix, SparseComplexMatrix
   cholmod_common cc;
 
   cholmod_l_start (&cc);
-  cholmod_sparse A = cos2ccs (a);
-  cholmod_sparse *B = ros2ccs (b, &cc);
+  cholmod_sparse A = ocs2ccs (a);
+  cholmod_sparse *B = ors2ccs (b, &cc);
   cholmod_sparse *X;
 
   X = SuiteSparseQR_min2norm<Complex> (order, SPQR_DEFAULT_TOL, &A, B, &cc);
   spqr_error_handler (&cc);
 
-  SparseComplexMatrix ret = ccs2cos (X, &cc);
+  SparseComplexMatrix ret = ccs2ocs (X, &cc);
   info = 0;
 
-  if (sizeof (octave_idx_type) != sizeof (SuiteSparse_long))
+  if (octave_suitesparse_ptr_size_mismatch)
     {
       delete [] reinterpret_cast<SuiteSparse_long *> (A.p);
       delete [] reinterpret_cast<SuiteSparse_long *> (A.i);
@@ -3051,16 +3073,14 @@ sparse_qr<SparseComplexMatrix>::min2norm_solve<SparseMatrix, SparseComplexMatrix
 // Bateman's original code.
 
 template <typename SPARSE_T>
-class
-cxsparse_defaults
+class cxsparse_defaults
 {
 public:
   enum { order = -1 };
 };
 
 template <>
-class
-cxsparse_defaults<SparseMatrix>
+class cxsparse_defaults<SparseMatrix>
 {
 public:
 #if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))
@@ -3071,8 +3091,7 @@ public:
 };
 
 template <>
-class
-cxsparse_defaults<SparseComplexMatrix>
+class cxsparse_defaults<SparseComplexMatrix>
 {
 public:
 #if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))

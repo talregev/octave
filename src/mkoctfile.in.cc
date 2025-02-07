@@ -38,6 +38,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <cstdio>
 #include <cstdlib>
 
 #if defined (OCTAVE_USE_WINDOWS_API)
@@ -250,12 +251,6 @@ make_vars_map (bool link_stand_alone, bool verbose, bool debug)
 
   std::string DEFAULT_LDFLAGS;
 
-#if (defined (OCTAVE_USE_WINDOWS_API) || defined (CROSS) || defined (OCTAVE_LINK_ALL_DEPS))
-  // We'll be linking the files we compile with -loctinterp and -loctave,
-  // so we need to know where to find them.
-  DEFAULT_LDFLAGS += "-L" + quote_path (vars["OCTLIBDIR"]);
-#endif
-
   if (vars["LIBDIR"] != "/usr/lib")
     DEFAULT_LDFLAGS += " -L" + quote_path (vars["LIBDIR"]);
 
@@ -319,6 +314,8 @@ make_vars_map (bool link_stand_alone, bool verbose, bool debug)
 
   vars["LIBOCTINTERP"] = "-loctinterp";
 
+  vars["LIBOCTMEX"] = "-loctmex";
+
   vars["READLINE_LIBS"] = %OCTAVE_CONF_READLINE_LIBS%;
 
   vars["LAPACK_LIBS"] = get_variable ("LAPACK_LIBS", %OCTAVE_CONF_LAPACK_LIBS%);
@@ -343,13 +340,13 @@ make_vars_map (bool link_stand_alone, bool verbose, bool debug)
                                 replace_prefix (%OCTAVE_CONF_FLIBS%));
 
   vars["OCTAVE_LINK_DEPS"] = get_variable ("OCTAVE_LINK_DEPS",
-                                           %OCTAVE_CONF_MKOCTFILE_OCTAVE_LINK_DEPS%);
+                                           replace_prefix (%OCTAVE_CONF_MKOCTFILE_OCTAVE_LINK_DEPS%));
 
   vars["OCTAVE_LINK_OPTS"] = get_variable ("OCTAVE_LINK_OPTS",
                                            %OCTAVE_CONF_OCTAVE_LINK_OPTS%);
 
   vars["OCT_LINK_DEPS"] = get_variable ("OCT_LINK_DEPS",
-                                        %OCTAVE_CONF_MKOCTFILE_OCT_LINK_DEPS%);
+                                        replace_prefix (%OCTAVE_CONF_MKOCTFILE_OCT_LINK_DEPS%));
 
   vars["OCT_LINK_OPTS"]
     = get_variable ("OCT_LINK_OPTS",
@@ -444,18 +441,18 @@ static std::string help_msg =
   "                            BLAS_LIBS                   LIBDIR\n"
   "                            CC                          LIBOCTAVE\n"
   "                            CFLAGS                      LIBOCTINTERP\n"
-  "                            CPICFLAG                    OCTAVE_LINK_OPTS\n"
-  "                            CPPFLAGS                    OCTINCLUDEDIR\n"
-  "                            CXX                         OCTAVE_LIBS\n"
-  "                            CXXFLAGS                    OCTAVE_LINK_DEPS\n"
-  "                            CXXLD                       OCTLIBDIR\n"
-  "                            CXXPICFLAG                  OCT_LINK_DEPS\n"
-  "                            DL_LDFLAGS                  OCT_LINK_OPTS\n"
-  "                            F77                         RDYNAMIC_FLAG\n"
-  "                            F77_INTEGER8_FLAG           SPECIAL_MATH_LIB\n"
-  "                            FFLAGS                      XTRA_CFLAGS\n"
-  "                            FPICFLAG                    XTRA_CXXFLAGS\n"
-  "                            INCFLAGS\n"
+  "                            CPICFLAG                    LIBOCTMEX\n"
+  "                            CPPFLAGS                    OCTAVE_LINK_OPTS\n"
+  "                            CXX                         OCTINCLUDEDIR\n"
+  "                            CXXFLAGS                    OCTAVE_LIBS\n"
+  "                            CXXLD                       OCTAVE_LINK_DEPS\n"
+  "                            CXXPICFLAG                  OCTLIBDIR\n"
+  "                            DL_LDFLAGS                  OCT_LINK_DEPS\n"
+  "                            F77                         OCT_LINK_OPTS\n"
+  "                            F77_INTEGER8_FLAG           RDYNAMIC_FLAG\n"
+  "                            FFLAGS                      SPECIAL_MATH_LIB\n"
+  "                            FPICFLAG                    XTRA_CFLAGS\n"
+  "                            INCFLAGS                    XTRA_CXXFLAGS\n"
   "\n"
   "                          Octave configuration variables as above, but\n"
   "                          currently unused by mkoctfile.\n"
@@ -507,7 +504,8 @@ static std::string help_msg =
   "  --link-stand-alone      Link a stand-alone executable file.\n"
   "\n"
   "  --mex                   Assume we are creating a MEX file.  Set the\n"
-  "                          default output extension to \".mex\".\n"
+  "                          default output extension to \".mex\".  Link to\n"
+  "                          liboctmex instead of liboctinterp and liboctave.\n"
   "\n"
   "  -s, --strip             Strip output file.\n"
   "\n"
@@ -516,7 +514,7 @@ static std::string help_msg =
   "\n"
   "  -v, --verbose           Echo commands as they are executed.\n"
   "\n"
-  "  --silent                Ignored.  Intended to suppress output from\n"
+  "  --quiet                 Ignored.  Intended to suppress output from\n"
   "                          compiler steps.\n"
   "\n"
   "  FILE                    Compile or link FILE.  Recognized file types are:\n"
@@ -673,6 +671,33 @@ create_interleaved_complex_file ()
 }
 
 static std::string
+create_mex_soversion_file ()
+{
+  std::string tmpl = get_temp_directory () + "/oct-XXXXXX.c";
+
+  char *ctmpl = new char [tmpl.length () + 1];
+
+  ctmpl = strcpy (ctmpl, tmpl.c_str ());
+
+  // mkostemps will open the file and return a file descriptor.  We
+  // won't worry about closing it because we will need the file until we
+  // are done and then the file will be closed when mkoctfile exits.
+  int fd = octave_mkostemps_wrapper (ctmpl, 2);
+
+  // Make C++ string from filled-in template.
+  std::string retval (ctmpl);
+  delete [] ctmpl;
+
+  // Write symbol definition to file.
+  FILE *fid = fdopen (fd, "w");
+  fprintf (fid, "const int __octave_mex_soversion__ = %d;\n",
+           OCTAVE_MEX_SOVERSION);
+  fclose (fid);
+
+  return retval;
+}
+
+static std::string
 tmp_objfile_name ()
 {
   std::string tmpl = get_temp_directory () + "/oct-XXXXXX.o";
@@ -799,7 +824,8 @@ main (int argc, char **sys_argv)
         {
           verbose = true;
         }
-      else if (arg == "-silent" ||  arg == "--silent")
+      else if (arg == "-silent" || arg == "--silent"
+               || arg == "-quiet" || arg == "--quiet")
         {
           // Ignored for now.
         }
@@ -991,6 +1017,14 @@ main (int argc, char **sys_argv)
       if (vars["ALL_CFLAGS"].find ("-g") != std::string::npos)
         defs += " -DMEX_DEBUG";
 
+      // Create tmp C source file that defines an extern symbol that can
+      // be checked when loading the mex file to make sure the SOVERSION
+      // of liboctmex matches between the .mex file and the Octave version
+      // attempting to load it.
+      std::string tmp_file = create_mex_soversion_file ();
+
+      cfiles.push_back (tmp_file);
+
       if (mx_has_interleaved_complex)
         {
           defs += " -DMX_HAS_INTERLEAVED_COMPLEX=1";
@@ -1002,7 +1036,7 @@ main (int argc, char **sys_argv)
               // determine that the file was compiled expecting
               // interleaved complex values.
 
-              std::string tmp_file = create_interleaved_complex_file ();
+              tmp_file = create_interleaved_complex_file ();
 
               cfiles.push_back (tmp_file);
             }
@@ -1346,19 +1380,21 @@ main (int argc, char **sys_argv)
     }
   else
     {
-#if defined (OCTAVE_USE_WINDOWS_API) || defined(CROSS)
-      octave_libs = "-L" + quote_path (vars["OCTLIBDIR"])
-                    + ' ' + vars["OCTAVE_LIBS"];
-#endif
+      if (creating_mex_file)
+        octave_libs = (" -L" + quote_path (vars["OCTLIBDIR"]) + ' '
+                       + vars["LIBOCTMEX"]);
 
       std::string cmd
         = (vars["CXXLD"] + ' ' + vars["ALL_CXXFLAGS"] + ' '
            + pass_on_options + " -o " + octfile + ' ' + objfiles + ' '
            + libfiles + ' ' + ldflags + ' ' + vars["DL_LDFLAGS"] + ' '
            + vars["LDFLAGS"] + ' ' + octave_libs + ' '
-           + vars["OCT_LINK_OPTS"] + ' ' + vars["OCT_LINK_DEPS"]);
+           + vars["OCT_LINK_OPTS"]);
 
-#if defined (OCTAVE_USE_WINDOWS_API) || defined(CROSS)
+      if (! creating_mex_file)
+        cmd += ' ' + vars["OCT_LINK_DEPS"];
+
+#if defined (OCTAVE_USE_WINDOWS_API) || defined (CROSS) || defined (OCTAVE_LINK_ALL_DEPS)
       if (! f77files.empty () && ! vars["FLIBS"].empty ())
         cmd += ' ' + vars["FLIBS"];
 #endif

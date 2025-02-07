@@ -765,17 +765,17 @@ endfunction
 ## Convert all error indices into tuple format
 function cout = ind2tuple (matsize, erridx)
 
-  cout = cell (numel (erridx), 1);
   tmp = cell (1, numel (matsize));
   [tmp{:}] = ind2sub (matsize, erridx(:));
   subs = [tmp{:}];
   if (numel (matsize) == 2)
-    subs = subs(:, matsize != 1);
+    subs = subs(:, matsize != 1);  # For vectors, use 1-D index
   endif
-  for i = 1:numel (erridx)
-    loc = sprintf ("%d,", subs(i,:));
-    cout{i} = ["(" loc(1:end-1) ")"];
-  endfor
+  fmt = repmat ('%d,', 1, max (columns (subs), 1));
+  fmt(end) = [];   # delete final extra comma
+  cout = ostrsplit (sprintf (['(' fmt ')', '$'], subs'), '$');
+  cout(end) = [];  # delete extra cell from final '$'
+  cout = cout.';   # return column vector
 
 endfunction
 
@@ -785,15 +785,24 @@ function str = pprint (argin, err)
 
   str = ["ASSERT errors for:  assert " argin "\n"];
   str = [str, "\n  Location  |  Observed  |  Expected  |  Reason\n"];
-  for i = 1:length (err.index)
-    leni = length (err.index{i});
-    leno = length (err.observed{i});
-    lene = length (err.expected{i});
-    str = [str, sprintf("%*s%*s %*s%*s %*s%*s   %s\n",
-                  6+fix(leni/2), err.index{i}   , max (6-fix(leni/2), 0), "",
-                  6+fix(leno/2), err.observed{i}, max (6-fix(leno/2), 0), "",
-                  6+fix(lene/2), err.expected{i}, max (6-fix(lene/2), 0), "",
-                  err.reason{i})];
+
+  pos = numel (str);
+  str(pos + 100 * numel (err.index)) = ' ';
+  for i = 1:numel (err.index)
+    leni = numel (err.index{i});
+    leno = numel (err.observed{i});
+    lene = numel (err.expected{i});
+    tmp = sprintf("%*s%*s %*s%*s %*s%*s   %s\n",
+            6+fix(leni/2), err.index{i}   , max (6-fix(leni/2), 0), "",
+            6+fix(leno/2), err.observed{i}, max (6-fix(leno/2), 0), "",
+            6+fix(lene/2), err.expected{i}, max (6-fix(lene/2), 0), "",
+            err.reason{i});
+    if (pos + numel (tmp) > numel (str))
+      str(end + 1e6) = ' ';
+    endif
+    str((pos + 1):(pos + numel (tmp))) = tmp;
+    pos += numel (tmp);
   endfor
+  str = str(1:pos);
 
 endfunction

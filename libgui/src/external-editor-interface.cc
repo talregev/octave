@@ -80,26 +80,30 @@ external_editor_interface::call_custom_editor (const QString& file, int line)
 
 // Slots for the several signals for invoking the editor
 
-void external_editor_interface::request_new_file (const QString&)
+void
+external_editor_interface::request_new_file (const QString&)
 {
   call_custom_editor ();
 }
 
-void external_editor_interface::request_open_file (const QString& file_name,
-                                                   const QString&, int line,
-                                                   bool, bool, bool,
-                                                   const QString&)
+void
+external_editor_interface::request_open_file (const QString& file_name,
+                                              const QString&, int line,
+                                              bool, bool, bool,
+                                              const QString&)
 {
   call_custom_editor (file_name, line);
 }
 
-void external_editor_interface::handle_edit_file_request (const QString& file)
+void
+external_editor_interface::handle_edit_file_request (const QString& file)
 {
   call_custom_editor (file);
 }
 
 // Get and verify the settings of the external editor program
-QString external_editor_interface::external_editor ()
+QString
+external_editor_interface::external_editor ()
 {
   gui_settings settings;
 
@@ -121,7 +125,7 @@ QString external_editor_interface::external_editor ()
       int button = msgBox->exec ();
 
       if (button == QMessageBox::Yes)
-        emit request_settings_dialog ("editor");
+        Q_EMIT request_settings_dialog ("editor");
     }
 
   return editor;

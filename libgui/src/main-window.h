@@ -86,11 +86,9 @@ public:
 
   bool command_window_has_focus () const;
 
-  void focus_command_window ();
-
   bool confirm_shutdown ();
 
-signals:
+Q_SIGNALS:
 
   // Note: CLOSE_GUI_SIGNAL is currently only used by the new
   // experimental terminal widget.
@@ -133,8 +131,9 @@ signals:
 
   void update_prompt_signal (const QString& prompt);
 
-public slots:
+public Q_SLOTS:
 
+  void focus_command_window ();
   void focus_changed (QWidget *w_old, QWidget *w_new);
   void focus_window (const QString& win_name);
   void request_reload_settings ();
@@ -159,7 +158,7 @@ public slots:
                                         = QString ());
   void show_about_octave ();
   void notice_settings (bool update_by_worker = false);
-  QPalette getFusionDarkPalette();
+  QPalette getFusionDarkPalette ();
   void prepare_to_exit ();
   void go_to_previous_widget ();
   void reset_windows ();
@@ -173,7 +172,7 @@ public slots:
   void accept_directory_line_edit ();
 
   void execute_command_in_terminal (const QString& dir);
-  void run_file_in_terminal (const QFileInfo& info);
+  void run_file_in_terminal (const QFileInfo& info, int opts);
 
   void handle_new_figure_request ();
 
@@ -223,7 +222,7 @@ public slots:
 
   //! Find files dialog.
   //!@{
-  void find_files (const QString& startdir = QDir::currentPath ());
+  void find_files (const QString& startdir = QString ());
   void find_files_finished (int) { }
   //!@}
 
@@ -242,7 +241,7 @@ public slots:
     return dock_widget_list ();
   }
 
-private slots:
+private Q_SLOTS:
 
   void disable_menu_shortcuts (bool disable);
   void restore_create_file_setting ();

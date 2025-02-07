@@ -255,6 +255,8 @@ extern sc_pref sc_edit_debug_remove_breakpoints;
 const QString sc_edit_run ("editor_run");
 extern sc_pref sc_edit_run_run_file;
 extern sc_pref sc_edit_run_run_selection;
+extern sc_pref sc_edit_run_run_tests;
+extern sc_pref sc_edit_run_run_demos;
 
 // help
 const QString sc_edit_help ("editor_help");
@@ -280,6 +282,7 @@ sc_prevent_rl_conflicts ("shortcuts/prevent_readline_conflicts", QVariant (false
 const gui_pref
 sc_prevent_rl_conflicts_menu ("shortcuts/prevent_readline_conflicts_menu", QVariant (false));
 
+extern void init_all_shortcuts (void);
 extern QString get_shortcut_section (const QString& key);
 
 #endif

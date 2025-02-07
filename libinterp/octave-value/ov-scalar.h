@@ -33,7 +33,6 @@
 #include <iosfwd>
 #include <string>
 
-#include "lo-ieee.h"
 #include "lo-mappers.h"
 #include "lo-utils.h"
 #include "mx-base.h"
@@ -49,9 +48,9 @@ class octave_value_list;
 
 // Real scalar values.
 
-class
-OCTINTERP_API
-octave_scalar : public octave_base_scalar<double>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_scalar<double>;
+
+class OCTINTERP_API octave_scalar : public octave_base_scalar<double>
 {
 public:
 
@@ -82,7 +81,7 @@ public:
   { return octave::idx_vector (scalar); }
 
   octave_value any (int = 0) const
-  { return (scalar != 0 && ! lo_ieee_isnan (scalar)); }
+  { return (scalar != 0 && ! octave::math::isnan (scalar)); }
 
   builtin_type_t builtin_type () const { return btyp_double; }
 
@@ -288,7 +287,7 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

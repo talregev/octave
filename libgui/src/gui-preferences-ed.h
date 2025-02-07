@@ -26,10 +26,6 @@
 #if ! defined (octave_gui_preferences_ed_h)
 #define octave_gui_preferences_ed_h 1
 
-#if defined (HAVE_QSCINTILLA)
-#include <Qsci/qsciscintilla.h>
-#endif
-
 #include "gui-settings.h"
 
 // Editor preferences
@@ -133,7 +129,8 @@ const QString
 ed_last_comment_str ("editor/oct_last_comment_str");
 
 const QStringList
-ed_comment_strings = {
+ed_comment_strings =
+{
   "##",
   "#",
   "%",
@@ -159,7 +156,8 @@ extern gui_pref ed_session_bookmarks;
 
 // Tabs
 const QStringList
-ed_tab_position_names = {
+ed_tab_position_names =
+{
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Top"),
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Bottom"),
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Left"),
@@ -178,16 +176,6 @@ extern gui_pref ed_force_newline;
 
 extern gui_pref ed_rm_trailing_spaces;
 
-#if defined (HAVE_QSCINTILLA)
-#if defined (Q_OS_WIN32)
-const int os_eol_mode = QsciScintilla::EolWindows;
-#else
-const int os_eol_mode = QsciScintilla::EolUnix;
-#endif
-#else
-const int os_eol_mode = 2;
-#endif
-
 extern gui_pref ed_default_eol_mode;
 
 extern gui_pref ed_show_dbg_file;
@@ -199,6 +187,8 @@ extern gui_pref ed_create_new_file;
 extern gui_pref ed_hiding_closes_files;
 
 extern gui_pref ed_always_reload_changed_files;
+
+extern gui_pref ed_run_selection_tmp_file;
 
 extern gui_pref ed_mru_file_list;
 

@@ -34,10 +34,6 @@
 #include "dim-vector.h"
 
 #include "mxarray.h"
-#include "ov-base.h"
-#include "ov-scalar.h"
-#include "ov-bool.h"
-#include "ov-bool-mat.h"
 #include "errwarn.h"
 #include "ops.h"
 #include "oct-locbuf.h"
@@ -50,8 +46,6 @@
 
 #include "ov-base-sparse.h"
 #include "ov-base-sparse.cc"
-
-template class octave_base_sparse<SparseBoolMatrix>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_sparse_bool_matrix,
                                      "sparse bool matrix", "logical");
@@ -180,7 +174,7 @@ octave_sparse_bool_matrix::as_double () const
 bool
 octave_sparse_bool_matrix::save_binary (std::ostream& os, bool)
 {
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -321,7 +315,7 @@ octave_sparse_bool_matrix::save_hdf5 (octave_hdf5_id loc_id, const char *name,
 
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);

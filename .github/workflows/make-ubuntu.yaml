@@ -1,6 +1,6 @@
 name: make-ubuntu
 on: [push]
-concurrency: ci-ubuntu-${{ github.ref }}
+concurrency: ci-${{ github.ref }}
 
 jobs:
 
@@ -14,7 +14,7 @@ jobs:
       matrix:
         # For available GitHub-hosted runners, see:
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
-        os: [ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-arm]
         compiler: [gcc, clang]
         include:
           - compiler: gcc
@@ -35,10 +35,16 @@ jobs:
           - os: ubuntu-22.04
             compiler: gcc
             ccache-max: 1.2G
+          - os: ubuntu-24.04-arm
+            compiler: gcc
+            ccache-max: 1.2G
           - os: ubuntu-24.04
             compiler: clang
             ccache-max: 400M
           - os: ubuntu-22.04
+            compiler: clang
+            ccache-max: 400M
+          - os: ubuntu-24.04-arm
             compiler: clang
             ccache-max: 400M
 
@@ -49,6 +55,9 @@ jobs:
       CXX: ${{ matrix.cxx }}
 
     steps:
+      - name: get CPU information
+        run: lscpu
+
       - name: checkout repository
         uses: actions/checkout@v4
 
@@ -115,10 +124,15 @@ jobs:
           echo gfortran --version
           gfortran --version
           mkdir .build
+          echo "::group::Run configure script"
           cd .build && ../configure \
             CPPFLAGS="-I/usr/include/hdf5/serial -I/usr/include/suitesparse" \
             LDFLAGS="-L/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/hdf5/serial" \
             ${{ matrix.extra-config-flags }}
+          echo "::endgroup::"
+          echo "::group::Show config.log"
+          cat ./config.log
+          echo "::endgroup::"
 
       - name: build
         # Parallel make seems to fail intermittently when creating the figures
@@ -167,6 +181,27 @@ jobs:
           mkoctfile --link-stand-alone embedded.cc -o embedded
           LD_LIBRARY_PATH="/usr/local/lib/octave/$(octave --eval "disp(version())")" \
             ./embedded
+
+      - name: test Octave packages
+        env:
+          # colon separated list of packages
+          PACKAGE_NAMES: "control:stk"
+        run: |
+          unset CC
+          unset CXX
+          IFS=':' read -r -a packages <<< "${PACKAGE_NAMES}"
+          for package in "${packages[@]}"; do
+            printf "   \033[0;32m==>\033[0m Octave package \033[0;32m${package}\033[0m\n"
+            echo "::group::Install ${package}"
+            octave --eval "pkg install -verbose -forge ${package}"
+            echo "::endgroup::"
+            echo "::group::Test ${package}"
+            octave --eval "pkg test ${package}"
+            echo "::endgroup::"
+            echo "::group::Test log for ${package}"
+            cat ${GITHUB_WORKSPACE}/fntests.log
+            echo "::endgroup::"
+           done
 
       - name: analyze test suite results
         # Make sure the test summary lists 0 "FAIL"s and no "REGRESSION"

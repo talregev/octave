@@ -27,7 +27,6 @@
 #  include "config.h"
 #endif
 
-#include <cassert>
 #include <cctype>
 #include <cstring>
 
@@ -110,7 +109,7 @@ convert_to_valid_int (const octave_value& tc, int& conv_err)
 
   if (! conv_err)
     {
-      if (! lo_ieee_isnan (dval))
+      if (! math::isnan (dval))
         {
           int ival = math::nint (dval);
 
@@ -131,7 +130,7 @@ get_size (double d, const std::string& who)
 {
   octave_idx_type retval = -1;
 
-  if (lo_ieee_isnan (d))
+  if (math::isnan (d))
     ::error ("%s: NaN invalid as size specification", who.c_str ());
 
   if (math::isinf (d))
@@ -142,9 +141,8 @@ get_size (double d, const std::string& who)
         ::error ("%s: negative value invalid as size specification",
                  who.c_str ());
 
-      static const double out_of_range_top
-        = static_cast<double> (std::numeric_limits<octave_idx_type>::max ())
-          + 1.;
+      static constexpr double out_of_range_top
+        = static_cast<double> (std::numeric_limits<octave_idx_type>::max ()) + 1.0;
       if (d >= out_of_range_top)
         ::error ("%s: dimension too large for Octave's index type",
                  who.c_str ());
@@ -240,8 +238,7 @@ expand_char_class (const std::string& s)
   return retval;
 }
 
-class
-scanf_format_elt
+class scanf_format_elt
 {
 public:
 
@@ -285,8 +282,7 @@ public:
   std::string char_class;
 };
 
-class
-scanf_format_list
+class scanf_format_list
 {
 public:
 
@@ -748,8 +744,7 @@ scanf_format_list::all_numeric_conversions ()
     return false;
 }
 
-class
-printf_format_elt
+class printf_format_elt
 {
 public:
 
@@ -789,8 +784,7 @@ public:
   char modifier;
 };
 
-class
-printf_format_list
+class printf_format_list
 {
 public:
 
@@ -1214,8 +1208,7 @@ init_inf_nan ()
 // of the buffer and the buffer is refilled.  This also allows cheap
 // seek and tell operations within a "fast read" block.
 
-class
-delimited_stream
+class delimited_stream
 {
 public:
 
@@ -1637,8 +1630,7 @@ delimited_stream::getline (std::string& out, char delim)
 
 // A single conversion specifier, such as %f or %c.
 
-class
-textscan_format_elt
+class textscan_format_elt
 {
 public:
 
@@ -1692,8 +1684,7 @@ public:
 
 class textscan;
 
-class
-textscan_format_list
+class textscan_format_list
 {
 public:
 
@@ -1803,9 +1794,7 @@ private:
 //   textscan scanner ();
 //   scanner.scan (...);
 
-class
-OCTINTERP_API
-textscan
+class OCTINTERP_API textscan
 {
 public:
 
@@ -3693,7 +3682,7 @@ textscan::parse_options (const octave_value_list& args,
         }
       else if (param == "collectoutput")
         {
-          m_collect_output = args(i+1).xbool_value ("%s: CollectOutput must be logical or numeric",
+          m_collect_output = args(i+1).strict_bool_value ("%s: CollectOutput must be logical or numeric",
                              m_who.c_str ());
         }
       else if (param == "emptyvalue")
@@ -3711,11 +3700,11 @@ textscan::parse_options (const octave_value_list& args,
       else if (param == "multipledelimsasone")
         {
           m_multiple_delims_as_one = args(i
-                                        +1).xbool_value ("%s: MultipleDelimsAsOne must be logical or numeric", m_who.c_str ());
+                                        +1).strict_bool_value ("%s: MultipleDelimsAsOne must be logical or numeric", m_who.c_str ());
         }
       else if (param == "returnonerror")
         {
-          m_return_on_error = args(i+1).xbool_value ("%s: ReturnOnError must be logical or numeric",
+          m_return_on_error = args(i+1).strict_bool_value ("%s: ReturnOnError must be logical or numeric",
                               m_who.c_str ());
         }
       else if (param == "whitespace")
@@ -4432,7 +4421,7 @@ octave_scan<>
       break;
 
     default:
-      panic_impossible ();
+      error ("expecting format type to be one of 'e', 'f', 'g', 'E', or 'G' but found '%c' - please report this bug", fmt.type);
       break;
     }
 
@@ -4460,7 +4449,7 @@ do_scanf_conv (std::istream& is, const scanf_format_elt& fmt,
       else
         mval.resize (max_size, 1, 0.0);
 
-      data = mval.fortran_vec ();
+      data = mval.rwdata ();
     }
 
   if (! discard)
@@ -4693,14 +4682,14 @@ do_scanf_conv (std::istream&, const scanf_format_elt&, double *,
                           else if (nr > 0)                              \
                             mval.resize (nr, max_size / nr, 0.0);       \
                           else                                          \
-                            panic_impossible ();                        \
+                            error ("unexpected size in character conversion - please report this bug"); \
                         }                                               \
                       else if (nr > 0)                                  \
                         mval.resize (nr, max_size / nr, 0.0);           \
                       else                                              \
                         mval.resize (max_size, 1, 0.0);                 \
                                                                         \
-                      data = mval.fortran_vec ();                       \
+                      data = mval.rwdata ();                       \
                     }                                                   \
                                                                         \
                   data[data_index++] = static_cast<unsigned char>       \
@@ -4777,7 +4766,7 @@ base_stream::do_scanf (scanf_format_list& fmt_list,
             }
         }
       else
-        panic_impossible ();
+        error ("unexpected size in character conversion - please report this bug");
     }
   else if (nr > 0)
     {
@@ -4802,7 +4791,7 @@ base_stream::do_scanf (scanf_format_list& fmt_list,
       max_size = 32;
     }
 
-  double *data = mval.fortran_vec ();
+  double *data = mval.rwdata ();
 
   if (isp)
     {
@@ -4857,14 +4846,14 @@ base_stream::do_scanf (scanf_format_list& fmt_list,
                       else if (nr > 0)
                         mval.resize (nr, max_size / nr, 0.0);
                       else
-                        panic_impossible ();
+                        error ("unexpected size in character conversion - please report this bug");
                     }
                   else if (nr > 0)
                     mval.resize (nr, max_size / nr, 0.0);
                   else
                     mval.resize (max_size, 1, 0.0);
 
-                  data = mval.fortran_vec ();
+                  data = mval.rwdata ();
                 }
 
               std::string fmt = elt->text;
@@ -5485,8 +5474,7 @@ base_stream::flush ()
   return retval;
 }
 
-class
-printf_value_cache
+class printf_value_cache
 {
 public:
 
@@ -5831,7 +5819,7 @@ base_stream::do_numeric_printf_conv (std::ostream& os,
         }
 
       const char *tval;
-      if (lo_ieee_isinf (dval))
+      if (math::isinf (dval))
         {
           if (elt->flags.find ('+') != std::string::npos)
             tval = (dval < 0 ? "-Inf" : "+Inf");
@@ -6414,7 +6402,7 @@ convert_and_copy (std::list<void *>& input_buf_list,
 
   DST_T conv (dim_vector (nr, nc));
 
-  dst_elt_type *conv_data = conv.fortran_vec ();
+  dst_elt_type *conv_data = conv.rwdata ();
 
   octave_idx_type j = 0;
 
@@ -6690,7 +6678,7 @@ stream::read (const Array<double>& size, octave_idx_type block_size,
   std::ptrdiff_t input_buf_size
     = static_cast<std::ptrdiff_t> (input_buf_elts) * input_elt_size;
 
-  error_if (input_buf_size < 0);
+  panic_if (input_buf_size < 0);
 
   // Must also work and return correct type object for 0 elements to read.
   std::istream *isp = input_stream ();

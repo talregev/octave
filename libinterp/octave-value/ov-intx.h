@@ -49,9 +49,9 @@
 #include "ov-re-mat.h"
 #include "ov-scalar.h"
 
-class
-OCTINTERP_API
-OCTAVE_VALUE_INT_MATRIX_T
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_int_matrix<intNDArray<OCTAVE_INT_T>>;
+
+class OCTINTERP_API OCTAVE_VALUE_INT_MATRIX_T
   : public octave_base_int_matrix<intNDArray<OCTAVE_INT_T>>
 {
 public:
@@ -146,12 +146,12 @@ public:
   matrix_value (bool = false) const
   {
     Matrix retval;
-    dim_vector dv = dims ();
+    const dim_vector& dv = dims ();
     if (dv.ndims () > 2)
       error ("invalid conversion of %s to Matrix", type_name ().c_str ());
 
     retval = Matrix (dv(0), dv(1));
-    double *vec = retval.fortran_vec ();
+    double *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).double_value ();
@@ -163,12 +163,12 @@ public:
   float_matrix_value (bool = false) const
   {
     FloatMatrix retval;
-    dim_vector dv = dims ();
+    const dim_vector& dv = dims ();
     if (dv.ndims () > 2)
       error ("invalid conversion of %s to FloatMatrix", type_name ().c_str ());
 
     retval = FloatMatrix (dv(0), dv(1));
-    float *vec = retval.fortran_vec ();
+    float *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).float_value ();
@@ -180,12 +180,12 @@ public:
   complex_matrix_value (bool = false) const
   {
     ComplexMatrix retval;
-    dim_vector dv = dims ();
+    const dim_vector& dv = dims ();
     if (dv.ndims () > 2)
       error ("invalid conversion of %s to Matrix", type_name ().c_str ());
 
     retval = ComplexMatrix (dv(0), dv(1));
-    Complex *vec = retval.fortran_vec ();
+    Complex *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = Complex (m_matrix(i).double_value ());
@@ -197,12 +197,12 @@ public:
   float_complex_matrix_value (bool = false) const
   {
     FloatComplexMatrix retval;
-    dim_vector dv = dims ();
+    const dim_vector& dv = dims ();
     if (dv.ndims () > 2)
       error ("invalid conversion of %s to FloatMatrix", type_name ().c_str ());
 
     retval = FloatComplexMatrix (dv(0), dv(1));
-    FloatComplex *vec = retval.fortran_vec ();
+    FloatComplex *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = FloatComplex (m_matrix(i).float_value ());
@@ -214,7 +214,7 @@ public:
   array_value (bool = false) const
   {
     NDArray retval (m_matrix.dims ());
-    double *vec = retval.fortran_vec ();
+    double *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).double_value ();
@@ -225,7 +225,7 @@ public:
   float_array_value (bool = false) const
   {
     FloatNDArray retval (m_matrix.dims ());
-    float *vec = retval.fortran_vec ();
+    float *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).float_value ();
@@ -236,7 +236,7 @@ public:
   complex_array_value (bool = false) const
   {
     ComplexNDArray retval (m_matrix.dims ());
-    Complex *vec = retval.fortran_vec ();
+    Complex *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = Complex (m_matrix(i).double_value ());
@@ -247,7 +247,7 @@ public:
   float_complex_array_value (bool = false) const
   {
     FloatComplexNDArray retval (m_matrix.dims ());
-    FloatComplex *vec = retval.fortran_vec ();
+    FloatComplex *vec = retval.rwdata ();
     octave_idx_type nel = m_matrix.numel ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = FloatComplex (m_matrix(i).float_value ());
@@ -264,7 +264,7 @@ public:
     if (warn && m_matrix.any_element_not_one_or_zero ())
       warn_logical_conversion ();
 
-    bool *vec = retval.fortran_vec ();
+    bool *vec = retval.rwdata ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).bool_value ();
 
@@ -278,7 +278,7 @@ public:
 
     octave_idx_type nel = numel ();
 
-    char *vec = retval.fortran_vec ();
+    char *vec = retval.rwdata ();
     for (octave_idx_type i = 0; i < nel; i++)
       vec[i] = m_matrix(i).char_value ();
 
@@ -383,8 +383,10 @@ private:
 
   static octave_hdf5_id s_hdf5_save_type;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
+
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_int_scalar<OCTAVE_INT_T>;
 
 class
 OCTINTERP_API
@@ -696,5 +698,5 @@ private:
 
   static octave_hdf5_id s_hdf5_save_type;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };

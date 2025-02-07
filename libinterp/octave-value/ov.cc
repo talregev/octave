@@ -1058,9 +1058,14 @@ octave_value::octave_value (const octave::idx_vector& idx, bool lazy)
       m_rep = new octave_bool_matrix (mask, idx);
       break;
 
-    default:
-      panic_impossible ();
+    case octave::idx_vector::class_invalid:
+      error ("unexpected: invalid index in conversion to octave_value - please report this bug");
       break;
+
+      // We should have handled all possible enum values above.  Rely
+      // on compiler diagnostics to warn if we haven't.  For example,
+      // GCC's -Wswitch option, enabled by -Wall, will provide a
+      // warning.
     }
 
   // FIXME: needed?
@@ -1699,6 +1704,16 @@ octave_value::idx_type_value (bool req_int, bool frc_str_conv) const
 #endif
 }
 
+octave_idx_type
+octave_value::strict_idx_type_value (bool frc_str_conv) const
+{
+#if defined (OCTAVE_ENABLE_64)
+  return int64_value (true, frc_str_conv);
+#else
+  return int_value (true, frc_str_conv);
+#endif
+}
+
 Cell
 octave_value::cell_value () const
 {
@@ -2177,7 +2192,18 @@ XVALUE_EXTRACTOR (octave_fcn_handle *, xfcn_handle_value, fcn_handle_value)
 
 XVALUE_EXTRACTOR (octave_value_list, xlist_value, list_value)
 
+// Make some stricter versions of XVALUE_EXTRACTOR,
+// especially for parsing integer arguments that cannot be floating point.
+// See bug #65538.
+
+XVALUE_EXTRACTOR (int, strict_int_value, strict_int_value)
+
+XVALUE_EXTRACTOR (bool, strict_bool_value, strict_bool_value)
+
+XVALUE_EXTRACTOR (octave_idx_type, strict_idx_type_value, strict_idx_type_value)
+
 #undef XVALUE_EXTRACTOR
+
 
 octave_value
 octave_value::storable_value () const
@@ -2565,7 +2591,7 @@ octave_value::empty_conv (const std::string& type, const octave_value& rhs)
           return octave_scalar_map ();
 
         default:
-          panic_impossible ();
+          error ("unexpected: index not '(', '{', or '.' in octave_value::empty_conv - please report this bug");
         }
     }
   else
@@ -2957,9 +2983,8 @@ check_colon_operand (const octave_value& val, const char *op_str)
 
   double dval = val.double_value ();
   double intpart;
-  static const double out_of_range_top
-    = static_cast<double> (std::numeric_limits<typename T::val_type>::max ())
-      + 1.;
+  static constexpr double out_of_range_top
+    = static_cast<double> (std::numeric_limits<typename T::val_type>::max ()) + 1.0;
 
   if (dval >= out_of_range_top
       || dval < std::numeric_limits<typename T::val_type>::min ()
@@ -2994,8 +3019,7 @@ integer_difference (ST a, ST b)
   // Map to unsigned.
   // Idea from https://stackoverflow.com/questions/10589559
 
-  static const UT offset
-    = UT (0) - static_cast<UT> (std::numeric_limits<ST>::min ());
+  static const UT offset = UT (0) - static_cast<UT> (std::numeric_limits<ST>::min ());
 
   UT au = static_cast<UT> (a) + offset;
   UT bu = static_cast<UT> (b) + offset;
@@ -3133,8 +3157,8 @@ range_numel (T base, double increment, T limit)
       || (increment < 0 && base < limit))
     return 0;
 
-  static const double out_of_range_top
-    = static_cast<double> (std::numeric_limits<UT>::max ()) + 1.;
+  static constexpr double out_of_range_top
+    = static_cast<double> (std::numeric_limits<UT>::max ()) + 1.0;
 
   double abs_increment = std::abs (increment);
 
@@ -3859,6 +3883,13 @@ assignments.
 %! t.b = "There";
 %! t.c = 163;
 %! assert (s, t);
+
+// Overloaded subsref in classdef class
+%!test
+%! data.x = 1;
+%! cm = containers.Map;
+%! cm('foo') = data;
+%! assert (cm('foo').x, 1);
 */
 
 DEFUN (is_sq_string, args, ,

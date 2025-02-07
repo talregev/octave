@@ -27,29 +27,40 @@
 #  include "config.h"
 #endif
 
+#include "lo-array-errwarn.h"
 #include "unwind-prot.h"
 
 #include "error.h"
-#include "ovl.h"
-#include "ov-fcn.h"
-#include "pt-eval.h"
-
-#include "error.h"
+#include "filepos.h"
 #include "interpreter-private.h"
-#include "symtab.h"
 #include "interpreter.h"
-#include "lo-array-errwarn.h"
+#include "ov-fcn.h"
+#include "ovl.h"
+#include "pt-eval.h"
+#include "symtab.h"
 
 octave_base_value *
 octave_function::clone () const
 {
-  panic_impossible ();
+  error ("unexpected call to octave_function::clone - please report this bug");
 }
 
 octave_base_value *
 octave_function::empty_clone () const
 {
-  panic_impossible ();
+  error ("unexpected call to octave_function::empty_clone - please report this bug");
+}
+
+octave::filepos
+octave_function::beg_pos () const
+{
+  error ("unexpected call to octave_function::beg_pos - please report this bug");
+}
+
+octave::filepos
+octave_function::end_pos () const
+{
+  error ("unexpected call to octave_function::end_pos - please report this bug");
 }
 
 octave_value_list

@@ -88,6 +88,7 @@ glpk (int sense, int n, int m, double *c, int nz, int *rn, int *cn,
 {
   int typx = 0;
   int errnum = 0;
+  int tout = 0;  // to save and restore msglev settings
 
   time = 0.0;
   status = -1;    // Initialize status to "bad" value
@@ -173,12 +174,22 @@ glpk (int sense, int n, int m, double *c, int nz, int *rn, int *cn,
 
   glp_load_matrix (lp, nz, rn, cn, a);
 
+  // sort the constraints for better presolving analogue to the code
+  // sample provided by glpk
+  glp_sort_matrix (lp);
+
   if (save_pb)
     {
       static char tmp[] = "outpb.lp";
       if (glp_write_lp (lp, nullptr, tmp) != 0)
         error ("__glpk__: unable to write problem");
     }
+
+  // direct calling glp_subroutines requires explicit msglev setting
+  if (par.msglev < 3)
+    tout = glp_term_out (GLP_OFF);
+  else
+    tout = glp_term_out (GLP_ON);
 
   // scale the problem data
   if (! par.presol || lpsolver != 1)
@@ -187,6 +198,8 @@ glpk (int sense, int n, int m, double *c, int nz, int *rn, int *cn,
   // build advanced initial basis (if required)
   if (lpsolver == 1 && ! par.presol)
     glp_adv_basis (lp, 0);
+
+  glp_term_out (tout);  // restore previous msglev status
 
   // For MIP problems without a presolver, a first pass with glp_simplex
   // is required
@@ -332,7 +345,7 @@ OCTAVE_BEGIN_NAMESPACE(octave)
       if (tmp.is_defined ())                                            \
         {                                                               \
           if (! tmp.isempty ())                                        \
-            VAL = tmp.xint_value ("glpk: invalid value in PARAM" NAME); \
+            VAL = tmp.strict_int_value ("glpk: invalid value in PARAM" NAME); \
           else                                                          \
             error ("glpk: invalid value in PARAM" NAME);                \
         }                                                               \
@@ -356,7 +369,7 @@ Undocumented internal function.
 
   Matrix C = args(0).xmatrix_value ("__glpk__: invalid value of C");
 
-  double *c = C.fortran_vec ();
+  double *c = C.rwdata ();
   Array<int> rn;
   Array<int> cn;
   ColumnVector a;
@@ -417,7 +430,7 @@ Undocumented internal function.
   //             for each constraint in the constraint matrix.
   Matrix B = args(2).xmatrix_value ("__glpk__: invalid value of B");
 
-  double *b = B.fortran_vec ();
+  double *b = B.rwdata ();
 
   // 4th Input.  An array of length mrowsc containing the lower
   //             bound on each of the variables.
@@ -426,7 +439,7 @@ Undocumented internal function.
   if (LB.numel () < mrowsc)
     error ("__glpk__: invalid dimensions for LB");
 
-  double *lb = LB.fortran_vec ();
+  double *lb = LB.rwdata ();
 
   // LB argument, default: Free
   Array<int> freeLB (dim_vector (mrowsc, 1));
@@ -448,7 +461,7 @@ Undocumented internal function.
   if (UB.numel () < mrowsc)
     error ("__glpk__: invalid dimensions for UB");
 
-  double *ub = UB.fortran_vec ();
+  double *ub = UB.rwdata ();
 
   Array<int> freeUB (dim_vector (mrowsc, 1));
   for (int i = 0; i < mrowsc; i++)
@@ -466,7 +479,7 @@ Undocumented internal function.
   //             in the constraint matrix.
   charMatrix CTYPE = args(5).xchar_matrix_value ("__glpk__: invalid value of CTYPE");
 
-  char *ctype = CTYPE.fortran_vec ();
+  char *ctype = CTYPE.rwdata ();
 
   // 7th Input.  A column array containing the types of the variables.
   charMatrix VTYPE = args(6).xchar_matrix_value ("__glpk__: invalid value of VARTYPE");
@@ -586,8 +599,8 @@ Undocumented internal function.
   OCTAVE_GLPK_GET_REAL_PARAM ("toldj", par.toldj);
 
   // Relative tolerance used to choose eligible pivotal elements of
-  //  the simplex table in the ratio test
-  par.tolpiv = 1e-10;
+  // the simplex table in the ratio test
+  par.tolpiv = 1e-9;
   OCTAVE_GLPK_GET_REAL_PARAM ("tolpiv", par.tolpiv);
 
   par.objll = -std::numeric_limits<double>::max ();
@@ -611,13 +624,13 @@ Undocumented internal function.
   double time = 0.0;
   int status = -1;
 
-  int errnum = glpk (sense, mrowsc, mrowsA, c, nz, rn.fortran_vec (),
-                     cn.fortran_vec (), a.fortran_vec (), b, ctype,
-                     freeLB.fortran_vec (), lb, freeUB.fortran_vec (),
-                     ub, vartype.fortran_vec (), isMIP, lpsolver,
-                     save_pb, scale, par, xmin.fortran_vec (), fmin,
-                     status, lambda.fortran_vec (),
-                     redcosts.fortran_vec (), time);
+  int errnum = glpk (sense, mrowsc, mrowsA, c, nz, rn.rwdata (),
+                     cn.rwdata (), a.rwdata (), b, ctype,
+                     freeLB.rwdata (), lb, freeUB.rwdata (),
+                     ub, vartype.rwdata (), isMIP, lpsolver,
+                     save_pb, scale, par, xmin.rwdata (), fmin,
+                     status, lambda.rwdata (),
+                     redcosts.rwdata (), time);
 
   octave_scalar_map extra;
 

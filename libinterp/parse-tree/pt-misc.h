@@ -28,7 +28,8 @@
 
 #include "octave-config.h"
 
-#include "base-list.h"
+#include <list>
+
 #include "pt-decl.h"
 #include "pt-walk.h"
 
@@ -42,7 +43,7 @@ class tree_index_expression;
 // parameters in a function definition.  Elements are identifiers
 // only.
 
-class tree_parameter_list : public base_list<tree_decl_elt *>
+class tree_parameter_list : public std::list<tree_decl_elt *>
 {
 public:
 
@@ -59,18 +60,29 @@ public:
   tree_parameter_list (in_or_out io, tree_decl_elt *t)
     : m_in_or_out (io), m_marked_for_varargs (0)
   {
-    append (t);
+    push_back (t);
   }
 
   tree_parameter_list (in_or_out io, tree_identifier *id)
     : m_in_or_out (io), m_marked_for_varargs (0)
   {
-    append (new tree_decl_elt (id));
+    push_back (new tree_decl_elt (id));
   }
 
   OCTAVE_DISABLE_CONSTRUCT_COPY_MOVE (tree_parameter_list)
 
   ~tree_parameter_list ();
+
+  tree_parameter_list * mark_in_delims (const token& open_delim, const token& close_delim)
+  {
+    m_open_delim = open_delim;
+    m_close_delim = close_delim;
+
+    return this;
+  }
+
+  filepos beg_pos () const { return m_open_delim.beg_pos (); }
+  filepos end_pos () const { return m_close_delim.end_pos (); }
 
   void mark_as_formal_parameters ();
 
@@ -108,6 +120,9 @@ private:
   // -1: takes varargs only
   // 0: does not take varargs.
   int m_marked_for_varargs;
+
+  token m_open_delim;
+  token m_close_delim;
 };
 
 OCTAVE_END_NAMESPACE(octave)

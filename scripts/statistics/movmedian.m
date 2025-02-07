@@ -27,106 +27,44 @@
 ## @deftypefn  {} {@var{y} =} movmedian (@var{x}, @var{wlen})
 ## @deftypefnx {} {@var{y} =} movmedian (@var{x}, [@var{nb}, @var{na}])
 ## @deftypefnx {} {@var{y} =} movmedian (@dots{}, @var{dim})
-## @deftypefnx {} {@var{y} =} movmedian (@dots{}, "@var{nancond}")
+## @deftypefnx {} {@var{y} =} movmedian (@dots{}, @var{nancond})
 ## @deftypefnx {} {@var{y} =} movmedian (@dots{}, @var{property}, @var{value})
 ## Calculate the moving median over a sliding window of length @var{wlen} on
 ## data @var{x}.
 ##
-## If @var{wlen} is a scalar, the function @code{movmedian} is applied to a
-## moving window of length @var{wlen}.  When @var{wlen} is an odd number the
-## window is symmetric and includes @w{@code{(@var{wlen} - 1) / 2}}@ elements
-## on either side of the central element.  For example, when calculating the
-## output at index 5 with a window length of 3, @code{movmedian} uses data
-## elements @w{@code{[4, 5, 6]}}.  If @var{wlen} is an even number, the window
-## is asymmetric and has @w{@code{@var{wlen}/2}}@ elements to the left of the
-## central element and @w{@code{@var{wlen}/2 - 1}}@ elements to the right of
-## the central element.  For example, when calculating the output at index 5
-## with a window length of 4, @code{movmedian} uses data elements
-## @w{@code{[3, 4, 5, 6]}}.
-##
-## If @var{wlen} is an array with two elements @w{@code{[@var{nb}, @var{na}]}},
-## the function is applied to a moving window @code{-@var{nb}:@var{na}}.  This
-## window includes @var{nb} number of elements @emph{before} the current
-## element and @var{na} number of elements @emph{after} the current element.
-## The current element is always included.  For example, given
-## @w{@code{@var{wlen} = [3, 0]}}, the data used to calculate index 5 is
-## @w{@code{[2, 3, 4, 5]}}.
+## The moving window length input @var{wlen} can either be a numeric scalar
+## or a 2-element numeric array @w{@qcode{[@var{nb}, @var{na}]}}. The elements
+## included in the moving window depend on the size and value of @var{wlen}
+## as well as whether the @qcode{"SamplePoints"} option has been specified.
+## For full details of element inclusion,
+## @pxref{XREFmovslice,,@code{movslice}}.
 ##
 ## If the optional argument @var{dim} is given, operate along this dimension.
 ##
-## The optional string argument @qcode{"@var{nancond}"} controls whether
-## @code{NaN} and @code{NA} values should be included (@qcode{"includenan"}),
-## or excluded (@qcode{"omitnan"}), from the data passed to
-## @code{movmedian}.  The default is @qcode{"includenan"}.  Caution: the
-## @qcode{"omitnan"} option is not yet implemented.
+## The optional argument @var{nancond} is a string that controls how @code{NaN}
+## and @code{NA} values affect the output of @qcode{"movmedian"}. The value
+## @qcode{"includenan"} (default) causes @code{NaN} and @code{NA} values to be
+## included in the moving window, and any window slice containing @code{NaN} or
+## @code{NA} values will return @code{NaN} for that element.  The value
+## @qcode{"omitnan"} causes @qcode{"movmedian"} to ignore any @code{NaN}
+## or @code{NA} values resulting in fewer elements being used to calculate the
+## median for that window slice.  If @qcode{"omitnan"} is specified and a window
+## slice contains all @code{NaN} or @code{NA} values, @qcode{"movmedian"} returns
+## @code{NaN} for that element.  The values @qcode{"includemissing"} and
+## @qcode{"omitmissing"} may be used synonymously with @qcode{"includenan"} and
+## @qcode{"omitnan"}, respectively.
 ##
 ## The calculation can be controlled by specifying @var{property}/@var{value}
-## pairs.  Valid properties are
-##
-## @table @asis
-##
-## @item @qcode{"Endpoints"}
-##
-## This property controls how results are calculated at the boundaries
-## (@w{endpoints}) of the window.  Possible values are:
-##
-## @table @asis
-## @item @qcode{"shrink"}  (default)
-## The window is truncated at the beginning and end of the array to exclude
-## elements for which there is no source data.  For example, with a window of
-## length 3, @code{@var{y}(1) = movmedian (@var{x}(1:2))}, and
-## @code{@var{y}(end) = movmedian (@var{x}(end-1:end))}.
-##
-## @item @qcode{"discard"}
-## Any @var{y} values that use a window extending beyond the original
-## data array are deleted.  For example, with a 10-element data vector and a
-## window of length 3, the output will contain only 8 elements.  The first
-## element would require calculating the function over indices
-## @w{@code{[0, 1, 2]}}@ and is therefore discarded.  The last element would
-## require calculating the function over indices @w{@code{[9, 10, 11]}}@ and is
-## therefore discarded.
-##
-## @item @qcode{"fill"}
-## Any window elements outside the data array are replaced by @code{NaN}.  For
-## example, with a window of length 3,
-## @code{@var{y}(1) = movmedian ([NaN, @var{x}(1:2)])}, and
-## @code{@var{y}(end) = movmedian ([@var{x}(end-1:end), NaN])}.
-## This option usually results in @var{y} having @code{NaN} values at the
-## boundaries, although it is influenced by how @code{movmedian} handles
-## @code{NaN}, and also by the property @qcode{"nancond"}.
-##
-## @item @var{user_value}
-## Any window elements outside the data array are replaced by the specified
-## value @var{user_value} which must be a numeric scalar.  For example, with a
-## window of length 3,
-## @code{@var{y}(1) = movmedian ([@var{user_value}, @var{x}(1:2)])}, and
-## @code{@var{y}(end) = movmedian ([@var{x}(end-1:end), @var{user_value}])}.
-## A common choice for @var{user_value} is 0.
-##
-## @item @qcode{"same"}
-## Any window elements outside the data array are replaced by the value of
-## @var{x} at the boundary.  For example, with a window of length 3,
-## @code{@var{y}(1) = movmedian ([@var{x}(1), @var{x}(1:2)])}, and
-## @code{@var{y}(end) = movmedian ([@var{x}(end-1:end), @var{x}(end)])}.
-##
-## @item @qcode{"periodic"}
-## The window is wrapped so that any missing data elements are taken from
-## the other side of the data.  For example, with a window of length 3,
-## @code{@var{y}(1) = movmedian ([@var{x}(end), @var{x}(1:2)])}, and
-## @code{@var{y}(end) = movmedian ([@var{x}(end-1:end), @var{x}(1)])}.
-##
-## @end table
-##
-## @item @qcode{"SamplePoints"}
-## Caution: This option is not yet implemented.
-##
-## @end table
+## pairs.  Valid properties are @qcode{"Endpoints"} and
+## @qcode{"SamplePoints"}.  For full descriptions of these properties and
+## valid options, @pxref{XREFmovfun,,@code{movfun}}.
 ##
 ## Programming Note: This function is a wrapper which calls @code{movfun}.
-## For additional options and documentation, @pxref{XREFmovfun,,@code{movfun}}.
+## For full documentation of inputs and options,
+## @pxref{XREFmovfun,,@code{movfun}}.
 ##
-## @seealso{movfun, movslice, movmad, movmax, movmean, movmin, movprod, movstd,
-## movsum, movvar}
+## @seealso{median, movfun, movslice, movmad, movmax, movmean, movmin,
+## movprod, movstd, movsum, movvar}
 ## @end deftypefn
 
 function y = movmedian (x, wlen, varargin)
@@ -143,6 +81,8 @@ endfunction
 %!assert (movmedian (1:5, 3), [1.5, 2, 3, 4, 4.5], eps)
 %!assert (movmedian (1:5, [1, 1]), [1.5, 2, 3, 4, 4.5], eps)
 %!assert (movmedian (1:5, 3, 2), [1.5, 2, 3, 4, 4.5], eps)
+%!assert <*65928> (movmedian (1:5, 3, 1), 1:5)
+%!assert <*65928> (movmedian (1:5, 3, 3), 1:5)
 
 %!assert (movmedian (magic (4), 3),
 %!        [10.5, 6.5, 6.5, 10.5; 9, 7, 6, 12; ...
@@ -152,8 +92,13 @@ endfunction
 %!         5, 11, 10, 8; 6.5, 10.5, 10.5, 6.5], eps)
 %!assert (movmedian (magic (4), 3, 2),
 %!        [9, 3, 3, 8; 8, 10, 10, 9; 8, 7, 7, 9; 9, 14, 14, 8])
+%!assert <*65928> (movmedian (magic (4), 3, 3), magic (4))
 
 %!assert <*55241> (movmedian ((1:10).', 3), [1.5; (2:9).'; 9.5], eps)
+
+%!assert <66156> (movmedian ([1:4, NaN(1,3), 8:10], 3), movmedian ([1:4, NaN(1,3), 8:10], 3, "includenan"))
+%!assert <66156> (movmedian ([1:4, NaN(1,3), 8:10], 3, "includenan"), [1.5, 2, 3, NaN(1,5), 9, 9.5], eps)
+%!assert <66156> (movmedian ([1:4, NaN(1,3), 8:10], 3, "omitnan"), [1.5, 2, 3, 3.5, 4, NaN, 8, 8.5, 9, 9.5], eps)
 
 ## Test input validation
 %!error <Invalid call> movmedian ()

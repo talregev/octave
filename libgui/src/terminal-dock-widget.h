@@ -60,12 +60,10 @@ public:
   // Only valid if using the old terminal widget.
   QTerminal * get_qterminal ();
 
-#if defined (HAVE_QSCINTILLA)
   // Only valid if using the new terminal widget.
   command_widget * get_command_widget ();
-#endif
 
-signals:
+Q_SIGNALS:
 
   void settings_changed ();
 
@@ -74,7 +72,7 @@ signals:
 
   void update_prompt_signal (const QString&);
 
-  void interpreter_output_signal (const QString&);
+  void interpreter_output_signal (const QString&, int style = 0);
 
   void new_command_line_signal (const QString& = QString ());
 
@@ -83,7 +81,7 @@ signals:
   void interpreter_event (const fcn_callback& fcn);
   void interpreter_event (const meth_callback& meth);
 
-public slots:
+public Q_SLOTS:
 
   void notice_settings ();
 

@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
+#if defined (HAVE_CONFIG_H)
 #  include "config.h"
 #endif
 
@@ -49,9 +49,7 @@ quote_string (std::string str)
   return ('"' + str + '"');
 }
 
-class
-OCTINTERP_API
-latex_renderer : public base_text_renderer
+class OCTINTERP_API latex_renderer : public base_text_renderer
 {
 public:
 

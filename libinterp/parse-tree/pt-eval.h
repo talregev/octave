@@ -332,7 +332,7 @@ public:
 
   void enter_debugger (const std::string& prompt = "debug> ");
 
-  void keyboard (const std::string& prompt = "keyboard> ");
+  void keyboard (const std::string& prompt = "debug> ");
 
   void dbupdown (int n, bool verbose = false);
 
@@ -345,6 +345,8 @@ public:
   };
 
   Matrix ignored_fcn_outputs () const;
+
+  std::string inputname (int n, bool ids_only = true) const;
 
   octave_value make_fcn_handle (const std::string& nm);
 
@@ -463,6 +465,10 @@ public:
   int debug_user_code_column () const;
 
   void debug_where (std::ostream& os) const;
+
+  void debug_list (std::ostream& os, int num_lines) const;
+
+  void debug_type (std::ostream& os, int start_line, int end_line) const;
 
   octave_user_code * current_user_code () const;
 

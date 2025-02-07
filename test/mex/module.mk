@@ -38,18 +38,20 @@ MKOCTFILELDFLAGS = \
   -L$(top_builddir)/liboctave/.libs
 
 MKOCTFILE = \
+  OCT_LINK_DEPS="$(OCT_LINK_DEPS)" \
   DL_LDFLAGS="$(DL_LDFLAGS)" \
   $(top_builddir)/src/mkoctfile $(MKOCTFILECPPFLAGS) $(MKOCTFILELDFLAGS)
 
 MKMEXFILECPPFLAGS = \
   -I$(top_builddir) \
+  -I$(top_srcdir)/libmex \
   -I$(top_srcdir)/libinterp/corefcn \
   -I$(top_builddir)/libinterp/corefcn
 MKMEXFILELDFLAGS = \
-  -L$(top_builddir)/libinterp/.libs \
-  -L$(top_builddir)/liboctave/.libs
+  -L$(top_builddir)/libmex/.libs
 
 MKMEXFILE = \
+  OCT_LINK_DEPS="" \
   DL_LDFLAGS="$(DL_LDFLAGS)" \
   $(top_builddir)/src/mkoctfile --mex $(MKMEXFILECPPFLAGS) $(MKMEXFILELDFLAGS)
 

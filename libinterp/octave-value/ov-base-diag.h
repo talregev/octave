@@ -43,30 +43,33 @@
 // Real matrix values.
 
 template <typename DMT, typename MT>
-class
-OCTINTERP_API
-octave_base_diag : public octave_base_value
+class OCTINTERP_TEMPLATE_API octave_base_diag : public octave_base_value
 {
 
 public:
 
+  OCTINTERP_OVERRIDABLE_FUNC_API 
   octave_base_diag ()
     : octave_base_value (), m_matrix (), m_dense_cache () { }
 
+  OCTINTERP_OVERRIDABLE_FUNC_API 
   octave_base_diag (const DMT& m)
-    : octave_base_value (), m_matrix (m), m_dense_cache ()
-  { }
+    : octave_base_value (), m_matrix (m), m_dense_cache () { }
 
+  OCTINTERP_OVERRIDABLE_FUNC_API 
   octave_base_diag (const octave_base_diag& m)
     : octave_base_value (), m_matrix (m.m_matrix), m_dense_cache () { }
 
-  ~octave_base_diag () = default;
+  OCTINTERP_OVERRIDABLE_FUNC_API  ~octave_base_diag () = default;
 
-  std::size_t byte_size () const { return m_matrix.byte_size (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API std::size_t byte_size () const
+  { return m_matrix.byte_size (); }
 
-  octave_value squeeze () const { return m_matrix; }
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value squeeze () const
+  { return m_matrix; }
 
-  octave_value full_value () const { return to_dense (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value full_value () const
+  { return to_dense (); }
 
   // We don't need to override all three forms of subsref.  The using
   // declaration will avoid warnings about partially-overloaded virtual
@@ -76,8 +79,9 @@ public:
   OCTINTERP_API octave_value
   subsref (const std::string& type, const std::list<octave_value_list>& idx);
 
-  octave_value_list subsref (const std::string& type,
-                             const std::list<octave_value_list>& idx, int)
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value_list
+  subsref (const std::string& type, const std::list<octave_value_list>& idx,
+           int)
   { return subsref (type, idx); }
 
   OCTINTERP_API octave_value
@@ -87,14 +91,17 @@ public:
   subsasgn (const std::string& type, const std::list<octave_value_list>& idx,
             const octave_value& rhs);
 
-  dim_vector dims () const { return m_matrix.dims (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API dim_vector dims () const
+  { return m_matrix.dims (); }
 
-  octave_idx_type nnz () const { return diag ().nnz (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_idx_type nnz () const
+  { return diag ().nnz (); }
 
-  octave_value reshape (const dim_vector& new_dims) const
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value reshape (const dim_vector& new_dims) const
   { return to_dense ().reshape (new_dims); }
 
-  octave_value permute (const Array<int>& vec, bool inv = false) const
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value
+  permute (const Array<int>& vec, bool inv = false) const
   {
     if (vec.numel () == 2
         && ((vec.xelem (0) == 1 && vec.xelem (1) == 0)
@@ -107,11 +114,15 @@ public:
   OCTINTERP_API octave_value
   resize (const dim_vector& dv, bool fill = false) const;
 
-  octave_value all (int dim = 0) const { return MT (m_matrix).all (dim); }
-  octave_value any (int dim = 0) const { return MT (m_matrix).any (dim); }
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value all (int dim = 0) const
+  { return MT (m_matrix).all (dim); }
 
-  MatrixType matrix_type () const { return MatrixType::Diagonal; }
-  MatrixType matrix_type (const MatrixType&) const
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value any (int dim = 0) const
+  { return MT (m_matrix).any (dim); }
+
+  OCTINTERP_OVERRIDABLE_FUNC_API MatrixType matrix_type () const
+  { return MatrixType::Diagonal; }
+  OCTINTERP_OVERRIDABLE_FUNC_API MatrixType matrix_type (const MatrixType&) const
   { return matrix_type (); }
 
   // We don't need to override both forms of the diag method.  The using
@@ -121,38 +132,45 @@ public:
 
   OCTINTERP_API octave_value diag (octave_idx_type k = 0) const;
 
-  octave_value sort (octave_idx_type dim = 0, sortmode mode = ASCENDING) const
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value
+  sort (octave_idx_type dim = 0, sortmode mode = ASCENDING) const
   { return to_dense ().sort (dim, mode); }
-  octave_value sort (Array<octave_idx_type>& sidx, octave_idx_type dim = 0,
-                     sortmode mode = ASCENDING) const
+  OCTINTERP_OVERRIDABLE_FUNC_API octave_value
+  sort (Array<octave_idx_type>& sidx, octave_idx_type dim = 0,
+        sortmode mode = ASCENDING) const
   { return to_dense ().sort (sidx, dim, mode); }
 
-  sortmode issorted (sortmode mode = UNSORTED) const
+  OCTINTERP_OVERRIDABLE_FUNC_API sortmode
+  issorted (sortmode mode = UNSORTED) const
   { return to_dense ().issorted (mode); }
 
-  Array<octave_idx_type> sort_rows_idx (sortmode mode = ASCENDING) const
+  OCTINTERP_OVERRIDABLE_FUNC_API Array<octave_idx_type>
+  sort_rows_idx (sortmode mode = ASCENDING) const
   { return to_dense ().sort_rows_idx (mode); }
 
-  sortmode is_sorted_rows (sortmode mode = UNSORTED) const
+  OCTINTERP_OVERRIDABLE_FUNC_API sortmode
+ is_sorted_rows (sortmode mode = UNSORTED) const
   { return to_dense ().is_sorted_rows (mode); }
 
-  bool is_matrix_type () const { return true; }
+  OCTINTERP_OVERRIDABLE_FUNC_API bool is_matrix_type () const
+  { return true; }
 
-  bool isnumeric () const { return true; }
+  OCTINTERP_OVERRIDABLE_FUNC_API bool isnumeric () const { return true; }
 
-  bool is_defined () const { return true; }
+  OCTINTERP_OVERRIDABLE_FUNC_API bool is_defined () const { return true; }
 
-  bool is_constant () const { return true; }
+  OCTINTERP_OVERRIDABLE_FUNC_API bool is_constant () const { return true; }
 
   OCTINTERP_API bool is_true () const;
 
-  bool is_diag_matrix () const { return true; }
+  OCTINTERP_OVERRIDABLE_FUNC_API bool is_diag_matrix () const { return true; }
 
   OCTINTERP_API double double_value (bool = false) const;
 
   OCTINTERP_API float float_value (bool = false) const;
 
-  double scalar_value (bool frc_str_conv = false) const
+  OCTINTERP_OVERRIDABLE_FUNC_API double
+  scalar_value (bool frc_str_conv = false) const
   { return double_value (frc_str_conv); }
 
   OCTINTERP_API octave::idx_vector
@@ -189,29 +207,29 @@ public:
   OCTINTERP_API SparseComplexMatrix
   sparse_complex_matrix_value (bool = false) const;
 
-  int8NDArray
-  int8_array_value () const { return to_dense ().int8_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API int8NDArray int8_array_value () const
+  { return to_dense ().int8_array_value (); }
 
-  int16NDArray
-  int16_array_value () const { return to_dense ().int16_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API int16NDArray int16_array_value () const
+  { return to_dense ().int16_array_value (); }
 
-  int32NDArray
-  int32_array_value () const { return to_dense ().int32_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API int32NDArray int32_array_value () const
+  { return to_dense ().int32_array_value (); }
 
-  int64NDArray
-  int64_array_value () const { return to_dense ().int64_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API int64NDArray int64_array_value () const
+  { return to_dense ().int64_array_value (); }
 
-  uint8NDArray
-  uint8_array_value () const { return to_dense ().uint8_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API uint8NDArray uint8_array_value () const
+  { return to_dense ().uint8_array_value (); }
 
-  uint16NDArray
-  uint16_array_value () const { return to_dense ().uint16_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API uint16NDArray uint16_array_value () const
+  { return to_dense ().uint16_array_value (); }
 
-  uint32NDArray
-  uint32_array_value () const { return to_dense ().uint32_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API uint32NDArray uint32_array_value () const
+  { return to_dense ().uint32_array_value (); }
 
-  uint64NDArray
-  uint64_array_value () const { return to_dense ().uint64_array_value (); }
+  OCTINTERP_OVERRIDABLE_FUNC_API uint64NDArray uint64_array_value () const
+  { return to_dense ().uint64_array_value (); }
 
   OCTINTERP_API octave_value
   convert_to_str_internal (bool pad, bool force, char type) const;

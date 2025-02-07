@@ -29,10 +29,13 @@
 ## @deftypefnx {} {@var{cmap} =} colormap (@qcode{"default"})
 ## @deftypefnx {} {@var{cmap} =} colormap (@var{map_name})
 ## @deftypefnx {} {@var{cmap} =} colormap (@var{hax}, @dots{})
+## @deftypefnx {} {@var{cmap} =} colormap (@var{hfig}, @dots{})
 ## @deftypefnx {} {} colormap @var{map_name}
 ## Query or set the current colormap.
 ##
-## With no input arguments, @code{colormap} returns the current color map.
+## With no input arguments, @code{colormap} returns the current color map.  If
+## there is no current figure, a new figure will be opened and the default
+## color map will be returned.
 ##
 ## @code{colormap (@var{map})} sets the current colormap to @var{map}.  The
 ## colormap should be an @var{n} row by 3 column matrix.  The columns
@@ -40,13 +43,14 @@
 ## must be between 0 and 1 inclusive.  The new colormap is returned.
 ##
 ## @code{colormap (@qcode{"default"})} restores the default colormap (the
-## @code{viridis} map with 64 entries).  The default colormap is returned.
+## @code{viridis} map with 256 entries).  The default colormap is returned.
 ##
 ## The map may also be specified by a string, @var{map_name}, which
 ## is the name of a function that returns a colormap.
 ##
 ## If the first argument @var{hax} is an axes handle, then the colormap for
-## those axes is queried or set.
+## the specified axes is queried or set.  If the first argument @var{hfig} is a
+## figure handle, then the colormap for the specified figure is queried or set.
 ##
 ## For convenience, it is also possible to use this function with the
 ## command form, @code{colormap @var{map_name}}.
@@ -91,15 +95,32 @@
 
 function cmap = colormap (varargin)
 
-  [hax, varargin, nargin] = __plt_get_axis_arg__ ("colormap", varargin{:});
+  hax = [];
+  if (nargin > 0)
+    if (isscalar (varargin{1}) && ishghandle (varargin{1}))
+      htmp = varargin{1};
+      if (isaxes (htmp))
+        hax = htmp;
+      elseif (isfigure (htmp))
+        hax = [];
+      else
+        error ("colormap: target argument must be a figure or axes handle");
+      endif
+      ## Delete first item in list that was just processed.
+      varargin(1) = [];
+      nargin = nargin - 1;
+    endif
+  endif
 
   if (nargin > 1)
     print_usage ();
   endif
 
   if (! isempty (hax))
+    have_fig = false;
     cf = hax;
   else
+    have_fig = true;
     cf = get (0, "currentfigure");
   endif
 
@@ -108,7 +129,7 @@ function cmap = colormap (varargin)
     if (ischar (map))
       map = lower (map);
       if (strcmp (map, "default"))
-        map = viridis (64);
+        map = viridis (256);
       else
         try
           map = feval (map);
@@ -131,6 +152,11 @@ function cmap = colormap (varargin)
       endif
       ## Set the new color map
       set (cf, "colormap", map);
+      if (have_fig)
+        ## Matlab Compatibility: Also clear any axes colormaps as of R2018A.
+        hax = findobj (cf, '-depth', 1, 'type', 'axes');
+        set (hax, 'colormap', []);
+      endif
     endif
   endif
 
@@ -169,19 +195,40 @@ endfunction
 %!   cmap = (get (gcf, "colormap"));
 %!   assert (cmap, cmaptst);
 %!   colormap ("default");
-%!   assert (colormap (), viridis (64));
+%!   assert (colormap (), viridis (256));
 %!   colormap ("ocean");
-%!   assert (colormap, ocean (64));
+%!   assert (colormap, ocean (256));
+%! unwind_protect_cleanup
+%!   close (hf);
+%! end_unwind_protect
+
+%!test <*65674>
+%! hf = figure ("visible", "off");
+%! unwind_protect
+%!   hax1 = subplot (2, 1, 1);
+%!   hax2 = subplot (2, 1, 2);
+%!   cmaptst = [0 1 0; 1 0 1; 1 1 1];
+%!   colormap (cmaptst);
+%!   colormap (hax1, jet (16));
+%!   colormap (hax2, pink (16));
+%!   assert (map = colormap (hf), cmaptst);
+%!   assert (map = colormap (hax1), jet (16));
+%!   assert (map = colormap (hax2), pink (16));
+%!   colormap (gray (4));
+%!   assert (map = colormap (hf), gray (4));
+%!   assert (map = colormap (hax1), gray (4));
+%!   assert (map = colormap (hax2), gray (4));
 %! unwind_protect_cleanup
 %!   close (hf);
 %! end_unwind_protect
 
 ## Test input validation
-%!error colormap (1,2,3)
+%!error <target argument must be a figure or axes handle> colormap (0)
+%!error <Invalid call> colormap (1,2,3)
+%!error <failed to set MAP .invalid_map_name.> colormap ("invalid_map_name")
 %!error <MAP must be a real-valued N x 3> colormap ({1,2,3})
 %!error <MAP must be a real-valued N x 3> colormap ([1 i 1])
 %!error <MAP must be a real-valued N x 3> colormap (ones (3,3,3))
 %!error <MAP must be a real-valued N x 3> colormap ([1 0 1 0])
 %!error <all MAP values must be in the range> colormap ([-1 0 0])
 %!error <all MAP values must be in the range> colormap ([2 0 0])
-%!error <failed to set MAP .invalid_map_name.> colormap ("invalid_map_name")

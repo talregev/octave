@@ -116,7 +116,7 @@ binmap (const T& x, const Array<R>& ya, F fcn)
   const R *y = ya.data ();
 
   Array<U> result (ya.dims ());
-  U *p = result.fortran_vec ();
+  U *p = result.rwdata ();
 
   octave_idx_type i;
   for (i = 0; i < len - 3; i += 4)
@@ -147,7 +147,7 @@ binmap (const Array<T>& xa, const R& y, F fcn)
   const R *x = xa.data ();
 
   Array<U> result (xa.dims ());
-  U *p = result.fortran_vec ();
+  U *p = result.rwdata ();
 
   octave_idx_type i;
   for (i = 0; i < len - 3; i += 4)
@@ -173,8 +173,8 @@ template <typename U, typename T, typename R, typename F>
 Array<U>
 binmap (const Array<T>& xa, const Array<R>& ya, F fcn, const char *name)
 {
-  dim_vector xad = xa.dims ();
-  dim_vector yad = ya.dims ();
+  const dim_vector& xad = xa.dims ();
+  const dim_vector& yad = ya.dims ();
   if (xa.numel () == 1)
     return binmap<U, T, R, F> (xa(0), ya, fcn);
   else if (ya.numel () == 1)
@@ -197,7 +197,7 @@ binmap (const Array<T>& xa, const Array<R>& ya, F fcn, const char *name)
   const T *y = ya.data ();
 
   Array<U> result (xa.dims ());
-  U *p = result.fortran_vec ();
+  U *p = result.rwdata ();
 
   octave_idx_type i;
   for (i = 0; i < len - 3; i += 4)
@@ -236,8 +236,6 @@ binmap (const T& x, const Sparse<R>& ys, F fcn)
       for (octave_idx_type i = 0; i < nz; i++)
         {
           octave_quit ();
-          // FIXME: Could keep track of whether fcn call results in a 0.
-          //        If no zeroes are created could skip maybe_compress()
           retval.xdata (i) = fcn (x, ys.data (i));
         }
 
@@ -267,8 +265,6 @@ binmap (const Sparse<T>& xs, const R& y, F fcn)
       for (octave_idx_type i = 0; i < nz; i++)
         {
           octave_quit ();
-          // FIXME: Could keep track of whether fcn call results in a 0.
-          //        If no zeroes are created could skip maybe_compress()
           retval.xdata (i) = fcn (xs.data (i), y);
         }
 

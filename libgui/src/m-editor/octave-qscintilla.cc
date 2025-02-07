@@ -229,16 +229,18 @@ octave_qscintilla::octave_qscintilla (QWidget *p)
   markerDefine (QsciScintilla::Minus, marker::selection);
 
   // init state of undo/redo action for this tab
-  emit status_update (isUndoAvailable (), isRedoAvailable ());
+  Q_EMIT status_update (isUndoAvailable (), isRedoAvailable ());
 }
 
-void octave_qscintilla::setCursorPosition (int line, int col)
+void
+octave_qscintilla::setCursorPosition (int line, int col)
 {
   QsciScintilla::setCursorPosition (line, col);
-  emit update_rowcol_indicator_signal (line, col);
+  Q_EMIT update_rowcol_indicator_signal (line, col);
 }
 
-void octave_qscintilla::set_selection_marker_color (const QColor& c)
+void
+octave_qscintilla::set_selection_marker_color (const QColor& c)
 {
   QColor ic = c;
   ic.setAlphaF (0.45);
@@ -250,7 +252,8 @@ void octave_qscintilla::set_selection_marker_color (const QColor& c)
 }
 
 // context menu requested
-void octave_qscintilla::contextMenuEvent (QContextMenuEvent *e)
+void
+octave_qscintilla::contextMenuEvent (QContextMenuEvent *e)
 {
 #if defined (HAVE_QSCI_VERSION_2_6_0)
   QPoint global_pos, local_pos;                         // the menu's position
@@ -283,7 +286,7 @@ void octave_qscintilla::contextMenuEvent (QContextMenuEvent *e)
 #  endif
     {
       // fill context menu with editor's standard actions
-      emit create_context_menu_signal (context_menu);
+      Q_EMIT create_context_menu_signal (context_menu);
 
       // additional custom entries of the context menu
       context_menu->addSeparator ();   // separator before custom entries
@@ -333,14 +336,15 @@ void octave_qscintilla::contextMenuEvent (QContextMenuEvent *e)
 }
 
 // common function with flag for documentation
-void octave_qscintilla::contextmenu_help_doc (bool documentation)
+void
+octave_qscintilla::contextmenu_help_doc (bool documentation)
 {
   if (documentation)
     {
       std::string name = m_word_at_cursor.toStdString ();
 
-      emit interpreter_event
-        ([=] (interpreter& interp)
+      Q_EMIT interpreter_event
+        ([name] (interpreter& interp)
          {
            // INTERPRETER THREAD
 
@@ -348,31 +352,34 @@ void octave_qscintilla::contextmenu_help_doc (bool documentation)
          });
     }
   else
-    emit execute_command_in_terminal_signal ("help " + m_word_at_cursor);
+    Q_EMIT execute_command_in_terminal_signal ("help " + m_word_at_cursor);
 }
 
 // call edit the function related to the current word
-void octave_qscintilla::context_edit ()
+void
+octave_qscintilla::context_edit ()
 {
   if (get_actual_word ())
     contextmenu_edit (true);
 }
 
 // call edit the function related to the current word
-void octave_qscintilla::context_run ()
+void
+octave_qscintilla::context_run ()
 {
   if (hasSelectedText ())
     {
       contextmenu_run (true);
 
-      emit interpreter_event
+      Q_EMIT interpreter_event
         ([] (interpreter&)
           { command_editor::erase_empty_line (false); });
     }
 }
 
-void octave_qscintilla::get_global_textcursor_pos (QPoint *global_pos,
-                                                   QPoint *local_pos)
+void
+octave_qscintilla::get_global_textcursor_pos (QPoint *global_pos,
+    QPoint *local_pos)
 {
   long position = SendScintilla (SCI_GETCURRENTPOS);
   long point_x  = SendScintilla (SCI_POINTXFROMPOSITION, 0, position);
@@ -382,7 +389,8 @@ void octave_qscintilla::get_global_textcursor_pos (QPoint *global_pos,
 }
 
 // determine the actual word and whether we are in an octave or matlab script
-bool octave_qscintilla::get_actual_word ()
+bool
+octave_qscintilla::get_actual_word ()
 {
   QPoint global_pos, local_pos;
   get_global_textcursor_pos (&global_pos, &local_pos);
@@ -393,7 +401,8 @@ bool octave_qscintilla::get_actual_word ()
 }
 
 // helper function for clearing all indicators of a specific style
-void octave_qscintilla::clear_selection_markers ()
+void
+octave_qscintilla::clear_selection_markers ()
 {
   int end_pos = text ().length ();
   int end_line, end_col;
@@ -403,7 +412,8 @@ void octave_qscintilla::clear_selection_markers ()
   markerDeleteAll (marker::selection);
 }
 
-QString octave_qscintilla::eol_string ()
+QString
+octave_qscintilla::eol_string ()
 {
   switch (eolMode ())
     {
@@ -421,7 +431,8 @@ QString octave_qscintilla::eol_string ()
 
 // Function returning the true cursor position where the tab length
 // is taken into account.
-void octave_qscintilla::get_current_position (int *pos, int *line, int *col)
+void
+octave_qscintilla::get_current_position (int *pos, int *line, int *col)
 {
   *pos = SendScintilla (QsciScintillaBase::SCI_GETCURRENTPOS);
   *line = SendScintilla (QsciScintillaBase::SCI_LINEFROMPOSITION, *pos);
@@ -429,7 +440,8 @@ void octave_qscintilla::get_current_position (int *pos, int *line, int *col)
 }
 
 // Function returning the comment string of the current lexer
-QStringList octave_qscintilla::comment_string (bool comment)
+QStringList
+octave_qscintilla::comment_string (bool comment)
 {
   int lexer = SendScintilla (SCI_GETLEXER);
 
@@ -494,7 +506,8 @@ QStringList octave_qscintilla::comment_string (bool comment)
 }
 
 // provide the style at a specific position
-int octave_qscintilla::get_style (int pos)
+int
+octave_qscintilla::get_style (int pos)
 {
   int position;
   if (pos < 0)
@@ -507,7 +520,8 @@ int octave_qscintilla::get_style (int pos)
 }
 
 // Is a specific cursor position in a line or block comment?
-int octave_qscintilla::is_style_comment (int pos)
+int
+octave_qscintilla::is_style_comment (int pos)
 {
   int lexer = SendScintilla (QsciScintillaBase::SCI_GETLEXER);
   int style = get_style (pos);
@@ -549,8 +563,9 @@ int octave_qscintilla::is_style_comment (int pos)
 }
 
 // Do smart indentation after if, for, ...
-void octave_qscintilla::smart_indent (bool do_smart_indent, int do_auto_close,
-                                      int line, int ind_char_width)
+void
+octave_qscintilla::smart_indent (bool do_smart_indent, int do_auto_close,
+                                 int line, int ind_char_width)
 {
   QString prevline = text (line);
 
@@ -665,8 +680,9 @@ void octave_qscintilla::smart_indent (bool do_smart_indent, int do_auto_close,
 }
 
 // Do smart indentation of current selection or line.
-void octave_qscintilla::smart_indent_line_or_selected_text (int lineFrom,
-                                                            int lineTo)
+void
+octave_qscintilla::smart_indent_line_or_selected_text (int lineFrom,
+    int lineTo)
 {
   QRegularExpression blank_line_regexp {"^[\t ]*$"};
 
@@ -787,7 +803,8 @@ void octave_qscintilla::smart_indent_line_or_selected_text (int lineFrom,
     }
 }
 
-void octave_qscintilla::set_word_selection (const QString& word)
+void
+octave_qscintilla::set_word_selection (const QString& word)
 {
   m_selection = word;
 
@@ -809,7 +826,8 @@ void octave_qscintilla::set_word_selection (const QString& word)
     }
 }
 
-void octave_qscintilla::show_selection_markers (int l1, int c1, int l2, int c2)
+void
+octave_qscintilla::show_selection_markers (int l1, int c1, int l2, int c2)
 {
   fillIndicatorRange (l1, c1, l2, c2, m_indicator_id);
 
@@ -817,28 +835,33 @@ void octave_qscintilla::show_selection_markers (int l1, int c1, int l2, int c2)
     markerAdd (l1, marker::selection);
 }
 
-void octave_qscintilla::contextmenu_help (bool)
+void
+octave_qscintilla::contextmenu_help (bool)
 {
   contextmenu_help_doc (false);
 }
 
-void octave_qscintilla::contextmenu_doc (bool)
+void
+octave_qscintilla::contextmenu_doc (bool)
 {
   contextmenu_help_doc (true);
 }
 
-void octave_qscintilla::context_help_doc (bool documentation)
+void
+octave_qscintilla::context_help_doc (bool documentation)
 {
   if (get_actual_word ())
     contextmenu_help_doc (documentation);
 }
 
-void octave_qscintilla::contextmenu_edit (bool)
+void
+octave_qscintilla::contextmenu_edit (bool)
 {
-  emit context_menu_edit_signal (m_word_at_cursor);
+  Q_EMIT context_menu_edit_signal (m_word_at_cursor);
 }
 
-void octave_qscintilla::contextmenu_run_temp_error ()
+void
+octave_qscintilla::contextmenu_run_temp_error ()
 {
   QMessageBox::critical (this, tr ("Octave Editor"),
                          tr ("Creating temporary files failed.\n"
@@ -847,7 +870,8 @@ void octave_qscintilla::contextmenu_run_temp_error ()
                              "\"Run Selection\" requires temporary files.").arg (QDir::tempPath ()));
 }
 
-void octave_qscintilla::contextmenu_run (bool)
+void
+octave_qscintilla::contextmenu_run (bool)
 {
   // Take selected code and extend it by commands for echoing each
   // evaluated line and for adding the line to the history (use script)
@@ -864,25 +888,27 @@ void octave_qscintilla::contextmenu_run (bool)
   for (int i = 0; i < lines.count (); i++)
     {
       QString line = lines.at (i);
+
       if (line.trimmed ().isEmpty ())
         continue;
+
+      if (line.startsWith ("%!"))   // Handle tests and demos
+        {
+          // Do not remove "%!" if keyword (e.g., "test", "demo", etc.) is
+          // directly following.  Exception is "assert".
+          // assert might be used without leading space
+          line.replace (QRegularExpression ("^%!assert(\\s*)([^\\s]+)"),
+                        "assert\\1\\2");
+          // Remove "%! " from body of test/demo block
+          line.replace (QRegularExpression ("^%!\\s+"), "");
+        }
+
       QString line_escaped = line;
       line_escaped.replace (QString ("'"), QString ("''"));
       QString line_history = line;
 
-      // Prevent output of breakpoint in temp. file for keyboard
-      QString next_bp_quiet;
-      QString next_bp_quiet_reset;
-      if (line.contains ("keyboard"))
-        {
-          // Define commands for not showing bp location and for resetting
-          // this in case "keyboard" was within a comment
-          next_bp_quiet = "__db_next_breakpoint_quiet__;\n";
-          next_bp_quiet_reset = "\n__db_next_breakpoint_quiet__(false);";
-        }
-
       // Add codeline
-      code += next_bp_quiet + line + next_bp_quiet_reset + "\n";
+      code += line + "\n";
       hist += line_history + "\n";
     }
 
@@ -900,6 +926,10 @@ void octave_qscintilla::contextmenu_run (bool)
       return;
     }
 
+  // Store file in settings in order to avoid opening it in editor
+  gui_settings settings;
+  settings.setValue (ed_run_selection_tmp_file.settings_key (), tmp_file->fileName ());
+
   // Create tmp file required for adding command to history
   QPointer<QTemporaryFile> tmp_hist = create_tmp_file ("", hist);
 
@@ -913,8 +943,8 @@ void octave_qscintilla::contextmenu_run (bool)
     }
 
   // Add commands to the history
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([tmp_hist] (interpreter& interp)
       {
         // INTERPRETER THREAD
 
@@ -927,12 +957,6 @@ void octave_qscintilla::contextmenu_run (bool)
         Fhistory (interp, ovl (opt, path));
       });
 
-  // Disable opening a file at a breakpoint in case keyboard () is used
-  gui_settings settings;
-
-  bool show_dbg_file = settings.bool_value (ed_show_dbg_file);
-  settings.setValue (ed_show_dbg_file.settings_key (), false);
-
   // The interpreter_event callback function below emits a signal.
   // Because we don't control when that happens, use a guarded pointer
   // so that the callback can abort if this object is no longer valid.
@@ -940,8 +964,8 @@ void octave_qscintilla::contextmenu_run (bool)
   QPointer<octave_qscintilla> this_oq (this);
 
   // Let the interpreter execute the tmp file
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this, this_oq, tmp_file, tmp_hist] (interpreter& interp)
      {
        // INTERPRETER THREAD
 
@@ -988,7 +1012,7 @@ void octave_qscintilla::contextmenu_run (bool)
              max_stack_size = 2;
            if (stack.size () <= max_stack_size)
              {
-               QRegularExpression rx {"source: error sourcing file [^\n]*$"};
+               QRegularExpression rx {"source: error sourcing file [^\\n\\:]*"};
                if (new_msg.contains (rx))
                  {
                    // Selected code has syntax errors
@@ -1010,7 +1034,7 @@ void octave_qscintilla::contextmenu_run (bool)
                    for (int i = 0; i < rx_list.length (); i++)
                      {
                        rx = QRegularExpression {rx_list.at (i)};
-                       QRegularExpressionMatch match = rx.match(new_msg);
+                       QRegularExpressionMatch match = rx.match (new_msg);
                        if (match.hasMatch ())
                          {
                            err_line = match.captured (1).toInt ();
@@ -1028,9 +1052,9 @@ void octave_qscintilla::contextmenu_run (bool)
              stack.pop_back ();
 
            // Clean up before throwing the modified error.
-           emit ctx_menu_run_finished_signal (show_dbg_file, err_line,
-                                              tmp_file, tmp_hist,
-                                              dbg, auto_repeat);
+           Q_EMIT ctx_menu_run_finished_signal (err_line,
+                                                tmp_file, tmp_hist,
+                                                dbg, auto_repeat);
 
            // New exception with updated message and stack
            execution_exception nee (ee.err_type (), ee.identifier (),
@@ -1042,9 +1066,9 @@ void octave_qscintilla::contextmenu_run (bool)
 
        // Clean up
 
-       emit ctx_menu_run_finished_signal (show_dbg_file, err_line,
-                                          tmp_file, tmp_hist,
-                                          dbg, auto_repeat);
+       Q_EMIT ctx_menu_run_finished_signal (err_line,
+                                            tmp_file, tmp_hist,
+                                            dbg, auto_repeat);
 
        command_editor::erase_empty_line (true);
        command_editor::replace_line ("");
@@ -1058,28 +1082,28 @@ void octave_qscintilla::contextmenu_run (bool)
 }
 
 void octave_qscintilla::ctx_menu_run_finished
-  (bool show_dbg_file, int, QPointer<QTemporaryFile> tmp_file,
+  (int, QPointer<QTemporaryFile> tmp_file,
    QPointer<QTemporaryFile> tmp_hist, bool dbg, bool auto_repeat)
 {
-  emit focus_console_after_command_signal ();
+  Q_EMIT focus_console_after_command_signal ();
 
   // TODO: Use line nr. (int argument) of possible error for removing
   //       lines from history that were never executed. For this,
   //       possible lines from commands at a debug prompt must be
   //       taken into consideration.
 
-  gui_settings settings;
-
-  settings.setValue (ed_show_dbg_file.settings_key (), show_dbg_file);
-
   if (tmp_file && tmp_file->exists ())
-    tmp_file->remove ();
+    {
+      tmp_file->remove ();
+      gui_settings settings;
+      settings.setValue (ed_run_selection_tmp_file.settings_key (), QString ());
+    }
 
   if (tmp_hist && tmp_hist->exists ())
     tmp_hist->remove ();
 
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([dbg, auto_repeat] (interpreter& interp)
      {
        // INTERPRETER THREAD
        if (dbg)
@@ -1090,7 +1114,8 @@ void octave_qscintilla::ctx_menu_run_finished
 // wrappers for dbstop related context menu items
 
 // FIXME: Why can't the data be sent as the argument to the function???
-void octave_qscintilla::contextmenu_break_condition (bool)
+void
+octave_qscintilla::contextmenu_break_condition (bool)
 {
 #if defined (HAVE_QSCI_VERSION_2_6_0)
   QAction *action = qobject_cast<QAction *>(sender ());
@@ -1100,25 +1125,28 @@ void octave_qscintilla::contextmenu_break_condition (bool)
   int margins = marginWidth (1) + marginWidth (2) + marginWidth (3);
   local_pos = QPoint (margins + 1, local_pos.y ());
 
-  emit context_menu_break_condition_signal (lineAt (local_pos));
+  Q_EMIT context_menu_break_condition_signal (lineAt (local_pos));
 #endif
 }
 
-void octave_qscintilla::contextmenu_break_once (const QPoint& local_pos)
+void
+octave_qscintilla::contextmenu_break_once (const QPoint& local_pos)
 {
 #if defined (HAVE_QSCI_VERSION_2_6_0)
-  emit context_menu_break_once (lineAt (local_pos));
+  Q_EMIT context_menu_break_once (lineAt (local_pos));
 #else
   octave_unused_parameter (local_pos);
 #endif
 }
 
-void octave_qscintilla::text_changed ()
+void
+octave_qscintilla::text_changed ()
 {
-  emit status_update (isUndoAvailable (), isRedoAvailable ());
+  Q_EMIT status_update (isUndoAvailable (), isRedoAvailable ());
 }
 
-void octave_qscintilla::cursor_position_changed (int line, int col)
+void
+octave_qscintilla::cursor_position_changed (int line, int col)
 {
   // Clear the selection if we move away from it.  We have to check the
   // position, because we allow entering text at the point of the
@@ -1131,14 +1159,16 @@ void octave_qscintilla::cursor_position_changed (int line, int col)
 }
 
 // when edit area gets focus update information on undo/redo actions
-void octave_qscintilla::focusInEvent (QFocusEvent *focusEvent)
+void
+octave_qscintilla::focusInEvent (QFocusEvent *focusEvent)
 {
-  emit status_update (isUndoAvailable (), isRedoAvailable ());
+  Q_EMIT status_update (isUndoAvailable (), isRedoAvailable ());
 
   QsciScintilla::focusInEvent (focusEvent);
 }
 
-void octave_qscintilla::show_replace_action_tooltip ()
+void
+octave_qscintilla::show_replace_action_tooltip ()
 {
   int pos;
   get_current_position (&pos, &m_selection_line, &m_selection_col);
@@ -1167,8 +1197,9 @@ void octave_qscintilla::show_replace_action_tooltip ()
   QToolTip::showText (global_pos, msg);
 }
 
-void octave_qscintilla::replace_all (const QString& o_str, const QString& n_str,
-                                     bool re, bool cs, bool wo)
+void
+octave_qscintilla::replace_all (const QString& o_str, const QString& n_str,
+                                bool re, bool cs, bool wo)
 {
   // get the resulting cursor position
   int pos, line, col, nline, ncol;
@@ -1208,25 +1239,27 @@ void octave_qscintilla::replace_all (const QString& o_str, const QString& n_str,
   setCursorPosition (line, col);
 }
 
-bool octave_qscintilla::event (QEvent *e)
+bool
+octave_qscintilla::event (QEvent *e)
 {
-  if (m_debug_mode && e->type() == QEvent::ToolTip)
+  if (m_debug_mode && e->type () == QEvent::ToolTip)
     {
       // FIXME: can we handle display of a tooltip using an
       // interpreter event or a custom signal/slot connection?
 
       QHelpEvent *help_e = static_cast<QHelpEvent *> (e);
-      QString symbol = wordAtPoint (help_e->pos());
+      QString symbol = wordAtPoint (help_e->pos ());
 
-      emit show_symbol_tooltip_signal (help_e->globalPos (), symbol);
+      Q_EMIT show_symbol_tooltip_signal (help_e->globalPos (), symbol);
 
       return true;
     }
 
-  return QsciScintilla::event(e);
+  return QsciScintilla::event (e);
 }
 
-void octave_qscintilla::keyPressEvent (QKeyEvent *key_event)
+void
+octave_qscintilla::keyPressEvent (QKeyEvent *key_event)
 {
   if (m_selection.isEmpty ())
     QsciScintilla::keyPressEvent (key_event);
@@ -1283,8 +1316,9 @@ void octave_qscintilla::keyPressEvent (QKeyEvent *key_event)
     }
 }
 
-void octave_qscintilla::auto_close (int auto_endif, int linenr,
-                                    const QString& line, QString& first_word)
+void
+octave_qscintilla::auto_close (int auto_endif, int linenr,
+                               const QString& line, QString& first_word)
 {
   // Insert an "end" for an "if" etc., if needed.
   // (Use of "while" allows "return" to skip the rest.
@@ -1367,7 +1401,8 @@ void octave_qscintilla::auto_close (int auto_endif, int linenr,
   setIndentation (linenr + 2, indentation (linenr));
 }
 
-void octave_qscintilla::dragEnterEvent (QDragEnterEvent *e)
+void
+octave_qscintilla::dragEnterEvent (QDragEnterEvent *e)
 {
   // if is not dragging a url, pass to qscintilla to handle,
   // otherwise ignore it so that it will be handled by
@@ -1378,16 +1413,18 @@ void octave_qscintilla::dragEnterEvent (QDragEnterEvent *e)
     }
   else
     {
-      e->ignore();
+      e->ignore ();
     }
 }
 
-void octave_qscintilla::handle_enter_debug_mode ()
+void
+octave_qscintilla::handle_enter_debug_mode ()
 {
   m_debug_mode = true;
 }
 
-void octave_qscintilla::handle_exit_debug_mode ()
+void
+octave_qscintilla::handle_exit_debug_mode ()
 {
   m_debug_mode = false;
 }

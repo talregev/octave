@@ -120,7 +120,7 @@ include %reldir%/template-inst/module.mk
 include %reldir%/corefcn/module.mk
 include %reldir%/dldfcn/module.mk
 
-DLD_LIBOCTINTERP_LIBADD = $(OCT_LINK_DEPS)
+DLD_LIBOCTINTERP_LIBADD = $(OCT_LTLINK_DEPS)
 LIBINTERP_DLDFCN_LIBADD =
 
 %canon_reldir%_liboctinterp_la_SOURCES = \
@@ -156,9 +156,9 @@ endif
 ## Increment the following version numbers as needed and according
 ## to the rules in the etc/HACKING.md file:
 
-%canon_reldir%_liboctinterp_current = 13
+%canon_reldir%_liboctinterp_current = 12
 %canon_reldir%_liboctinterp_revision = 0
-%canon_reldir%_liboctinterp_age = 1
+%canon_reldir%_liboctinterp_age = 0
 
 %canon_reldir%_liboctinterp_version_info = $(%canon_reldir%_liboctinterp_current):$(%canon_reldir%_liboctinterp_revision):$(%canon_reldir%_liboctinterp_age)
 

@@ -208,6 +208,16 @@ ed_tabs_max_width ("editor/tabs_max_width", QVariant (0));
 
 // File handling
 
+#if defined (HAVE_QSCINTILLA)
+#if defined (Q_OS_WIN32)
+const int os_eol_mode = QsciScintilla::EolWindows;
+#else
+const int os_eol_mode = QsciScintilla::EolUnix;
+#endif
+#else
+const int os_eol_mode = 2;
+#endif
+
 gui_pref
 ed_force_newline ("editor/force_newline", QVariant (true));
 
@@ -232,6 +242,9 @@ ed_hiding_closes_files ("editor/hiding_closes_files", QVariant (false));
 gui_pref
 ed_always_reload_changed_files ("editor/always_reload_changed_files",
                                 QVariant (false));
+
+gui_pref
+ed_run_selection_tmp_file ("editor/run_selection_tmp_file", QVariant (QString ()));
 
 gui_pref
 ed_mru_file_list ("editor/mru_file_list", QVariant ());

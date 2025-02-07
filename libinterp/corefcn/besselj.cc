@@ -153,8 +153,8 @@ do_bessel (enum bessel_type type, const char *fcn,
         }
       else
         {
-          dim_vector dv0 = args(0).dims ();
-          dim_vector dv1 = args(1).dims ();
+          const dim_vector& dv0 = args(0).dims ();
+          const dim_vector& dv1 = args(1).dims ();
 
           bool args0_is_row_vector = (dv0(1) == dv0.numel ());
           bool args1_is_col_vector = (dv1(0) == dv1.numel ());
@@ -244,8 +244,8 @@ do_bessel (enum bessel_type type, const char *fcn,
         }
       else
         {
-          dim_vector dv0 = args(0).dims ();
-          dim_vector dv1 = args(1).dims ();
+          const dim_vector& dv0 = args(0).dims ();
+          const dim_vector& dv1 = args(1).dims ();
 
           bool args0_is_row_vector = (dv0(1) == dv0.numel ());
           bool args1_is_col_vector = (dv1(0) == dv1.numel ());
@@ -598,7 +598,7 @@ Error---no computation, algorithm termination condition not met, return
     }
   else
     {
-      octave_idx_type kind = args(1).xint_value ("besselh: invalid value of K");
+      octave_idx_type kind = args(1).strict_int_value ("besselh: invalid value of K");
 
       octave_value_list tmp_args;
 
@@ -687,13 +687,13 @@ return @code{NaN}.
   int kind = 0;
   if (nargin > 1)
     {
-      kind = args(0).xint_value ("airy: K must be an integer value");
+      kind = args(0).strict_int_value ("airy: K must be an integer value");
 
       if (kind < 0 || kind > 3)
         error ("airy: K must be 0, 1, 2, or 3");
     }
 
-  bool scale = (nargin == 3) && args(2).xbool_value ("airy: scale option must be a logical value");
+  bool scale = (nargin == 3) && args(2).strict_bool_value ("airy: scale option must be a logical value");
 
   int idx = (nargin == 1 ? 0 : 1);
 

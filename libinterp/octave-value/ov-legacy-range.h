@@ -57,8 +57,7 @@ class octave_value_list;
 // of this type used by the interpreter.  The action of maybe_mutate is
 // performed by octave_legacy_range::try_narrowing_conversion.
 
-class
-octave_legacy_range : public octave_base_value
+class octave_legacy_range : public octave_base_value
 {
 public:
 
@@ -105,7 +104,7 @@ private:
 
   std::unique_ptr<Range> m_range;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

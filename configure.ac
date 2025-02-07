@@ -27,7 +27,7 @@ dnl
 
 ### Initialize Autoconf
 AC_PREREQ([2.65])
-AC_INIT([GNU Octave], [9.4.1], [https://octave.org/bugs.html], [octave],
+AC_INIT([GNU Octave], [10.0.0], [https://octave.org/bugs.html], [octave],
         [https://www.gnu.org/software/octave/])
 
 ### Declare version numbers
@@ -39,9 +39,9 @@ dnl AC_INIT requires it to be static, not computed from shell variables.
 ## explains how to update these numbers for release and development
 ## versions.
 
-OCTAVE_MAJOR_VERSION=9
-OCTAVE_MINOR_VERSION=4
-OCTAVE_PATCH_VERSION=1
+OCTAVE_MAJOR_VERSION=10
+OCTAVE_MINOR_VERSION=0
+OCTAVE_PATCH_VERSION=0
 
 dnl PACKAGE_VERSION is set by the AC_INIT VERSION argument.
 OCTAVE_VERSION="$PACKAGE_VERSION"
@@ -210,6 +210,7 @@ PKG_PROG_PKG_CONFIG
 PKG_INSTALLDIR
 AC_SUBST([liboctave_pkgconfigdir], [$pkgconfigdir])
 AC_SUBST([libinterp_pkgconfigdir], [$pkgconfigdir])
+AC_SUBST([libmex_pkgconfigdir], [$pkgconfigdir])
 
 ## Programs used in Makefiles.
 AC_PROG_AWK
@@ -313,10 +314,14 @@ ac_cv_prog_cxx_cxx11=""
 AC_PROG_CXX
 AC_PROG_CXXCPP
 
-ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR=no
+## Ensure that the C++ compiler fully supports C++17.
+## Preferably with GNU extensions if flags are required.
+AX_CXX_COMPILE_STDCXX(17, [], mandatory)
+
+ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR=yes
 AC_ARG_ENABLE(std-pmr-polymorphic-allocator,
-  [AS_HELP_STRING([--enable-std-pmr-polymorphic-allocator],
-    [build libraries requiring std::pmr::polymorphic_allocator if possible.  This allows more efficient transfer of arrays at the .mex file interface.  That also means that all libraries including Octave headers (e.g., .oct files) must be able to compile with that C++17 feature.])],
+  [AS_HELP_STRING([--disable-std-pmr-polymorphic-allocator],
+    [build libraries that do not require support for std::pmr::polymorphic_allocator.  This prevents more efficient transfer of arrays at the .mex file interface.])],
   [case $enableval in
      yes) ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR=yes ;;
      no) ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR=no ;;
@@ -339,34 +344,6 @@ AS_HELP_STRING([--without-qt], [don't use Qt libraries, disable Qt GUI])],
    esac])
 
 ### Determine C++ compiler capabilities.
-
-if test "$QT_VERSIONS" = 6; then
-  ## If QT_VERSIONS is set to 6, require that the C++ compiler fully
-  ## supports C++17.  Preferably with GNU extensions if flags are required.
-  ## We could use "AX_CXX_COMPILE_STDCXX(17, [], mandatory)" in this case.
-  ## But prefer to emit a more helpful error message.
-  AX_CXX_COMPILE_STDCXX(17, [], [])
-  if test "$HAVE_CXX17" = 0; then
-    ## The user explicitly requested Qt6.  But the C++ compiler lacks
-    ## support for C++17.
-    AC_MSG_ERROR([Qt6 requires a compiler that supports C++17.  Configure with "--with-qt=5" or "--without-qt", or use a compiler that supports C++17.])
-  fi
-elif test -z "${QT_VERSIONS+x}" || test $ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR = yes; then
-  ## If QT_VERSIONS is not explicitly set, check if the C++ compiler fully
-  ## supports C++17 (but don't require it).
-  ## The defaults for the Qt version will depend on the result of this check.
-  AX_CXX_COMPILE_STDCXX(17, [], [])
-else
-  ## Set HAVE_CXX17 to 0 because we don't require it (even if the used
-  ## C++ compiler might technically support C++17).
-  HAVE_CXX17=0
-fi
-
-if test "$HAVE_CXX17" = 0; then
-  ## Ensure that the C++ compiler fully supports C++11.
-  ## Preferably with GNU extensions if flags are required.
-  AX_CXX_COMPILE_STDCXX(11, [], mandatory)
-fi
 
 if test $ENABLE_STD_PMR_POLYMORPHIC_ALLOCATOR = yes; then
   OCTAVE_CHECK_STD_PMR_POLYMORPHIC_ALLOCATOR
@@ -713,7 +690,7 @@ case $host_os in
 esac
 AC_ARG_ENABLE([link-all-dependencies],
   [AS_HELP_STRING([--enable-link-all-dependencies],
-    [link Octave and its shared libraries with all dependencies, not just those immediately referenced (should not be needed on most systems).  This is done by default for cygwin* or darwin* hosts.])],
+    [link Octave and its shared libraries with all dependencies, not just those immediately referenced (should not be needed on most systems).  This is done by default for cygwin* hosts.])],
   [case $enableval in
      yes) link_all_deps=yes ;;
      no)  link_all_deps=no ;;
@@ -918,14 +895,17 @@ DL_LIBS="$lt_cv_dlopen_libs"
 if test $SHARED_LIBS = yes; then
   LIBOCTINTERP="-loctinterp"
   LIBOCTAVE="-loctave"
+  LIBOCTMEX="-loctmex"
 else
   LIBOCTINTERP="${top_builddir}/libinterp/liboctinterp.a"
   LIBOCTAVE="${top_builddir}/liboctave/liboctave.a"
+  LIBOCTMEX="${top_builddir}/liboctave/liboctmex.a"
 fi
 
 AC_SUBST(RDYNAMIC_FLAG)
 AC_SUBST(LIBOCTINTERP)
 AC_SUBST(LIBOCTAVE)
+AC_SUBST(LIBOCTMEX)
 
 if test "$cross_compiling" = yes && test -n "$ac_tool_prefix"; then
   CROSS_TOOL_PREFIX="$ac_tool_prefix"
@@ -953,28 +933,6 @@ AC_SUBST(MKOCTFILE_CC)
 AC_SUBST(MKOCTFILE_CXX)
 AC_SUBST(MKOCTFILE_F77)
 AC_SUBST(MKOCTFILE_RANLIB)
-
-### Enable float truncation to work around issues with x87 co-processors
-
-dnl When compiling math for x87, problems may arise in some code comparing
-dnl floating-point intermediate results.  The root cause is the extra precision
-dnl (~80 bits) of x87 co-processor registers versus the IEEE standard 64 bits.
-dnl Generally, storing the result in a local volatile variable forces a
-dnl truncation back to 64 bits, but it also degrades performance.
-dnl However, this performance degradation is very minimal, if indeed measurable.
-dnl Therefore, it has been enabled for all platforms and compilers.
-dnl Reported bugs indicate that --enable-float-truncate is required for MinGW
-dnl and Cygwin platforms and for GCC compilers >= 5.0.  It should not be
-dnl necessary for non-x87 targets or when using modern SSE math.
-ENABLE_FLOAT_TRUNCATE=yes
-AC_ARG_ENABLE([float-truncate],
-  [AS_HELP_STRING([--disable-float-truncate],
-    [truncate intermediate FP results])],
-  [if test "$enableval" = no; then ENABLE_FLOAT_TRUNCATE=no; fi], [])
-if test $ENABLE_FLOAT_TRUNCATE = yes; then
-  AC_DEFINE(OCTAVE_ENABLE_FLOAT_TRUNCATE, 1,
-    [Define to 1 to truncate intermediate FP results.])
-fi
 
 ### Enable internal checks
 
@@ -1070,8 +1028,8 @@ dnl override these.
 if test "$cross_compiling" = yes; then
   BUILD_CC="gcc"
   BUILD_CFLAGS="-O2 -g"
-  BUILD_CXX="g++"
-  BUILD_CXXFLAGS="-O2 -g -std=c++11"
+  BUILD_CXX="g++ -std=gnu++17"
+  BUILD_CXXFLAGS="-O2 -g"
   BUILD_LDFLAGS=""
   BUILD_EXEEXT=""
 else
@@ -1563,7 +1521,7 @@ fi
 
 OCTAVE_CHECK_LIB(bz2, BZIP2,
   [BZIP2 library not found.  Octave will not be able to compress or decompress bzip2 files.],
-  [bzlib.h], [BZ2_bzCompressInit])
+  [bzlib.h], [BZ2_bzCompressInit], [], [], [], [bzip2])
 
 ### Check for HDF5 library.
 
@@ -1681,7 +1639,7 @@ CPPFLAGS="$Z_CPPFLAGS $CPPFLAGS"
 LIBS="$Z_LDFLAGS $Z_LIBS $LIBS"
 OCTAVE_CHECK_LIB(curl, cURL,
   [cURL library not found.  The ftp objects, urlread, and urlwrite functions will be disabled.],
-  [curl/curl.h], [curl_easy_escape])
+  [curl/curl.h], [curl_easy_escape], [], [], [], [libcurl])
 if test -n "$CURL_LIBS"; then
   ## Additional check on cURL library that was found
   AC_CACHE_CHECK([for CURLOPT_DIRLISTONLY in curl/curl.h],
@@ -2796,6 +2754,27 @@ if test $OCTAVE_RELOCATE_ALL = yes; then
 fi
 AM_CONDITIONAL([AMCOND_RELOCATE_ALL], [test $OCTAVE_RELOCATE_ALL = yes])
 
+OCTAVE_RELOCATE_WITH_CYGPATH="no"
+CYGPATH=""
+if test $OCTAVE_RELOCATE_ALL = yes; then
+  case $host_os in
+    mingw*)
+      # If this is on MSYS2, paths (including the installation prefix) can be
+      # represented in UNIX or Windows compatible form.  The prefix should be
+      # relocated no matter in which form it appears.
+
+      # Check for the tool "cygpath" that can be used to convert between the
+      # different forms.
+      AC_CHECK_TOOL(CYGPATH, [cygpath])
+      if test -n "$CYGPATH"; then
+        OCTAVE_RELOCATE_WITH_CYGPATH="yes"
+      fi
+    ;;
+  esac
+fi
+AC_SUBST(OCTAVE_RELOCATE_WITH_CYGPATH)
+AC_SUBST(CYGPATH)
+
 ### Determine whether Mercurial ID should be embedded in library binaries.
 
 ENABLE_HG_ID=yes
@@ -2816,10 +2795,10 @@ AM_CONDITIONAL([AMCOND_INSTALL_BUILD_LOGS], [test $install_build_logs = yes])
 
 ### Determine whether libraries should be linked with visibility attributes.
 
-ENABLE_LIB_VISIBILITY_FLAGS=no
+ENABLE_LIB_VISIBILITY_FLAGS=yes
 AC_ARG_ENABLE(lib-visibility-flags,
-  [AS_HELP_STRING([--enable-lib-visibility-flags],
-    [build libraries with visibility flags (export only symbols from API)])],
+  [AS_HELP_STRING([--disable-lib-visibility-flags],
+    [don't build libraries with visibility flags (export all symbols)])],
   [case $enableval in
      yes) ENABLE_LIB_VISIBILITY_FLAGS=yes ;;
      no) ENABLE_LIB_VISIBILITY_FLAGS=no ;;
@@ -2858,24 +2837,28 @@ if test $ENABLE_LIB_VISIBILITY_FLAGS = yes; then
   EXTERNAL_DLL_DEFS="-DEXTERNAL_DLL"
   OCTAVE_DLL_DEFS="-DOCTAVE_DLL"
   OCTINTERP_DLL_DEFS="-DOCTINTERP_DLL"
+  OCTMEX_DLL_DEFS="-DOCTMEX_DLL"
   OCTGUI_DLL_DEFS="-DOCTGUI_DLL"
   OCTGRAPHICS_DLL_DEFS="-DOCTGRAPHICS_DLL"
 else
   EXTERNAL_DLL_DEFS=
   OCTAVE_DLL_DEFS=
   OCTINTERP_DLL_DEFS=
+  OCTMEX_DLL_DEFS=
   OCTGUI_DLL_DEFS=
   OCTGRAPHICS_DLL_DEFS=
 fi
 AC_MSG_NOTICE([defining EXTERNAL_DLL_DEFS to be $EXTERNAL_DLL_DEFS])
 AC_MSG_NOTICE([defining OCTAVE_DLL_DEFS to be $OCTAVE_DLL_DEFS])
 AC_MSG_NOTICE([defining OCTINTERP_DLL_DEFS to be $OCTINTERP_DLL_DEFS])
+AC_MSG_NOTICE([defining OCTMEX_DLL_DEFS to be $OCTMEX_DLL_DEFS])
 AC_MSG_NOTICE([defining OCTGUI_DLL_DEFS to be $OCTGUI_DLL_DEFS])
 AC_MSG_NOTICE([defining OCTGRAPHICS_DLL_DEFS to be $OCTGRAPHICS_DLL_DEFS])
 
 AC_SUBST(EXTERNAL_DLL_DEFS)
 AC_SUBST(OCTAVE_DLL_DEFS)
 AC_SUBST(OCTINTERP_DLL_DEFS)
+AC_SUBST(OCTMEX_DLL_DEFS)
 AC_SUBST(OCTGUI_DLL_DEFS)
 AC_SUBST(OCTGRAPHICS_DLL_DEFS)
 
@@ -3034,7 +3017,7 @@ fi
 
 ### Recommendations from the gnulib bootstrap script.
 
-GNULIB_LINK_DEPS="$FREXPF_LIBM $FREXP_LIBM $GETHOSTNAME_LIB $LIBSOCKET $LIB_CLOCK_GETTIME $LIB_CRYPTO $LIB_GETLOGIN $LIB_NANOSLEEP $LIB_SELECT $LTLIBICONV $LTLIBINTL $LTLIBTHREAD $INTL_MACOSX_LIBS"
+GNULIB_LINK_DEPS="$CLOCK_TIME_LIB $FREXPF_LIBM $FREXP_LIBM $GETHOSTNAME_LIB $GETHRXTIME_LIB $GETLOGIN_LIB $GETRANDOM_LIB $HARD_LOCALE_LIB $LIBPMULTITHREAD $LIBPTHREAD $LIBSOCKET $LIBTHREAD $LIB_CRYPTO $LTLIBC32CONV $LTLIBICONV $LTLIBINTL $LTLIBREADLINE $LTLIBUNISTRING $MBRTOWC_LIB $NANOSLEEP_LIB $PTHREAD_SIGMASK_LIB $SELECT_LIB $SETLOCALE_LIB $SETLOCALE_NULL_LIB $INTL_MACOSX_LIBS"
 
 ## FIXME: This is a kluge to transform $libdir/libiconv.dll.a to -liconv.
 ## It would probably be better to fix gnulib to not give us an absolute
@@ -3052,7 +3035,7 @@ case $host_os in
   ;;
 esac
 
-MKOCTFILE_GNULIB_LINK_DEPS="$FREXPF_LIBM $FREXP_LIBM $GETHOSTNAME_LIB $LIBSOCKET $LIB_CLOCK_GETTIME $LIB_CRYPTO $LIB_GETLOGIN $LIB_NANOSLEEP $LIB_SELECT $MKOCTFILE_LIBICONV $LIBINTL $LIBTHREAD $INTL_MACOSX_LIBS"
+MKOCTFILE_GNULIB_LINK_DEPS="$CLOCK_TIME_LIB $FREXPF_LIBM $FREXP_LIBM $GETHOSTNAME_LIB $GETHRXTIME_LIB $GETLOGIN_LIB $GETRANDOM_LIB $HARD_LOCALE_LIB $LIBPMULTITHREAD $LIBPTHREAD $LIBSOCKET $LIBTHREAD $LIB_CRYPTO $LIBC32CONV $MKOCTFILE_LIBICONV $LIBINTL $LIBREADLINE $LIBUNISTRING $MBRTOWC_LIB $NANOSLEEP_LIB $PTHREAD_SIGMASK_LIB $SELECT_LIB $SETLOCALE_LIB $SETLOCALE_NULL_LIB $INTL_MACOSX_LIBS"
 
 AC_SUBST(GNULIB_LINK_DEPS)
 
@@ -3077,6 +3060,7 @@ OCTAVE_LINK_DEPS=""
 OCTAVE_LINK_OPTS=""
 
 OCT_LINK_DEPS=""
+OCT_LTLINK_DEPS=""
 OCT_GUI_LINK_DEPS=""
 
 OCT_LINK_OPTS="$LDFLAGS"
@@ -3086,10 +3070,11 @@ if test $link_all_deps = yes; then
   AC_DEFINE(OCTAVE_LINK_ALL_DEPS, 1, [Link with all dependencies.])
 
   OCT_LINK_DEPS="libinterp/liboctinterp.la liboctave/liboctave.la"
-  OCT_GUI_LINK_DEPS="libgui/liboctgui.la libinterp/liboctinterp.la liboctave/liboctave.la"
+  OCT_LTLINK_DEPS="$OCT_LINK_DEPS"
+  OCT_GUI_LINK_DEPS="libgui/liboctgui.la $OCT_LINK_DEPS"
 
   MKOCTFILE_OCTAVE_LINK_DEPS="$LIBOCTINTERP_LINK_DEPS $MKOCTFILE_LIBOCTAVE_LINK_DEPS"
-  MKOCTFILE_OCT_LINK_DEPS="$LIBOCTINTERP $LIBOCTAVE"
+  MKOCTFILE_OCT_LINK_DEPS="-L${octlibdir} $LIBOCTINTERP $LIBOCTAVE"
 
   LIBOCTINTERP_LINK_DEPS="$LIBOCTINTERP_LINK_DEPS $LIBOCTAVE_LINK_DEPS"
   LIBOCTINTERP_LINK_OPTS="$LIBOCTINTERP_LINK_OPTS $LIBOCTAVE_LINK_OPTS"
@@ -3100,7 +3085,17 @@ else
   case $host_os in
     mingw* | msdosmsvc)
       OCT_LINK_DEPS="libinterp/liboctinterp.la liboctave/liboctave.la"
-      OCT_GUI_LINK_DEPS="libgui/liboctgui.la libinterp/liboctinterp.la liboctave/liboctave.la"
+      OCT_LTLINK_DEPS="$OCT_LINK_DEPS"
+      OCT_GUI_LINK_DEPS="libgui/liboctgui.la $OCT_LINK_DEPS"
+
+      MKOCTFILE_OCT_LINK_DEPS="-L${octlibdir} $LIBOCTINTERP $LIBOCTAVE"
+    ;;
+    darwin*)
+      dnl Contains variables that are defined and undefined at this point,
+      dnl so use appropriate quoting to defer expansion of
+      dnl ${abs_top_builddir}, ${bindir}, and ${version}.
+      OCT_LINK_DEPS='-bundle_loader ${abs_top_builddir}/src/octave'"${EXEEXT}"
+      MKOCTFILE_OCT_LINK_DEPS='-bundle_loader ${bindir}/octave-${version}'"${EXEEXT}"
     ;;
   esac
 fi
@@ -3112,6 +3107,7 @@ AC_SUBST(OCTAVE_LINK_DEPS)
 AC_SUBST(OCTAVE_LINK_OPTS)
 
 AC_SUBST(OCT_LINK_DEPS)
+AC_SUBST(OCT_LTLINK_DEPS)
 AC_SUBST(OCT_LINK_OPTS)
 
 AC_SUBST(OCT_GUI_LINK_DEPS)
@@ -3230,10 +3226,11 @@ AC_CONFIG_COMMANDS_PRE([
   eval man1ext="\"$man1ext\""
   eval infofile="\"$infofile\""
 
-  ## Also expand MKOCTFILE_DL_LDFLAGS, because it may depend on the values
+  ## Also expand the following variables because they may depend on the values
   ## of variables expanded above.
 
   eval MKOCTFILE_DL_LDFLAGS="\"$MKOCTFILE_DL_LDFLAGS\""
+  eval MKOCTFILE_OCT_LINK_DEPS="\"$MKOCTFILE_OCT_LINK_DEPS\""
 ])
 
 ### Do substitutions in Makefiles and other files that hold configuration info.
@@ -3253,7 +3250,8 @@ AC_CONFIG_FILES([
   libgnu/Makefile
   test/Makefile
   liboctave/octave.pc:liboctave/octave.in.pc
-  libinterp/octinterp.pc:libinterp/octinterp.in.pc])
+  libinterp/octinterp.pc:libinterp/octinterp.in.pc
+  libmex/octmex.pc:libmex/octmex.in.pc])
 
 dnl We use a .in.h file for oct-conf-post-private.h and
 dnl oct-conf-post-public.h simply to copy it to the build tree
@@ -3423,7 +3421,6 @@ Octave is now configured for $canonical_host_type
   64-bit BLAS array dims and indexing:  $HAVE_64_BIT_BLAS
   Use std::pmr::polymorphic_allocator:  $HAVE_STD_PMR_POLYMORPHIC_ALLOCATOR
   OpenMP SMP multithreading:            $ENABLE_OPENMP
-  Truncate intermediate FP results:     $ENABLE_FLOAT_TRUNCATE
   Include support for GNU readline:     $USE_READLINE
   Use push parser in command line REPL: $ENABLE_COMMAND_LINE_PUSH_PARSER
   Build cross tools:                    $cross_tools

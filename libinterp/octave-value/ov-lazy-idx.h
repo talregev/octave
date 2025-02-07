@@ -33,9 +33,7 @@
 // Lazy indices that stay in idx_vector form until the conversion to NDArray is
 // actually needed.
 
-class
-OCTINTERP_API
-octave_lazy_index : public octave_base_value
+class OCTINTERP_API octave_lazy_index : public octave_base_value
 {
 public:
 
@@ -144,6 +142,10 @@ public:
 
   void print (std::ostream& os, bool pr_as_read_syntax = false)
   { make_value ().print (os, pr_as_read_syntax); }
+
+  std::string edit_display (const float_display_format& fmt,
+                            octave_idx_type i, octave_idx_type j) const
+  { return make_value ().edit_display (fmt, i, j); }
 
   void print_info (std::ostream& os, const std::string& prefix) const
   { make_value ().print_info (os, prefix); }
@@ -277,7 +279,7 @@ private:
   static octave_base_value *
   numeric_conversion_function (const octave_base_value&);
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

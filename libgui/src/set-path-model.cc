@@ -46,7 +46,7 @@
 OCTAVE_BEGIN_NAMESPACE(octave)
 
 set_path_model::set_path_model (QObject *p)
-: QAbstractListModel (p)
+  : QAbstractListModel (p)
 {
   connect (this, &set_path_model::update_data_signal,
            this, &set_path_model::update_data);
@@ -54,7 +54,8 @@ set_path_model::set_path_model (QObject *p)
   m_revertible = false;
 }
 
-std::string set_path_model::to_string ()
+std::string
+set_path_model::to_string ()
 {
   std::string path_sep = directory_path::path_sep_str ();
 
@@ -73,12 +74,13 @@ std::string set_path_model::to_string ()
   return path_str;
 }
 
-void set_path_model::model_to_path ()
+void
+set_path_model::model_to_path ()
 {
   std::string path_str = to_string ();
 
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([path_str] (interpreter& interp)
     {
       // INTERPRETER THREAD
 
@@ -88,7 +90,8 @@ void set_path_model::model_to_path ()
     });
 }
 
-void set_path_model::clear ()
+void
+set_path_model::clear ()
 {
   beginResetModel ();
 
@@ -97,11 +100,12 @@ void set_path_model::clear ()
   endResetModel ();
 }
 
-void set_path_model::save ()
+void
+set_path_model::save ()
 {
   model_to_path ();
 
-  emit interpreter_event
+  Q_EMIT interpreter_event
     ([] (interpreter& interp)
     {
       // INTERPRETER THREAD
@@ -110,7 +114,8 @@ void set_path_model::save ()
     });
 }
 
-void set_path_model::revert ()
+void
+set_path_model::revert ()
 {
   clear ();
 
@@ -121,7 +126,8 @@ void set_path_model::revert ()
   model_to_path ();
 }
 
-void set_path_model::revert_last ()
+void
+set_path_model::revert_last ()
 {
   clear ();
 
@@ -132,13 +138,14 @@ void set_path_model::revert_last ()
   model_to_path ();
 }
 
-void set_path_model::add_dir (const QString& p)
+void
+set_path_model::add_dir (const QString& p)
 {
   m_last_dirs = m_dirs;
 
   beginInsertRows (QModelIndex (), m_dirs.size (), m_dirs.size ());
 
-  QList<QString>::Iterator it = m_dirs.begin();
+  QList<QString>::Iterator it = m_dirs.begin ();
 
   m_dirs.insert (it, p);
 
@@ -147,7 +154,8 @@ void set_path_model::add_dir (const QString& p)
   model_to_path ();
 }
 
-void set_path_model::rm_dir (const QModelIndexList& indices)
+void
+set_path_model::rm_dir (const QModelIndexList& indices)
 {
   m_last_dirs = m_dirs;
 
@@ -163,7 +171,8 @@ void set_path_model::rm_dir (const QModelIndexList& indices)
   model_to_path ();
 }
 
-void set_path_model::move_dir_up (const QModelIndexList& indices)
+void
+set_path_model::move_dir_up (const QModelIndexList& indices)
 {
   m_last_dirs = m_dirs;
 
@@ -185,7 +194,8 @@ void set_path_model::move_dir_up (const QModelIndexList& indices)
   model_to_path ();
 }
 
-void set_path_model::move_dir_down (const QModelIndexList& indices)
+void
+set_path_model::move_dir_down (const QModelIndexList& indices)
 {
   m_last_dirs = m_dirs;
 
@@ -208,7 +218,8 @@ void set_path_model::move_dir_down (const QModelIndexList& indices)
   model_to_path ();
 }
 
-void set_path_model::move_dir_top (const QModelIndexList& indices)
+void
+set_path_model::move_dir_top (const QModelIndexList& indices)
 {
   m_last_dirs = m_dirs;
 
@@ -229,7 +240,8 @@ void set_path_model::move_dir_top (const QModelIndexList& indices)
   model_to_path ();
 }
 
-void set_path_model::move_dir_bottom (const QModelIndexList& indices)
+void
+set_path_model::move_dir_bottom (const QModelIndexList& indices)
 {
   m_last_dirs = m_dirs;
 
@@ -252,12 +264,14 @@ void set_path_model::move_dir_bottom (const QModelIndexList& indices)
   model_to_path ();
 }
 
-int set_path_model::rowCount (const QModelIndex&) const
+int
+set_path_model::rowCount (const QModelIndex&) const
 {
   return m_dirs.size ();
 }
 
-QVariant set_path_model::data (const QModelIndex& idx, int role) const
+QVariant
+set_path_model::data (const QModelIndex& idx, int role) const
 {
   QVariant retval;
   if (idx.isValid ())
@@ -281,7 +295,8 @@ QVariant set_path_model::data (const QModelIndex& idx, int role) const
   return retval;
 }
 
-void set_path_model::path_to_model ()
+void
+set_path_model::path_to_model ()
 {
   // The interpreter_event callback function below emits a signal.
   // Because we don't control when that happens, use a guarded pointer
@@ -289,8 +304,8 @@ void set_path_model::path_to_model ()
 
   QPointer<set_path_model> this_spm (this);
 
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this, this_spm] (interpreter& interp)
     {
       // INTERPRETER THREAD
 
@@ -309,13 +324,14 @@ void set_path_model::path_to_model ()
       for (const auto& dir : dir_list)
         qs_dir_list << QString::fromStdString (dir);
 
-      emit update_data_signal (qs_dir_list);
+      Q_EMIT update_data_signal (qs_dir_list);
     });
 
   m_revertible = false;
 }
 
-void set_path_model::update_data (const QStringList& dirs)
+void
+set_path_model::update_data (const QStringList& dirs)
 {
   m_dirs = dirs;
 
@@ -332,8 +348,8 @@ void set_path_model::update_data (const QStringList& dirs)
 
   int numel = m_dirs.size ();
 
-  emit dataChanged (QAbstractListModel::index (0, 0),
-                    QAbstractListModel::index (numel-1, 0));
+  Q_EMIT dataChanged (QAbstractListModel::index (0, 0),
+                      QAbstractListModel::index (numel-1, 0));
 }
 
 OCTAVE_END_NAMESPACE(octave)

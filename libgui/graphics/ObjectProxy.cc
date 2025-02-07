@@ -40,7 +40,7 @@
 OCTAVE_BEGIN_NAMESPACE(octave)
 
 ObjectProxy::ObjectProxy (Object *obj)
-: QObject (), m_object (nullptr)
+  : QObject (), m_object (nullptr)
 {
   init (obj);
 }
@@ -87,7 +87,7 @@ ObjectProxy::setObject (Object *obj)
 void
 ObjectProxy::update (int pId)
 {
-  emit sendUpdate (pId);
+  Q_EMIT sendUpdate (pId);
 }
 
 void
@@ -108,13 +108,13 @@ ObjectProxy::finalize ()
 void
 ObjectProxy::redraw ()
 {
-  emit sendRedraw ();
+  Q_EMIT sendRedraw ();
 }
 
 void
 ObjectProxy::show ()
 {
-  emit sendShow ();
+  Q_EMIT sendShow ();
 }
 
 void

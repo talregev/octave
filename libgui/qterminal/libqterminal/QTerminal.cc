@@ -107,6 +107,7 @@ QTerminal::handleCustomContextMenuRequested (const QPoint& at)
 
     if (has_selected_text)
       {
+        // Find first word in selected text, trim everything else
         QRegularExpression expr {"(\\w+)"};
         QRegularExpressionMatch match = expr.match (selected_text);
 
@@ -115,15 +116,24 @@ QTerminal::handleCustomContextMenuRequested (const QPoint& at)
             QString expr_found = match.captured (1);
 
             m_edit_selected_action->setVisible (true);
-            m_edit_selected_action->setText (tr ("Edit %1").arg (expr_found));
+            m_edit_selected_action->setText (tr ("Edit \"%1\"").arg (expr_found));
             m_edit_selected_action->setData (expr_found);
 
             m_help_selected_action->setVisible (true);
-            m_help_selected_action->setText (tr ("Help on %1").arg (expr_found));
+            m_help_selected_action->setText (tr ("Help on \"%1\"").arg (expr_found));
             m_help_selected_action->setData (expr_found);
+          }
+
+        // Grab all of selected text, but trim leading non-word characters
+        // and trailing whitespace
+        expr.setPattern ("(\\w.*)\\s*$");
+        match = expr.match (selected_text);
+        if (match.hasMatch ())
+          {
+            QString expr_found = match.captured (1);
 
             m_doc_selected_action->setVisible (true);
-            m_doc_selected_action->setText (tr ("Documentation on %1")
+            m_doc_selected_action->setText (tr ("Documentation on \"%1\"")
                                             .arg (expr_found));
             m_doc_selected_action->setData (expr_found);
           }
@@ -159,7 +169,7 @@ QTerminal::run_selection ()
                                                 QString::SkipEmptyParts);
 #endif
   for (int i = 0; i < commands.size (); i++)
-    emit execute_command_in_terminal_signal (commands.at (i));
+    Q_EMIT execute_command_in_terminal_signal (commands.at (i));
 
 }
 
@@ -170,7 +180,7 @@ QTerminal::edit_file ()
   QString file = _edit_action->data ().toStringList ().at (0);
   int line = _edit_action->data ().toStringList ().at (1).toInt ();
 
-  emit edit_mfile_request (file,line);
+  Q_EMIT edit_mfile_request (file,line);
 }
 
 // slot for edit selected function names
@@ -178,7 +188,7 @@ void QTerminal::edit_selected ()
 {
   QString file = m_edit_selected_action->data ().toString ();
 
-  emit edit_mfile_request (file,0);
+  Q_EMIT edit_mfile_request (file,0);
 }
 
 // slot for showing help on selected epxression
@@ -186,7 +196,7 @@ void QTerminal::help_on_expression ()
 {
   QString expr = m_help_selected_action->data ().toString ();
 
-  emit execute_command_in_terminal_signal ("help " + expr);
+  Q_EMIT execute_command_in_terminal_signal ("help " + expr);
 }
 
 // slot for showing documentation on selected epxression
@@ -194,8 +204,8 @@ void QTerminal::doc_on_expression ()
 {
   std::string expr = m_doc_selected_action->data ().toString ().toStdString ();
 
-  emit interpreter_event
-    ([=] (octave::interpreter& interp)
+  Q_EMIT interpreter_event
+    ([expr] (octave::interpreter& interp)
      {
        // INTERPRETER THREAD
 
@@ -204,7 +214,7 @@ void QTerminal::doc_on_expression ()
 }
 
 void
-QTerminal::notice_settings (void)
+QTerminal::notice_settings ()
 {
   octave::gui_settings settings;
 
@@ -278,7 +288,7 @@ QTerminal::notice_settings (void)
 }
 
 void
-QTerminal::construct (void)
+QTerminal::construct ()
 {
   octave::gui_settings settings;
 

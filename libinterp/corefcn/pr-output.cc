@@ -300,7 +300,7 @@ static inline T
 pr_max_internal (const MArray<T>& m)
 {
   // We expect a 2-d array.
-  error_unless (m.ndims () == 2);
+  panic_unless (m.ndims () == 2);
 
   octave_idx_type nr = m.rows ();
   octave_idx_type nc = m.columns ();
@@ -680,7 +680,8 @@ template <typename MT>
 static inline float_display_format
 make_matrix_format (const MT& m)
 {
-  error_unless (m.ndims () == 2);
+  // We expect a 2-d array.
+  panic_unless (m.ndims () == 2);
 
   if (free_format)
     return float_display_format ();
@@ -1546,7 +1547,7 @@ pr_float (std::ostream& os, const float_display_format& fmt,
   if (! bank_format)
     {
       T i = cval.imag ();
-      if (! (hex_format || bit_format) && lo_ieee_signbit (i))
+      if (! (hex_format || bit_format) && std::signbit (i))
         {
           os << " - ";
           i = -i;
@@ -1569,7 +1570,7 @@ static inline void
 print_empty_matrix (std::ostream& os, octave_idx_type nr, octave_idx_type nc,
                     bool pr_as_read_syntax)
 {
-  error_unless (nr == 0 || nc == 0);
+  panic_unless (nr == 0 || nc == 0);
 
   if (pr_as_read_syntax)
     {
@@ -1591,7 +1592,7 @@ static inline void
 print_empty_nd_array (std::ostream& os, const dim_vector& dims,
                       bool pr_as_read_syntax)
 {
-  error_unless (dims.any_zero ());
+  panic_unless (dims.any_zero ());
 
   if (pr_as_read_syntax)
     os << "zeros (" << dims.str (',') << ')';
@@ -1774,7 +1775,7 @@ void
 octave_print_internal (std::ostream&, const float_display_format&,
                        char, bool)
 {
-  panic_impossible ();
+  error ("unexpected call to 'octave_print_internal (std::ostream&, const float_display_format&, char, bool)' - please report this bug");
 }
 
 void
@@ -2124,7 +2125,7 @@ print_nd_array (std::ostream& os, const NDA_T& nda,
 
       int ndims = nda.ndims ();
 
-      dim_vector dims = nda.dims ();
+      const dim_vector& dims = nda.dims ();
 
       Array<octave_idx_type> ra_idx (dim_vector (ndims, 1), 0);
 
@@ -2712,7 +2713,7 @@ octave_print_internal (std::ostream& os, const Array<std::string>& nda,
     {
       int ndims = nda.ndims ();
 
-      dim_vector dims = nda.dims ();
+      const dim_vector& dims = nda.dims ();
 
       Array<octave_idx_type> ra_idx (dim_vector (ndims, 1), 0);
 
@@ -2784,8 +2785,7 @@ octave_print_internal (std::ostream& os, const Array<std::string>& nda,
 }
 
 template <typename T>
-class
-octave_print_conv
+class octave_print_conv
 {
 public:
   typedef T print_conv_type;
@@ -2954,7 +2954,7 @@ octave_print_internal_template (std::ostream& os, const intNDArray<T>& nda,
 
       Array<octave_idx_type> ra_idx (dim_vector (ndims, 1), 0);
 
-      dim_vector dims = nda.dims ();
+      const dim_vector& dims = nda.dims ();
 
       octave_idx_type m = 1;
 
@@ -3023,7 +3023,7 @@ octave_print_internal_template (std::ostream& os, const intNDArray<T>& nda,
     {
       int ndims = nda.ndims ();
 
-      dim_vector dims = nda.dims ();
+      const dim_vector& dims = nda.dims ();
 
       Array<octave_idx_type> ra_idx (dim_vector (ndims, 1), 0);
 
@@ -3186,13 +3186,13 @@ PRINT_INT_ARRAY_INTERNAL (octave_uint64)
 void
 octave_print_internal (std::ostream&, const Cell&, bool, int, bool)
 {
-  panic_impossible ();
+  error ("unexpected call to 'octave_print_internal (std::ostream&, const Cell&, bool, int, bool)' - please report this bug");
 }
 
 void
 octave_print_internal (std::ostream&, const octave_value&, bool)
 {
-  panic_impossible ();
+  error ("unexpected call to 'octave_print_internal (std::ostream&, const octave_value&, bool)' - please report this bug");
 }
 
 OCTAVE_BEGIN_NAMESPACE(octave)
@@ -3251,7 +3251,7 @@ x = str2num (r)
 
   rat_string_len = 13;
   if (nargin == 2)
-    rat_string_len = args(1).nint_value ();
+    rat_string_len = args(1).strict_int_value ();
 
   frame.protect_var (rat_format);
 
@@ -3606,7 +3606,7 @@ set_format_style (int argc, const string_vector& argv)
   frame.protect_var (Vcompact_format);
   frame.protect_var (uppercase_format);
   int prec = output_precision ();
-  frame.add ([=] () { set_output_prec (prec); });
+  frame.add ([prec] () { set_output_prec (prec); });
 
   format = format_string;   // Initialize with existing value
   while (argc-- > 0)

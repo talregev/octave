@@ -30,15 +30,16 @@
 ## gray-blue shades.
 ##
 ## The argument @var{n} must be a scalar.
-## If unspecified, the length of the current colormap, or 64, is used.
+## If @var{n} is not specified the length of the current colormap is used.  If
+## there is no current colormap the default value of 256 is used.
 ## @seealso{colormap}
 ## @end deftypefn
 
 function map = bone (n)
 
   if (nargin == 1)
-    if (! isscalar (n))
-      error ("bone: N must be a scalar");
+    if (! (isscalar (n) && isreal (n) && n == fix (n)))
+      error ("bone: N must be a scalar integer");
     endif
     n = double (n);
   else
@@ -46,7 +47,7 @@ function map = bone (n)
     if (! isempty (hf))
       n = rows (get (hf, "colormap"));
     else
-      n = 64;
+      n = 256;
     endif
   endif
 
@@ -98,3 +99,29 @@ endfunction
 %!  rgbplot (cmap, "composite");
 %! subplot (2, 1, 2);
 %!  rgbplot (cmap);
+
+
+%!assert (size (bone ()), [256, 3])
+%!assert (size (bone (16)), [16, 3])
+
+%!assert (bone (1), [1/8, 1/8, 1/8])
+%!assert (bone (true), double ([1/8, 1/8, 1/8]))
+%!assert (bone (char (1)), double ([1/8, 1/8, 1/8]))
+%!assert (bone (int32 (1)), double ([1/8, 1/8, 1/8]))
+%!assert (bone (2), [1/16, 1/8, 1/8; 1 ,1, 1])
+
+%!assert (bone (0), zeros (0, 3))
+%!assert (bone (-1), zeros (0, 3))
+
+%!test
+%! a = [    0,     0,   1/8;
+%!       7/32, 11/32, 11/32;
+%!      23/48,  9/16,  9/16;
+%!      71/96, 25/32, 25/32;
+%!          1,     1,     1];
+%! assert (bone (5), a, eps)
+
+## Input validation
+%!error <N must be a scalar integer> bone ("foo")
+%!error <N must be a scalar integer> bone ([1, 2, 3])
+%!error <N must be a scalar integer> bone ({1, 2, 3})

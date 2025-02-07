@@ -43,6 +43,8 @@
 #include <QVector>
 
 #if defined (HAVE_QSCINTILLA)
+#  include <Qsci/qscilexer.h>
+
 #  include "octave-qscintilla.h"
 #  include "octave-txt-lexer.h"
 #  include <QScrollArea>
@@ -78,7 +80,7 @@ settings_dialog::settings_dialog (QWidget *p, const QString& desired_tab)
   setupUi (this);
 
   QMessageBox *info = wait_message_box (
-                      tr ("Loading current preferences ... "), this);
+                        tr ("Loading current preferences ... "), this);
 
   read_settings (true);  // it's the first read, prepare everything
 
@@ -105,7 +107,8 @@ settings_dialog::settings_dialog (QWidget *p, const QString& desired_tab)
   show ();
 }
 
-void settings_dialog::read_settings (bool first)
+void
+settings_dialog::read_settings (bool first)
 {
   gui_settings settings;
 
@@ -137,7 +140,7 @@ void settings_dialog::read_settings (bool first)
   if (first)
     {
       // Global style
-      QStringList styles = QStyleFactory::keys();
+      QStringList styles = QStyleFactory::keys ();
       styles.append (global_extra_styles);
       combo_styles->addItems (styles);
       combo_styles->insertItem (0, global_style.def ().toString ());
@@ -343,10 +346,10 @@ void settings_dialog::read_settings (bool first)
                    m_rb_uncomment_strings[i], &QCheckBox::setDisabled);
         }
 
-      m_rb_comment_strings[i]->setText (ed_comment_strings.at(i));
+      m_rb_comment_strings[i]->setText (ed_comment_strings.at (i));
       m_rb_comment_strings[i]->setChecked (i == selected_comment_string);
 
-      m_rb_uncomment_strings[i]->setText (ed_comment_strings.at(i));
+      m_rb_uncomment_strings[i]->setText (ed_comment_strings.at (i));
       m_rb_uncomment_strings[i]->setAutoExclusive (false);
       m_rb_uncomment_strings[i]->setChecked ( 1 << i & selected_uncomment_string);
     }
@@ -436,7 +439,7 @@ void settings_dialog::read_settings (bool first)
     {
       proxy_type->addItems (global_proxy_all_types);
       // Connect relevant signals for dis-/enabling some elements
-      connect (proxy_type, QOverload<int>::of (&QComboBox::currentIndexChanged),
+      connect (proxy_type, qOverload<int> (&QComboBox::currentIndexChanged),
                this, &settings_dialog::proxy_items_update);
       connect (use_proxy_server, &QCheckBox::toggled,
                this, &settings_dialog::proxy_items_update);
@@ -490,7 +493,7 @@ void settings_dialog::read_settings (bool first)
   varedit_columnWidth->setValue (settings.int_value (ve_column_width));
   varedit_rowHeight->setValue (settings.int_value (ve_row_height));
   varedit_font->setCurrentFont (QFont (settings.value (ve_font_name.settings_key (),
-                                                        settings.value (cs_font.settings_key (), default_font)).toString ()));
+                                       settings.value (cs_font.settings_key (), default_font)).toString ()));
   varedit_fontSize->setValue (settings.int_value (ve_font_size));
   varedit_useTerminalFont->setChecked (settings.bool_value (ve_use_terminal_font));
   varedit_font->setDisabled (varedit_useTerminalFont->isChecked ());
@@ -559,7 +562,7 @@ void settings_dialog::read_settings (bool first)
       current_line_color->setObjectName (ed_highlight_current_line_color.settings_key ());
 
       QLabel *current_line_color_label
-        = new QLabel(tr ("Color of highlighted current line (magenta (255,0,255) for automatic color)"));
+        = new QLabel (tr("Color of highlighted current line (magenta (255,0,255) for automatic color)"));
 
       QHBoxLayout *color_mode = new QHBoxLayout ();
       color_mode->addWidget (cb_color_mode);
@@ -575,10 +578,15 @@ void settings_dialog::read_settings (bool first)
       editor_styles_layout->addLayout (current_line);
 
       // update colors depending on second theme selection
-      connect (cb_color_mode, &QCheckBox::stateChanged,
+      connect (cb_color_mode,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+               &QCheckBox::checkStateChanged,
+#else
+               &QCheckBox::stateChanged,
+#endif
                this, &settings_dialog::update_editor_lexers);
       connect (pb_reload_default_colors, &QPushButton::clicked,
-               [=] () { update_editor_lexers (settings_reload_default_colors_flag); });
+               [this] () { update_editor_lexers (settings_reload_default_colors_flag); });
 
       // finally read the lexer colors using the update slot
       update_editor_lexers ();
@@ -603,7 +611,8 @@ void settings_dialog::read_settings (bool first)
 #endif
 }
 
-void settings_dialog::show_tab (const QString& tab)
+void
+settings_dialog::show_tab (const QString& tab)
 {
   gui_settings settings;
 
@@ -620,17 +629,20 @@ void settings_dialog::show_tab (const QString& tab)
     }
 }
 
-void settings_dialog::get_octave_dir ()
+void
+settings_dialog::get_octave_dir ()
 {
   get_dir (le_octave_dir, tr ("Set Octave Startup Directory"));
 }
 
-void settings_dialog::get_file_browser_dir ()
+void
+settings_dialog::get_file_browser_dir ()
 {
   get_dir (le_file_browser_dir, tr ("Set File Browser Startup Directory"));
 }
 
-void settings_dialog::get_dir (QLineEdit *line_edit, const QString& title)
+void
+settings_dialog::get_dir (QLineEdit *line_edit, const QString& title)
 {
   // FIXME: Remove, if for all common KDE versions (bug #54607) is resolved.
   int opts = QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks;
@@ -646,7 +658,8 @@ void settings_dialog::get_dir (QLineEdit *line_edit, const QString& title)
   line_edit->setText (dir);
 }
 
-void settings_dialog::button_clicked (QAbstractButton *button)
+void
+settings_dialog::button_clicked (QAbstractButton *button)
 {
   QDialogButtonBox::ButtonRole button_role = button_box->buttonRole (button);
 
@@ -658,7 +671,7 @@ void settings_dialog::button_clicked (QAbstractButton *button)
         hide ();  // already hide here, reloading settings takes some time
 
       QMessageBox *info = wait_message_box (tr ("Applying preferences ... "), this);
-      emit apply_new_settings ();
+      Q_EMIT apply_new_settings ();
       close_wait_message_box (info);
     }
 
@@ -682,7 +695,8 @@ void settings_dialog::button_clicked (QAbstractButton *button)
     }
 }
 
-void settings_dialog::set_disabled_pref_file_browser_dir (bool disable)
+void
+settings_dialog::set_disabled_pref_file_browser_dir (bool disable)
 {
   cb_restore_file_browser_dir->setDisabled (disable);
 
@@ -699,7 +713,8 @@ void settings_dialog::set_disabled_pref_file_browser_dir (bool disable)
 }
 
 // slot for updating enabled state of proxy settings
-void settings_dialog::proxy_items_update ()
+void
+settings_dialog::proxy_items_update ()
 {
   bool use_proxy = use_proxy_server->isChecked ();
 
@@ -731,7 +746,8 @@ void settings_dialog::proxy_items_update ()
 // gui_settings_object so that the user may choose to apply or cancel
 // the action.
 
-void settings_dialog::import_shortcut_set ()
+void
+settings_dialog::import_shortcut_set ()
 {
   if (! overwrite_all_shortcuts ())
     return;
@@ -755,7 +771,8 @@ void settings_dialog::import_shortcut_set ()
 // choice to save current application settings or the modified values
 // in the dialog?
 
-void settings_dialog::export_shortcut_set ()
+void
+settings_dialog::export_shortcut_set ()
 {
   QString file = get_shortcuts_file_name (OSC_EXPORT);
 
@@ -772,7 +789,8 @@ void settings_dialog::export_shortcut_set ()
 // gui_settings object so that the user may choose to apply or cancel
 // the action.
 
-void settings_dialog::default_shortcut_set ()
+void
+settings_dialog::default_shortcut_set ()
 {
   if (! overwrite_all_shortcuts ())
     return;
@@ -780,7 +798,8 @@ void settings_dialog::default_shortcut_set ()
   shortcuts_treewidget->set_default_shortcuts ();
 }
 
-void settings_dialog::update_editor_lexers (int def)
+void
+settings_dialog::update_editor_lexers (int def)
 {
 #if defined (HAVE_QSCINTILLA)
 
@@ -857,10 +876,11 @@ void settings_dialog::update_editor_lexers (int def)
 #endif
 }
 
-#if defined (HAVE_QSCINTILLA)
 
-void settings_dialog::update_lexer (QsciLexer *lexer, int mode, int def)
+void
+settings_dialog::update_lexer (QsciLexer *lexer, int mode, int def)
 {
+#if defined (HAVE_QSCINTILLA)
   // Get lexer settings and copy from default settings if not yet
   // available in normal settings file
   gui_settings settings;
@@ -959,14 +979,23 @@ void settings_dialog::update_lexer (QsciLexer *lexer, int mode, int def)
         }
     }
 
+#else
+  octave_unused_parameter (lexer);
+  octave_unused_parameter (mode);
+  octave_unused_parameter (def);
+
+  return;
+#endif
 }
 
-void settings_dialog::get_lexer_settings (QsciLexer *lexer)
+void
+settings_dialog::get_lexer_settings (QsciLexer *lexer)
 {
+#if defined (HAVE_QSCINTILLA)
   gui_settings settings;
 
   int styles[ed_max_lexer_styles];  // array for saving valid styles
-  // (enum is not continuous)
+                                    // (enum is not continuous)
   int max_style = settings.get_valid_lexer_styles (lexer, styles);
   QGridLayout *style_grid = new QGridLayout ();
   QVector<QLabel *> description (max_style);
@@ -1053,10 +1082,18 @@ void settings_dialog::get_lexer_settings (QsciLexer *lexer)
   tabs_editor_lexers->addTab (scroll_area, lexer->language ());
 
   tabs_editor_lexers->setCurrentIndex (settings.int_value (sd_last_editor_styles_tab));
+
+#else
+  octave_unused_parameter (lexer);
+
+  return;
+#endif
 }
 
-void settings_dialog::write_lexer_settings (QsciLexer *lexer)
+void
+settings_dialog::write_lexer_settings (QsciLexer *lexer)
 {
+#if defined (HAVE_QSCINTILLA)
   gui_settings settings;
 
   QCheckBox *cb_color_mode
@@ -1070,7 +1107,7 @@ void settings_dialog::write_lexer_settings (QsciLexer *lexer)
   QWidget *tab = tabs_editor_lexers->
     findChild <QWidget *> (QString (lexer->language ()) + "_styles");
   int styles[ed_max_lexer_styles];  // array for saving valid styles
-  // (enum is not continuous)
+                                    // (enum is not continuous)
 
   int max_style = settings.get_valid_lexer_styles (lexer, styles);
 
@@ -1084,7 +1121,7 @@ void settings_dialog::write_lexer_settings (QsciLexer *lexer)
   color = findChild <color_picker *> (ed_highlight_current_line_color.settings_key ());
   if (color)
     settings.setValue (ed_highlight_current_line_color.settings_key ()
-                        + settings_color_modes_ext[mode], color->color ());
+                       + settings_color_modes_ext[mode], color->color ());
 
   QString default_font_name
     = settings.string_value (global_mono_font);
@@ -1157,11 +1194,16 @@ void settings_dialog::write_lexer_settings (QsciLexer *lexer)
   settings.setValue (sd_last_editor_styles_tab.settings_key (),
                      tabs_editor_lexers->currentIndex ());
   settings.sync ();
+
+#else
+  octave_unused_parameter (lexer);
+
+  return;
+#endif
 }
 
-#endif
-
-void settings_dialog::write_changed_settings ()
+void
+settings_dialog::write_changed_settings ()
 {
 
   gui_settings settings;
@@ -1391,7 +1433,8 @@ void settings_dialog::write_changed_settings ()
   settings.sync ();
 }
 
-void settings_dialog::read_workspace_colors ()
+void
+settings_dialog::read_workspace_colors ()
 {
   gui_settings settings;
 
@@ -1434,7 +1477,7 @@ void settings_dialog::read_workspace_colors ()
   for (int i = 0; i < ws_colors_count; i++)
     {
       description[i] = new QLabel ("    "
-        + tr (ws_color_names.at (i).toStdString ().data ()));
+                                   + tr (ws_color_names.at (i).toStdString ().data ()));
       description[i]->setAlignment (Qt::AlignRight);
       description[i]->setEnabled (colors_enabled);
       connect (m_ws_enable_colors, &QCheckBox::toggled,
@@ -1469,13 +1512,19 @@ void settings_dialog::read_workspace_colors ()
 
   // update colors depending on second theme selection or reloading
   // the dfault values
-  connect (cb_color_mode, &QCheckBox::stateChanged,
+  connect (cb_color_mode,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+           &QCheckBox::checkStateChanged,
+#else
+           &QCheckBox::stateChanged,
+#endif
            this, &settings_dialog::update_workspace_colors);
   connect (pb_reload_default_colors, &QPushButton::clicked,
-           [=] () { update_workspace_colors (settings_reload_default_colors_flag); });
+           [this] () { update_workspace_colors (settings_reload_default_colors_flag); });
 }
 
-void settings_dialog::update_workspace_colors (int def)
+void
+settings_dialog::update_workspace_colors (int def)
 {
   QCheckBox *cb_color_mode
     = workspace_colors_box->findChild <QCheckBox *> (ws_color_mode.settings_key ());
@@ -1507,7 +1556,8 @@ void settings_dialog::update_workspace_colors (int def)
     }
 }
 
-void settings_dialog::write_workspace_colors ()
+void
+settings_dialog::write_workspace_colors ()
 {
   gui_settings settings;
 
@@ -1535,7 +1585,8 @@ void settings_dialog::write_workspace_colors ()
   settings.sync ();
 }
 
-void settings_dialog::read_terminal_colors ()
+void
+settings_dialog::read_terminal_colors ()
 {
   gui_settings settings;
 
@@ -1561,7 +1612,7 @@ void settings_dialog::read_terminal_colors ()
   for (unsigned int i = 0; i < cs_colors_count; i++)
     {
       description[i] = new QLabel ("    "
-          + tr (cs_color_names.at (i).toStdString ().data ()));
+                                   + tr (cs_color_names.at (i).toStdString ().data ()));
       description[i]->setAlignment (Qt::AlignRight);
       QColor setting_color = settings.color_value (cs_colors[i], mode);
       color[i] = new color_picker (setting_color);
@@ -1581,13 +1632,19 @@ void settings_dialog::read_terminal_colors ()
   terminal_colors_box->setLayout (style_grid);
 
   // update colors depending on second theme selection
-  connect (cb_color_mode, &QCheckBox::stateChanged,
+  connect (cb_color_mode,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+           &QCheckBox::checkStateChanged,
+#else
+           &QCheckBox::stateChanged,
+#endif
            this, &settings_dialog::update_terminal_colors);
   connect (pb_reload_default_colors, &QPushButton::clicked,
-           [=] () { update_terminal_colors (settings_reload_default_colors_flag); });
+           [this] () { update_terminal_colors (settings_reload_default_colors_flag); });
 }
 
-void settings_dialog::update_terminal_colors (int def)
+void
+settings_dialog::update_terminal_colors (int def)
 {
   QCheckBox *cb_color_mode
     = terminal_colors_box->findChild <QCheckBox *> (cs_color_mode.settings_key ());
@@ -1619,7 +1676,8 @@ void settings_dialog::update_terminal_colors (int def)
     }
 }
 
-void settings_dialog::write_terminal_colors ()
+void
+settings_dialog::write_terminal_colors ()
 {
   QCheckBox *cb_color_mode
     = terminal_colors_box->findChild <QCheckBox *> (cs_color_mode.settings_key ());
@@ -1644,7 +1702,8 @@ void settings_dialog::write_terminal_colors ()
   settings.sync ();
 }
 
-void settings_dialog::read_varedit_colors ()
+void
+settings_dialog::read_varedit_colors ()
 {
   gui_settings settings;
 
@@ -1670,7 +1729,7 @@ void settings_dialog::read_varedit_colors ()
   for (int i = 0; i < ve_colors_count; i++)
     {
       description[i] = new QLabel ("    "
-          + tr (ve_color_names.at (i).toStdString ().data ()));
+                                   + tr (ve_color_names.at (i).toStdString ().data ()));
       description[i]->setAlignment (Qt::AlignRight);
 
       QColor setting_color = settings.color_value (ve_colors[i], mode);
@@ -1691,13 +1750,19 @@ void settings_dialog::read_varedit_colors ()
   varedit_colors_box->setLayout (style_grid);
 
   // update colors depending on second theme selection
-  connect (cb_color_mode, &QCheckBox::stateChanged,
+  connect (cb_color_mode,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+           &QCheckBox::checkStateChanged,
+#else
+           &QCheckBox::stateChanged,
+#endif
            this, &settings_dialog::update_varedit_colors);
   connect (pb_reload_default_colors, &QPushButton::clicked,
-           [=] () { update_varedit_colors (settings_reload_default_colors_flag); });
+           [this] () { update_varedit_colors (settings_reload_default_colors_flag); });
 }
 
-void settings_dialog::update_varedit_colors (int def)
+void
+settings_dialog::update_varedit_colors (int def)
 {
   QCheckBox *cb_color_mode
     = varedit_colors_box->findChild <QCheckBox *> (ve_color_mode.settings_key ());
@@ -1729,7 +1794,8 @@ void settings_dialog::update_varedit_colors (int def)
     }
 }
 
-void settings_dialog::write_varedit_colors ()
+void
+settings_dialog::write_varedit_colors ()
 {
   QCheckBox *cb_color_mode
     = varedit_colors_box->findChild <QCheckBox *> (ve_color_mode.settings_key ());
@@ -1754,7 +1820,8 @@ void settings_dialog::write_varedit_colors ()
   settings.sync ();
 }
 
-QString settings_dialog::get_shortcuts_file_name (import_export_action action)
+QString
+settings_dialog::get_shortcuts_file_name (import_export_action action)
 {
   QString file;
 
@@ -1801,7 +1868,8 @@ QString settings_dialog::get_shortcuts_file_name (import_export_action action)
 //   (XX) - already possible (cancel operation, cancel settings
 //          dialog, re-open settings dialog and export changes).
 
-bool settings_dialog::overwrite_all_shortcuts ()
+bool
+settings_dialog::overwrite_all_shortcuts ()
 {
   QMessageBox msg_box;
 
@@ -1840,7 +1908,8 @@ bool settings_dialog::overwrite_all_shortcuts ()
   return false;
 }
 
-QMessageBox* settings_dialog::wait_message_box (const QString& text, QWidget *p)
+QMessageBox *
+settings_dialog::wait_message_box (const QString& text, QWidget *p)
 {
   QMessageBox *info = new QMessageBox (p);
 
@@ -1860,7 +1929,8 @@ QMessageBox* settings_dialog::wait_message_box (const QString& text, QWidget *p)
   return info;
 }
 
-void settings_dialog::close_wait_message_box (QMessageBox *mbox)
+void
+settings_dialog::close_wait_message_box (QMessageBox *mbox)
 {
   QApplication::restoreOverrideCursor ();
   mbox->close ();

@@ -49,7 +49,7 @@ NDArray::NDArray (const Array<octave_idx_type>& a, bool zero_based,
 {
   const octave_idx_type *pa = a.data ();
   resize (a.dims ());
-  double *ptmp = fortran_vec ();
+  double *ptmp = rwdata ();
   if (negative_to_nan)
     {
       double nan_val = lo_ieee_nan_value ();
@@ -99,7 +99,7 @@ NDArray::NDArray (const charNDArray& a)
 ComplexNDArray
 NDArray::fourier (int dim) const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   if (dim > dv.ndims () || dim < 0)
     return ComplexNDArray ();
@@ -117,7 +117,7 @@ NDArray::fourier (int dim) const
 
   const double *in (data ());
   ComplexNDArray retval (dv);
-  Complex *out (retval.fortran_vec ());
+  Complex *out (retval.rwdata ());
 
   // Need to be careful here about the distance between fft's
   for (octave_idx_type k = 0; k < nloop; k++)
@@ -130,7 +130,7 @@ NDArray::fourier (int dim) const
 ComplexNDArray
 NDArray::ifourier (int dim) const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   if (dim > dv.ndims () || dim < 0)
     return ComplexNDArray ();
@@ -147,7 +147,7 @@ NDArray::ifourier (int dim) const
   octave_idx_type dist = (stride == 1 ? n : 1);
 
   ComplexNDArray retval (*this);
-  Complex *out (retval.fortran_vec ());
+  Complex *out (retval.rwdata ());
 
   // Need to be careful here about the distance between fft's
   for (octave_idx_type k = 0; k < nloop; k++)
@@ -160,14 +160,14 @@ NDArray::ifourier (int dim) const
 ComplexNDArray
 NDArray::fourier2d () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 2)
     return ComplexNDArray ();
 
   dim_vector dv2 (dv(0), dv(1));
   const double *in = data ();
   ComplexNDArray retval (dv);
-  Complex *out = retval.fortran_vec ();
+  Complex *out = retval.rwdata ();
   octave_idx_type howmany = numel () / dv(0) / dv(1);
   octave_idx_type dist = dv(0) * dv(1);
 
@@ -180,13 +180,13 @@ NDArray::fourier2d () const
 ComplexNDArray
 NDArray::ifourier2d () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 2)
     return ComplexNDArray ();
 
   dim_vector dv2 (dv(0), dv(1));
   ComplexNDArray retval (*this);
-  Complex *out = retval.fortran_vec ();
+  Complex *out = retval.rwdata ();
   octave_idx_type howmany = numel () / dv(0) / dv(1);
   octave_idx_type dist = dv(0) * dv(1);
 
@@ -199,12 +199,12 @@ NDArray::ifourier2d () const
 ComplexNDArray
 NDArray::fourierNd () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int rank = dv.ndims ();
 
   const double *in (data ());
   ComplexNDArray retval (dv);
-  Complex *out (retval.fortran_vec ());
+  Complex *out (retval.rwdata ());
 
   octave::fftw::fftNd (in, out, rank, dv);
 
@@ -214,13 +214,13 @@ NDArray::fourierNd () const
 ComplexNDArray
 NDArray::ifourierNd () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int rank = dv.ndims ();
 
   ComplexNDArray tmp (*this);
-  Complex *in (tmp.fortran_vec ());
+  Complex *in (tmp.rwdata ());
   ComplexNDArray retval (dv);
-  Complex *out (retval.fortran_vec ());
+  Complex *out (retval.rwdata ());
 
   octave::fftw::ifftNd (in, out, rank, dv);
 

@@ -48,9 +48,7 @@ class octave_value_list;
 // Character matrix values with special properties for use as
 // strings.
 
-class
-OCTINTERP_API
-octave_char_matrix_str : public octave_char_matrix
+class OCTINTERP_API octave_char_matrix_str : public octave_char_matrix
 {
 public:
 
@@ -181,13 +179,12 @@ protected:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 typedef octave_char_matrix_str octave_char_matrix_dq_str;
 
-class
-octave_char_matrix_sq_str : public octave_char_matrix_str
+class octave_char_matrix_sq_str : public octave_char_matrix_str
 {
 public:
 
@@ -267,7 +264,7 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

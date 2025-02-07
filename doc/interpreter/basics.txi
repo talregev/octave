@@ -73,13 +73,14 @@ Specify the name of the file containing documentation strings for the
 built-in functions of Octave.  This value is normally correct and should
 only need to be specified in extraordinary situations.
 
-@item  --debug
-@itemx -d
-@cindex @sortas{options, Octave command --debug} @ @ @code{--debug}
-@cindex @sortas{options, Octave command -d} @ @ @code{-d}
-Enter parser debugging mode.  Using this option will cause Octave's
-parser to print a lot of information about the commands it reads, and is
-probably only useful if you are actually trying to debug the parser.
+@c FIXME: Disabled debug option for parser 2023-12-29.
+@c Uncomment and restore code if Octave adds capability to
+@c immediately enter debug mode for a script.
+@c @item  --debug
+@c @itemx -d
+@c @cindex @sortas{options, Octave command --debug} @ @ @code{--debug}
+@c @cindex @sortas{options, Octave command -d} @ @ @code{-d}
+@c Enter debugging mode.
 
 @item --doc-cache-file @var{filename}
 @cindex @sortas{options, Octave command --doc-cache-file} @ @ @code{--doc-cache-file @var{filename}}
@@ -95,7 +96,8 @@ function.
 @cindex @sortas{options, Octave command -x} @ @ @code{-x}
 Echo commands as they are executed.
 
-@item --eval @var{code}
+@item  --eval @var{code}
+@itemx -e @var{code}
 @cindex @sortas{options, Octave command --eval} @ @ @code{--eval @var{code}}
 Evaluate @var{code} and exit when finished unless @option{--persist} is also
 specified.
@@ -108,7 +110,8 @@ specified on the command line will override any value of
 in the system or user startup files that call the
 @w{@env{EXEC_PATH}}@ function.
 
-@item --gui
+@item  --gui
+@itemx -g
 @cindex @sortas{options, Octave command --gui} @ @ @code{--gui}
 Start the graphical user interface (GUI).
 
@@ -142,6 +145,11 @@ specified on the command line will override any value of
 commands in the system or user startup files that use the
 @code{info_program} function.
 
+@item  --init-trace
+@cindex @sortas{options, Octave command --init-trace} @ @ @code{--init-trace}
+Print the name of each configuration as it is read and executed during
+initialization.
+
 @item  --interactive
 @itemx -i
 @cindex @sortas{options, Octave command --interactive} @ @ @code{--interactive}
@@ -153,7 +161,8 @@ remote shell command or inside an Emacs shell buffer.
 @cindex @sortas{options, Octave command --line-editing} @ @ @code{--line-editing}
 Force readline use for command-line editing.
 
-@item --no-gui
+@item  --no-gui
+@itemx -G
 @cindex @sortas{options, Octave command --no-gui} @ @ @code{--no-gui}
 Disable the graphical user interface (GUI) and use the command line
 interface (CLI) instead.  This is the default behavior, but this option
@@ -165,25 +174,36 @@ may be useful to override a previous @option{--gui}.
 @cindex @sortas{options, Octave command -H} @ @ @code{-H}
 Disable recording of command-line history.
 
-@item --no-init-file
-@cindex @sortas{options, Octave command --no-init-file} @ @ @code{--no-init-file}
-@cindex @sortas{octaverc ~/.octaverc} @code{~/.octaverc}
-@cindex @sortas{octaverc .octaverc} @code{.octaverc}
-Don't read the initialization files @file{~/.octaverc} and @file{.octaverc}.
+@item  --no-init-all
+@itemx --norc
+@itemx -f
+@cindex @sortas{options, Octave command --no-init-all} @ @ @code{--no-init-all}
+@cindex @sortas{options, Octave command --norc} @ @ @code{--norc}
+@cindex @sortas{options, Octave command -f} @ @ @code{-f}
+Don't read any of the system or user initialization files at startup.
+This is equivalent to using both of the options @option{--no-site-file}
+and @option{--no-init-user}.
 
 @item --no-init-path
 @cindex @sortas{options, Octave command --no-init-path} @ @ @code{--no-init-path}
 Don't initialize the search path for function files to include default
 locations.
 
+@item --no-init-site
+@cindex @sortas{options, Octave command --no-init-site} @ @ @code{--no-init-site}
+@cindex site startup file
+Don't read the site-wide @file{octaverc} initialization files.
+
+@item --no-init-user
+@cindex @sortas{options, Octave command --no-init-user} @ @ @code{--no-init-user}
+@cindex @sortas{octaverc ~/.octaverc} @code{~/.octaverc}
+@cindex @sortas{octaverc .octaverc} @code{.octaverc}
+Don't read the user initialization files @file{~/.octaverc} and
+@file{.octaverc}.
+
 @item --no-line-editing
 @cindex @sortas{options, Octave command --no-line-editing} @ @ @code{--no-line-editing}
 Disable command-line editing.
-
-@item --no-site-file
-@cindex @sortas{options, Octave command --no-site-file} @ @ @code{--no-site-file}
-@cindex site startup file
-Don't read the site-wide @file{octaverc} initialization files.
 
 @item  --no-window-system
 @itemx -W
@@ -191,14 +211,6 @@ Don't read the site-wide @file{octaverc} initialization files.
 @cindex @sortas{options, Octave command -W} @ @ @code{-W}
 Disable use of a windowing system including graphics.  This forces a
 strictly terminal-only environment.
-
-@item  --norc
-@itemx -f
-@cindex @sortas{options, Octave command --norc} @ @ @code{--norc}
-@cindex @sortas{options, Octave command -f} @ @ @code{-f}
-Don't read any of the system or user initialization files at startup.
-This is equivalent to using both of the options @option{--no-init-file}
-and @option{--no-site-file}.
 
 @item  --path @var{path}
 @itemx -p @var{path}
@@ -215,11 +227,11 @@ of the path functions.
 Go to interactive mode after @option{--eval} or reading from a file
 named on the command line.
 
-@item  --silent
-@itemx --quiet
+@item  --quiet
+@itemx --silent
 @itemx -q
-@cindex @sortas{options, Octave command --silent} @ @ @code{--silent}
 @cindex @sortas{options, Octave command --quiet} @ @ @code{--quiet}
+@cindex @sortas{options, Octave command --silent} @ @ @code{--silent}
 @cindex @sortas{options, Octave command -q} @ @ @code{-q}
 Don't print the usual greeting and version message at startup.
 
@@ -272,12 +284,6 @@ Note that this does not enable the @code{Octave:language-extension}
 warning, which you might want if you want to be told about writing code
 that works in Octave but not @sc{matlab} (@pxref{XREFwarning,,warning},
 @ref{XREFwarning_ids,,warning_ids}).
-
-@item  --verbose
-@itemx -V
-@cindex @sortas{options, Octave command --verbose} @ @ @code{--verbose}
-@cindex @sortas{options, Octave command -V} @ @ @code{-V}
-Turn on verbose output.
 
 @item  --version
 @itemx -v
@@ -384,7 +390,7 @@ preferred location for configuration changes.
 
 A message will be displayed as each of the startup files is read if you
 invoke Octave with the @option{--verbose} option but without the
-@option{--silent} option.
+@option{--quiet} option.
 
 The startup files are always processed in the system's locale charset
 (independent of the m-file encoding that is set, for example, in the GUI

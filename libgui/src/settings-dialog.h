@@ -55,11 +55,11 @@ public:
 
   void show_tab (const QString&);
 
-signals:
+Q_SIGNALS:
 
   void apply_new_settings ();
 
-private slots:
+private Q_SLOTS:
 
   void get_octave_dir ();
   void get_file_browser_dir ();
@@ -89,11 +89,9 @@ private:
     OSC_EXPORT
   };
 
-#if defined (HAVE_QSCINTILLA)
   void update_lexer (QsciLexer *lexer, int mode, int def = 0);
   void get_lexer_settings (QsciLexer *lexer);
   void write_lexer_settings (QsciLexer *lexer);
-#endif
 
   void read_settings (bool first);
 

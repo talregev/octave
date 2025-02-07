@@ -582,7 +582,7 @@ draw (QDomElement& parent_elt, pdfpainter& painter)
           if (! str.isEmpty ())
             {
               int ii = 0;
-              foreach (QString s,  xx)
+              for (const QString& s : xx)
                 if (ii < str.size ())
                   painter.drawText (s.toInt ()-dx, y-dy, str.at (ii++));
             }

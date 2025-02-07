@@ -120,11 +120,11 @@ set_path_dialog::set_path_dialog (QWidget *parent)
   // Any interpreter_event signal from a set_path_model object is
   // handled the same as for the parent set_path_dialog object.
 
-  connect (model, QOverload<const fcn_callback&>::of (&set_path_model::interpreter_event),
-           this, QOverload<const fcn_callback&>::of (&set_path_dialog::interpreter_event));
+  connect (model, qOverload<const fcn_callback&> (&set_path_model::interpreter_event),
+           this, qOverload<const fcn_callback&> (&set_path_dialog::interpreter_event));
 
-  connect (model, QOverload<const meth_callback&>::of (&set_path_model::interpreter_event),
-           this, QOverload<const meth_callback&>::of (&set_path_dialog::interpreter_event));
+  connect (model, qOverload<const meth_callback&> (&set_path_model::interpreter_event),
+           this, qOverload<const meth_callback&> (&set_path_dialog::interpreter_event));
 
   m_path_list = new QListView (this);
   m_path_list->setWordWrap (false);
@@ -132,7 +132,7 @@ set_path_dialog::set_path_dialog (QWidget *parent)
   m_path_list->setSelectionBehavior (QAbstractItemView::SelectRows);
   m_path_list->setSelectionMode (QAbstractItemView::ExtendedSelection);
   m_path_list->setAlternatingRowColors (true);
-  m_path_list->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  m_path_list->setSizePolicy (QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   // layout everything
   QDialogButtonBox *button_box = new QDialogButtonBox (Qt::Horizontal);
@@ -157,8 +157,8 @@ set_path_dialog::set_path_dialog (QWidget *parent)
 
   // main layout
   QHBoxLayout *main_hboxlayout = new QHBoxLayout;
-  main_hboxlayout->addWidget(path_edit_layout);
-  main_hboxlayout->addWidget(m_path_list);
+  main_hboxlayout->addWidget (path_edit_layout);
+  main_hboxlayout->addWidget (m_path_list);
 
   QGridLayout *main_layout = new QGridLayout;
   main_layout->addWidget (m_info_label, 0, 0);
@@ -169,16 +169,18 @@ set_path_dialog::set_path_dialog (QWidget *parent)
 
   gui_settings settings;
 
-  restoreGeometry (settings.value(pd_geometry.settings_key ()).toByteArray());
+  restoreGeometry (settings.value (pd_geometry.settings_key ()).toByteArray ());
 }
 
-void set_path_dialog::update_model ()
+void
+set_path_dialog::update_model ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   m->path_to_model ();
 }
 
-void set_path_dialog::add_dir_common (bool subdirs)
+void
+set_path_dialog::add_dir_common (bool subdirs)
 {
   QString dir
     = QFileDialog::getExistingDirectory (this, tr ("Open Directory"),
@@ -192,7 +194,7 @@ void set_path_dialog::add_dir_common (bool subdirs)
         {
           // Use existing method mofifying load path and updating dialog
           // instead of adding string and updating load path
-          emit modify_path_signal (QStringList (dir), false, true);
+          Q_EMIT modify_path_signal (QStringList (dir), false, true);
         }
       else
         {
@@ -203,31 +205,35 @@ void set_path_dialog::add_dir_common (bool subdirs)
     }
 }
 
-void set_path_dialog::add_dir()
+void
+set_path_dialog::add_dir ()
 {
   add_dir_common (false);
 }
 
-void set_path_dialog::add_dir_subdirs ()
+void
+set_path_dialog::add_dir_subdirs ()
 {
   add_dir_common (true);
 }
 
-void set_path_dialog::rm_dir ()
+void
+set_path_dialog::rm_dir ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   QItemSelectionModel *selmodel = m_path_list->selectionModel ();
-  QModelIndexList indexlist = selmodel->selectedIndexes();
+  QModelIndexList indexlist = selmodel->selectedIndexes ();
   m->rm_dir (indexlist);
 
   selmodel->clearSelection ();
 }
 
-void set_path_dialog::move_dir_up ()
+void
+set_path_dialog::move_dir_up ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   QItemSelectionModel *selmodel = m_path_list->selectionModel ();
-  QModelIndexList indexlist = selmodel->selectedIndexes();
+  QModelIndexList indexlist = selmodel->selectedIndexes ();
   m->move_dir_up (indexlist);
 
   // Update selection and view
@@ -243,11 +249,12 @@ void set_path_dialog::move_dir_up ()
   m_path_list->scrollTo (m->index (min_row));
 }
 
-void set_path_dialog::move_dir_down ()
+void
+set_path_dialog::move_dir_down ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   QItemSelectionModel *selmodel = m_path_list->selectionModel ();
-  QModelIndexList indexlist = selmodel->selectedIndexes();
+  QModelIndexList indexlist = selmodel->selectedIndexes ();
   m->move_dir_down (indexlist);
 
   // Update selection and view
@@ -263,11 +270,12 @@ void set_path_dialog::move_dir_down ()
   m_path_list->scrollTo (m->index (max_row));
 }
 
-void set_path_dialog::move_dir_top ()
+void
+set_path_dialog::move_dir_top ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   QItemSelectionModel *selmodel = m_path_list->selectionModel ();
-  QModelIndexList indexlist = selmodel->selectedIndexes();
+  QModelIndexList indexlist = selmodel->selectedIndexes ();
   m->move_dir_top (indexlist);
 
   // Update selection and view
@@ -278,11 +286,12 @@ void set_path_dialog::move_dir_top ()
   m_path_list->scrollTo (m->index (0));
 }
 
-void set_path_dialog::move_dir_bottom ()
+void
+set_path_dialog::move_dir_bottom ()
 {
   set_path_model *m = static_cast<set_path_model *> (m_path_list->model ());
   QItemSelectionModel *selmodel = m_path_list->selectionModel ();
-  QModelIndexList indexlist = selmodel->selectedIndexes();
+  QModelIndexList indexlist = selmodel->selectedIndexes ();
   m->move_dir_bottom (indexlist);
 
   // Update selection and view
@@ -295,14 +304,16 @@ void set_path_dialog::move_dir_bottom ()
   m_path_list->scrollTo (m->index (row_count - 1));
 }
 
-void set_path_dialog::save_settings ()
+void
+set_path_dialog::save_settings ()
 {
   gui_settings settings;
 
   settings.setValue (pd_geometry.settings_key (), saveGeometry ());
 }
 
-void set_path_dialog::closeEvent (QCloseEvent *e)
+void
+set_path_dialog::closeEvent (QCloseEvent *e)
 {
   save_settings ();
 

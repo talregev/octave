@@ -52,13 +52,34 @@
 ## @result{} d =  113
 ##
 ## n / d - pi
-## @result{} 0.00000026676
+## @result{} 2.6676e-07
 ## @end group
 ## @end example
 ##
-## Programming Note: With one output @code{rat} produces a string which is a
-## continued fraction expansion.  To produce a string which is a simple
-## fraction (one numerator, one denominator) use @code{rats}.
+## Complex inputs are similar:
+##
+## @example
+## @group
+## s = rat (0.5 + i * pi)
+## @result{} s = complex (1 + 1/(-2), 3 + 1/(7 + 1/16))
+##
+## [n, d] = rat (0.5 + i * pi)
+## @result{} n =  113 + 710i
+## @result{} d =  226
+##
+## n / d - (0.5 + i * pi)
+## @result{} 0 + 2.6676e-07i
+## @end group
+## @end example
+##
+## Programming Notes:
+##
+## 1. With one output @code{rat} produces a string which is a continued
+## fraction expansion.  To produce a string which is a simple fraction
+## (one numerator, one denominator) use @code{rats}.
+##
+## 2. The string output produced by @code{rat} can be passed to @code{eval}
+## to get back the original input up to the tolerance used.
 ##
 ## @seealso{rats, format}
 ## @end deftypefn
@@ -73,10 +94,41 @@ function [n, d] = rat (x, tol)
     error ("rat: X must be a single or double array");
   endif
 
-  ## FIXME: This test should be removed when complex support is added.
-  ##        See bug #55198.
   if (iscomplex (x))
-    error ("rat: X must be a real, not complex, array");
+    if (nargout == 2)  # return numerator and denominator
+      if (nargin == 2)
+        [nr, dr] = rat (real (x), tol);
+        [ni, di] = rat (imag (x), tol);
+      else
+        [nr, dr] = rat (real (x));
+        [ni, di] = rat (imag (x));
+      endif
+
+      ## For inputs with inf, the output is set to 1/0 or -1/0.
+      ## Override that to +inf/1 or -inf/1.
+      ii = (dr == 0 & nr > 0); dr(ii) = 1; nr(ii) = +inf;
+      ii = (dr == 0 & nr < 0); dr(ii) = 1; nr(ii) = -inf;
+      ii = (di == 0 & ni > 0); di(ii) = 1; ni(ii) = +inf;
+      ii = (di == 0 & ni < 0); di(ii) = 1; ni(ii) = -inf;
+
+      d = lcm (dr, di);  # now this should always be nonzero
+      n = complex (nr .* (d ./ dr), ni .* (d ./ di));
+    elseif (nargout <= 1)  # string output
+      if (nargin == 2)
+        realstr = rat (real (x), tol);
+        imagstr = rat (imag (x), tol);
+      else
+        realstr = rat (real (x));
+        imagstr = rat (imag (x));
+      endif
+
+      nn = rows (realstr);
+      start  = repmat ("complex (", nn, 1);
+      mid    = repmat (", ",        nn, 1);
+      finish = repmat (")",         nn, 1);
+      n = [start, realstr, mid, imagstr, finish];
+    endif
+    return;
   endif
 
   y = x(:);
@@ -89,8 +141,8 @@ function [n, d] = rat (x, tol)
     ## default norm
     tol = 1e-6 * norm (y, 1);
   else
-    if (! (isscalar (tol) && isnumeric (tol) && tol > 0))
-      error ("rat: TOL must be a numeric scalar > 0");
+    if (! (isscalar (tol) && isnumeric (tol) && tol >= 0))
+      error ("rat: TOL must be a numeric scalar >= 0");
     endif
   endif
 
@@ -220,12 +272,71 @@ endfunction
 %! assert (n, [1, 0, -1]);
 %! assert (d, [0, 1, 0]);
 
+## Test complex scalar input
+%!test <*55198>
+%! assert (rat (complex (0.5, pi)), "complex (1 + 1/(-2), 3 + 1/(7 + 1/16))");
+%! [n, d] = rat (complex (0.5, pi));
+%! assert (n, 113 + 710*i);
+%! assert (d, 226);
+
+## Test complex vector input in all four quadrants
+%!test <*55198>
+%! theta = 72 * (1:4);
+%! x = cosd (theta) + i * sind (theta);
+%! [n, d] = rat (x);
+%! assert (n, [274195+843885i, -39955+29029i, -39955-29029i, 274195-843885i]);
+%! assert (d, [887313, 49387, 49387, 887313]);
+%! assert (all (abs (n ./ d - x) <= 2e-6));
+%! str = rat (x);
+%! assert (str(1, :), "complex (0 + 1/(3 + 1/(4 + 1/(4 + 1/(4 + 1/4)))), 1 + 1/(-20 + 1/(-2 + 1/(-3 + 1/(-6)))))");
+%! assert (str(2, :), "complex (-1 + 1/(5 + 1/(4 + 1/(4 + 1/4)))       , 1 + 1/(-2 + 1/(-2 + 1/(-3 + 1/8)))    )");
+%! assert (str(3, :), "complex (-1 + 1/(5 + 1/(4 + 1/(4 + 1/4)))       , -1 + 1/(2 + 1/(2 + 1/(3 + 1/(-8))))   )");
+%! assert (str(4, :), "complex (0 + 1/(3 + 1/(4 + 1/(4 + 1/(4 + 1/4)))), -1 + 1/(20 + 1/(2 + 1/(3 + 1/6)))     )");
+
+## Test complex exceptional inputs
+%!test <*55198>
+%! assert (rat (complex (inf, 0)), "complex (Inf, 0)");
+%! assert (rat (complex (0, inf)), "complex (0, Inf)");
+%! assert (rat (complex (-inf, 0)), "complex (-Inf, 0)");
+%! assert (rat (complex (0, -inf)), "complex (0, -Inf)");
+%! assert (rat (complex (nan, 0)), "complex (NaN , 0)");
+%! assert (rat (complex (0, nan)), "complex (0, NaN )");
+
+%!test <*55198>
+%! [n, d] = rat (complex (inf, 0));
+%! assert (n, complex (inf, 0));
+%! assert (d, 1);
+%! [n, d] = rat (complex (0, inf));
+%! assert (n, complex (0, inf));
+%! assert (d, 1);
+%! [n, d] = rat (complex (-inf, 0));
+%! assert (n, complex (-inf, 0));
+%! assert (d, 1);
+%! [n, d] = rat (complex (0, -inf));
+%! assert (n, complex (0, -inf));
+%! assert (d, 1);
+%! [n, d] = rat (complex (nan, 0));
+%! assert (n, complex (nan, 0));
+%! assert (d, 1);
+%! [n, d] = rat (complex (0, nan));
+%! assert (n, complex (0, nan));
+%! assert (d, 1);
+
+## Test eval with complex inputs
+%!test <*55198>
+%! x = complex (0.5, pi);
+%! assert (eval (rat (x)), x, 1e-6 * norm (x, 1))
+
+## Test eval with inf*i
+%!test <*55198>
+%! x = complex (0, inf);
+%! assert (eval (rat (x)), x, 1e-6 * norm (x, 1))
+
 %!assert <*43374> (eval (rat (0.75)), [0.75])
 
 ## Test input validation
 %!error <Invalid call> rat ()
 %!error <X must be a single or double array> rat (int8 (3))
-%!error <X must be a real, not complex, array> rat (1+1i)
 %!error <TOL must be a numeric scalar> rat (1, "a")
 %!error <TOL must be a numeric scalar> rat (1, [1 2])
-%!error <TOL must be a numeric scalar . 0> rat (1, -1)
+%!error <TOL must be a numeric scalar .* 0> rat (1, -1)

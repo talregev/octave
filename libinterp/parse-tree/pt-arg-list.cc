@@ -54,9 +54,9 @@ tree_argument_list::~tree_argument_list ()
 }
 
 void
-tree_argument_list::append (const element_type& s)
+tree_argument_list::push_back (const element_type& s)
 {
-  base_list<tree_expression *>::append (s);
+  std::list<tree_expression *>::push_back (s);
 
   if (! m_list_includes_magic_tilde && s && s->is_identifier ())
     {
@@ -100,7 +100,7 @@ tree_argument_list::is_valid_lvalue_list () const
 string_vector
 tree_argument_list::get_arg_names () const
 {
-  int len = length ();
+  int len = size ();
 
   string_vector retval (len);
 
@@ -143,9 +143,11 @@ tree_argument_list::dup (symbol_scope& scope) const
   tree_argument_list *new_list = new tree_argument_list ();
 
   new_list->m_simple_assign_lhs = m_simple_assign_lhs;
+  new_list->m_list_includes_magic_tilde = m_list_includes_magic_tilde;
+  new_list->m_delims = m_delims;
 
   for (const tree_expression *elt : *this)
-    new_list->append (elt ? elt->dup (scope) : nullptr);
+    new_list->push_back (elt ? elt->dup (scope) : nullptr);
 
   return new_list;
 }

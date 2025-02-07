@@ -26,9 +26,15 @@
 #if ! defined (octave_command_widget_h)
 #define octave_command_widget_h 1
 
+#include <QFileSystemWatcher>
 #include <QWidget>
-
 #include <Qsci/qsciscintilla.h>
+#include <QShortcut>
+#include <QTemporaryFile>
+
+#include "find-widget.h"
+#include "gui-preferences-sc.h"
+#include "console-lexer.h"
 
 // FIXME: We need the following header for the fcn_callback and
 // meth_callback typedefs.  Maybe it would be better to declare those in
@@ -37,6 +43,7 @@
 #include "event-manager.h"
 
 class QsciScintilla;
+class self_listener;
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
@@ -50,12 +57,14 @@ public:
 
   console (command_widget *p);
 
-signals:
+  void append_string (const QString& string, int style = console_lexer::Default);
+
+Q_SIGNALS:
 
   void interpreter_event (const fcn_callback& fcn);
   void interpreter_event (const meth_callback& meth);
 
-public slots:
+public Q_SLOTS:
 
   void cursor_position_changed (int line, int col);
 
@@ -67,13 +76,15 @@ public slots:
 
   void execute_command (const QString& command);
 
+  void find_incremental (const QString&);
+
+  void find (const QString&, bool);
+
 protected:
 
   void keyPressEvent (QKeyEvent *e);
 
 private:
-
-  void append_string (const QString& string);
 
   void accept_command_line ();
 
@@ -82,7 +93,9 @@ private:
   bool m_text_changed;
   command_widget *m_command_widget;
   QString m_last_key_string;
-
+  bool m_find_result_available;
+  bool m_find_direction;
+  QString m_last_find_inc_result;
 };
 
 class command_widget : public QWidget
@@ -93,13 +106,15 @@ public:
 
   command_widget (QWidget *p);
 
+  ~command_widget (void);
+
   console * get_console ( ) { return m_console; };
 
   void init_command_prompt ();
 
   QString prompt ();
 
-signals:
+Q_SIGNALS:
 
   void clear_line_edit ();
 
@@ -113,13 +128,15 @@ signals:
   void interpreter_event (const fcn_callback& fcn);
   void interpreter_event (const meth_callback& meth);
 
-public slots:
+public Q_SLOTS:
+
+  void process_redirected_streams (const char *buf, int len, int fd);
 
   void process_input_line (const QString& input_line);
 
   void update_prompt (const QString& prompt);
 
-  void insert_interpreter_output (const QString& msg);
+  void insert_interpreter_output (const QString& msg, int style);
 
   void notice_settings ();
 
@@ -128,6 +145,9 @@ private:
   bool m_incomplete_parse;
   QString m_prompt;
   console *m_console;
+  QPointer<self_listener> m_listener;
+  find_widget *m_find_widget;
+  QShortcut *m_find_shortcut;
 };
 
 OCTAVE_END_NAMESPACE(octave)

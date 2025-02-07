@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#if !defined (octave_pt_anon_scopes_h)
+#if ! defined (octave_pt_anon_scopes_h)
 #define octave_pt_anon_scopes_h 1
 
 #include <set>
@@ -36,8 +36,7 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 // In possibly nested definitions of anonymous functions, collect
 // their scopes and the symbol records therein.
 
-class
-tree_anon_scopes : public tree_walker
+class tree_anon_scopes : public tree_walker
 {
 public:
 

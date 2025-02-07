@@ -27,6 +27,8 @@
 #  include "config.h"
 #endif
 
+#include <iostream>
+
 #include <sstream>
 
 #include "file-info.h"
@@ -40,12 +42,15 @@
 #include "defun.h"
 #include "error.h"
 #include "errwarn.h"
+#include "filepos.h"
 #include "input.h"
 #include "ovl.h"
 #include "ov-usr-fcn.h"
 #include "ov.h"
 #include "pager.h"
+#include "pt-cmd.h"
 #include "pt-eval.h"
+#include "pt-id.h"
 #include "pt-jump.h"
 #include "pt-misc.h"
 #include "pt-pr-code.h"
@@ -82,6 +87,16 @@ octave_user_code::~octave_user_code ()
 
   delete m_cmd_list;
   delete m_file_info;
+}
+
+octave::filepos octave_user_code::beg_pos () const
+{
+  return m_cmd_list->beg_pos ();
+}
+
+octave::filepos octave_user_code::end_pos () const
+{
+  return m_cmd_list->end_pos ();
 }
 
 void
@@ -210,18 +225,8 @@ DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_user_function,
 // Ugh.  This really needs to be simplified (code/data?
 // extrinsic/intrinsic state?).
 
-octave_user_function::octave_user_function
-(const octave::symbol_scope& scope, octave::tree_parameter_list *pl,
- octave::tree_parameter_list *rl, octave::tree_statement_list *cl)
-  : octave_user_code ("", "", scope, cl, ""),
-    m_param_list (pl), m_ret_list (rl),
-    m_lead_comm (), m_trail_comm (),
-    m_location_line (0), m_location_column (0),
-    m_system_fcn_file (false),
-    m_num_named_args (m_param_list ? m_param_list->length () : 0),
-    m_subfunction (false), m_inline_function (false),
-    m_anonymous_function (false), m_nested_function (false),
-    m_class_constructor (none), m_class_method (none)
+octave_user_function::octave_user_function (const octave::symbol_scope& scope, octave::tree_identifier *id, octave::tree_parameter_list *pl, octave::tree_parameter_list *rl, octave::tree_statement_list *cl)
+  : octave_user_code ("", "", scope, cl, ""), m_id (id), m_param_list (pl), m_ret_list (rl), m_num_named_args (m_param_list ? m_param_list->size () : 0)
 {
   if (m_cmd_list)
     m_cmd_list->mark_as_function_body ();
@@ -229,10 +234,32 @@ octave_user_function::octave_user_function
 
 octave_user_function::~octave_user_function ()
 {
+  delete m_id;
   delete m_param_list;
   delete m_ret_list;
-  delete m_lead_comm;
-  delete m_trail_comm;
+}
+
+std::string
+octave_user_function::signature () const
+{
+  std::ostringstream buf;
+
+  octave::tree_print_code tpc (buf);
+
+  if (m_ret_list)
+    {
+      m_ret_list->accept (tpc);
+      buf << " = ";
+    }
+
+  buf << m_name << " ";
+
+  if (m_param_list)
+    m_param_list->accept (tpc);
+  else
+    buf << " ()";
+
+  return buf.str ();
 }
 
 octave_user_function *
@@ -243,17 +270,51 @@ octave_user_function::define_ret_list (octave::tree_parameter_list *t)
   return this;
 }
 
+void
+octave_user_function::attach_trailing_comments (const octave::comment_list& lst)
+{
+  if (m_cmd_list && ! m_cmd_list->empty ())
+    {
+      octave::tree_statement *last_stmt = m_cmd_list->back ();
+
+      octave::tree_command *cmd = last_stmt->command ();
+
+      octave::tree_no_op_command *no_op_cmd = dynamic_cast <octave::tree_no_op_command *> (cmd);
+
+      if (no_op_cmd && (no_op_cmd->is_end_of_fcn_or_script () || no_op_cmd->is_end_of_file ()))
+        no_op_cmd->attach_trailing_comments (lst);
+    }
+}
+
+octave::comment_list octave_user_function::trailing_comments () const
+{
+  if (m_cmd_list && ! m_cmd_list->empty ())
+    {
+      octave::tree_statement *last_stmt = m_cmd_list->back ();
+
+      octave::tree_command *cmd = last_stmt->command ();
+
+      octave::tree_no_op_command *no_op_cmd = dynamic_cast <octave::tree_no_op_command *> (cmd);
+
+      if (no_op_cmd && (no_op_cmd->is_end_of_fcn_or_script () || no_op_cmd->is_end_of_file ()))
+        return no_op_cmd->trailing_comments ();
+    }
+
+  return octave::comment_list ();
+}
+
 // If there is no explicit end statement at the end of the function,
 // relocate the no_op that was generated for the end of file condition
 // to appear on the next line after the last statement in the file, or
 // the next line after the function keyword if there are no statements.
-// More precisely, the new location should probably be on the next line
-// after the end of the parameter list, but we aren't tracking that
-// information (yet).
 
 void
 octave_user_function::maybe_relocate_end_internal ()
 {
+  // This shouldn't happen, but check and return early anyway.
+  if (m_anonymous_function)
+    return;
+
   if (m_cmd_list && ! m_cmd_list->empty ())
     {
       octave::tree_statement *last_stmt = m_cmd_list->back ();
@@ -261,28 +322,37 @@ octave_user_function::maybe_relocate_end_internal ()
       if (last_stmt && last_stmt->is_end_of_fcn_or_script ()
           && last_stmt->is_end_of_file ())
         {
-          octave::tree_statement_list::reverse_iterator
-          next_to_last_elt = m_cmd_list->rbegin ();
-
+          octave::tree_statement_list::reverse_iterator next_to_last_elt = m_cmd_list->rbegin ();
           next_to_last_elt++;
 
-          int new_eof_line;
-          int new_eof_col;
+          octave::filepos new_eof_pos;
 
           if (next_to_last_elt == m_cmd_list->rend ())
             {
-              new_eof_line = beginning_line ();
-              new_eof_col = beginning_column ();
+              // Empty function body, just the end statement.  Set the
+              // new beginning of that statement to the end of the
+              // argument list (if any) or the end of the function name.
+
+              // M_ID is only nullptr if this is an anonymous function
+              // and we shouldn't be updating the end position for that.
+              // So if there is no name and no parameter list, just
+              // return early.
+
+              if (m_param_list)
+                new_eof_pos = m_param_list->end_pos ();
+              else if (m_id)
+                new_eof_pos = m_id->end_pos ();
+              else
+                return;
             }
           else
             {
               octave::tree_statement *next_to_last_stmt = *next_to_last_elt;
 
-              new_eof_line = next_to_last_stmt->line ();
-              new_eof_col = next_to_last_stmt->column ();
+              new_eof_pos = next_to_last_stmt->end_pos ();
             }
 
-          last_stmt->set_location (new_eof_line + 1, new_eof_col);
+          last_stmt->update_end_pos (new_eof_pos);
         }
     }
 }
@@ -317,9 +387,14 @@ octave_user_function::profiler_name () const
 {
   std::ostringstream result;
 
+  octave::filepos bp = beg_pos ();
+
+  int bp_line = bp.line ();
+  int bp_column = bp.column ();
+
   if (is_anonymous_function ())
     result << "anonymous@" << fcn_file_name ()
-           << ':' << m_location_line << ':' << m_location_column;
+           << ':' << bp_line << ':' << bp_column;
   else if (is_subfunction ())
     result << parent_fcn_name () << '>' << name ();
   else if (is_class_method ())
@@ -328,7 +403,7 @@ octave_user_function::profiler_name () const
     result << '@' << name ();
   else if (is_inline_function ())
     result << "inline@" << fcn_file_name ()
-           << ':' << m_location_line << ':' << m_location_column;
+           << ':' << bp_line << ':' << bp_column;
   else
     result << name ();
 
@@ -504,7 +579,7 @@ octave::tree_expression *
 octave_user_function::special_expr ()
 {
   panic_unless (is_special_expr ());
-  panic_if (m_cmd_list->length () != 1);
+  panic_if (m_cmd_list->size () != 1);
 
   octave::tree_statement *stmt = m_cmd_list->front ();
   return stmt->expression ();
@@ -516,8 +591,8 @@ octave_user_function::subsasgn_optimization_ok ()
   bool retval = false;
   if (Voptimize_subsasgn_calls
       && m_param_list && m_ret_list
-      && m_param_list->length () > 0 && ! m_param_list->varargs_only ()
-      && m_ret_list->length () == 1 && ! m_ret_list->takes_varargs ())
+      && m_param_list->size () > 0 && ! m_param_list->varargs_only ()
+      && m_ret_list->size () == 1 && ! m_ret_list->takes_varargs ())
     {
       octave::tree_identifier *par1 = m_param_list->front ()->ident ();
       octave::tree_identifier *ret1 = m_ret_list->front ()->ident ();
@@ -584,20 +659,23 @@ octave_user_function::method_type_str () const
 octave_value
 octave_user_function::dump () const
 {
+  octave::filepos bp = beg_pos ();
+  octave::filepos ep = end_pos ();
+
   std::map<std::string, octave_value> m
-  = {{ "user_code", octave_user_code::dump () },
-    { "line", m_location_line },
-    { "col", m_location_column },
-    { "end_line", m_end_location_line },
-    { "end_col", m_end_location_column },
-    { "system_fcn_file", m_system_fcn_file },
-    { "num_named_args", m_num_named_args },
-    { "subfunction", m_subfunction },
-    { "inline_function", m_inline_function },
-    { "anonymous_function", m_anonymous_function },
-    { "nested_function", m_nested_function },
-    { "ctor_type", ctor_type_str () },
-    { "class_method", m_class_method }
+    = {{ "user_code", octave_user_code::dump () },
+       { "line", bp.line () },
+       { "col", bp.column () },
+       { "end_line", ep.line () },
+       { "end_col", ep.column () },
+       { "system_fcn_file", m_system_fcn_file },
+       { "num_named_args", m_num_named_args },
+       { "subfunction", m_subfunction },
+       { "inline_function", m_inline_function },
+       { "anonymous_function", m_anonymous_function },
+       { "nested_function", m_nested_function },
+       { "ctor_type", ctor_type_str () },
+       { "class_method", m_class_method }
   };
 
   return octave_value (m);
@@ -631,11 +709,11 @@ octave_user_function::restore_warning_states ()
 
   if (val.is_defined ())
     {
-      // Fail spectacularly if SAVED_WARNING_STATES is not an
-      // octave_map (or octave_scalar_map) object.
+      // Fail if SAVED_WARNING_STATES is not an octave_map (or
+      // octave_scalar_map) object.
 
       if (! val.isstruct ())
-        panic_impossible ();
+        error ("unexpected: SAVED_WARNING_STATES is not a struct in octave_user_function::restore_warning_states - please report this bug");
 
       octave_map m = val.map_value ();
 
@@ -721,7 +799,7 @@ Programming Note: @code{nargin} does not work on compiled functions
 
       tree_parameter_list *m_param_list = ufcn->parameter_list ();
 
-      retval = (m_param_list ? m_param_list->length () : 0);
+      retval = (m_param_list ? m_param_list->size () : 0);
       if (ufcn->takes_varargs ())
         retval = -1 - retval;
     }
@@ -843,7 +921,7 @@ returns -1 for all anonymous functions.
 
       tree_parameter_list *m_ret_list = ufcn->return_list ();
 
-      retval = (m_ret_list ? m_ret_list->length () : 0);
+      retval = (m_ret_list ? m_ret_list->size () : 0);
 
       if (ufcn->takes_var_return ())
         retval = -1 - retval;

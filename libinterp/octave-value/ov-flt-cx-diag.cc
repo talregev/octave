@@ -30,14 +30,9 @@
 #include "byte-swap.h"
 
 #include "ov-flt-cx-diag.h"
-#include "ov-base-diag.cc"
 #include "ov-flt-re-diag.h"
 #include "ov-flt-complex.h"
-#include "ov-flt-cx-mat.h"
 #include "ls-utils.h"
-
-
-template class octave_base_diag<FloatComplexDiagMatrix, FloatComplexMatrix>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_float_complex_diag_matrix,
                                      "float complex diagonal matrix", "single");
@@ -200,7 +195,7 @@ octave_float_complex_diag_matrix::load_binary (std::istream& is, bool swap,
     }
 
   FloatComplexDiagMatrix m (r, c);
-  FloatComplex *re = m.fortran_vec ();
+  FloatComplex *re = m.rwdata ();
   octave_idx_type len = m.length ();
   read_floats (is, reinterpret_cast<float *> (re),
                static_cast<save_type> (tmp), 2 * len, swap, fmt);

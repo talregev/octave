@@ -521,7 +521,7 @@ octave::string::u8_to_encoding (const std::string& who,
            who.c_str (), encoding.c_str (), std::strerror (errno));
     }
 
-  octave::unwind_action free_native_str ([=] () { ::free (native_str); });
+  octave::unwind_action free_native_str ([native_str] () { ::free (native_str); });
 
   std::string retval = std::string (native_str, length);
 
@@ -551,7 +551,7 @@ octave::string::u8_from_encoding (const std::string& who,
            who.c_str (), encoding.c_str (), std::strerror (errno));
     }
 
-  octave::unwind_action free_utf8_str ([=] () { ::free (utf8_str); });
+  octave::unwind_action free_utf8_str ([utf8_str] () { ::free (utf8_str); });
 
   std::string retval = std::string (reinterpret_cast<char *> (utf8_str), length);
 
@@ -597,8 +597,7 @@ octave::string::u8_validate (const std::string& who,
                   ("%s: converting from codepage '%s' to UTF-8 failed: %s",
                    who.c_str (), fallback.c_str (), std::strerror (errno));
 
-              octave::unwind_action free_val_utf8
-                ([=] () { ::free (val_utf8); });
+              octave::unwind_action free_val_utf8 ([val_utf8] () { ::free (val_utf8); });
 
               out_str.append (reinterpret_cast<const char *> (val_utf8),
                               lengthp);
@@ -635,7 +634,7 @@ octave::string::u16_to_encoding (const std::string& who,
            who.c_str (), encoding.c_str (), std::strerror (errno));
     }
 
-  octave::unwind_action free_native_str ([=] () { ::free (native_str); });
+  octave::unwind_action free_native_str ([native_str] () { ::free (native_str); });
 
   std::string retval = std::string (native_str, length);
 
@@ -917,10 +916,11 @@ rational_approx (T val, int len)
   if (len <= 0)
     len = 10;
 
-  static const T out_of_range_top
-    = static_cast<T> (std::numeric_limits<int>::max ()) + 1.;
-  static const T out_of_range_bottom
-    = static_cast<T> (std::numeric_limits<int>::min ()) - 1.;
+  static constexpr T out_of_range_top
+    = static_cast<T> (std::numeric_limits<int>::max ()) + 1.0;
+  static constexpr T out_of_range_bottom
+    = static_cast<T> (std::numeric_limits<int>::min ()) - 1.0;
+
   if (octave::math::isinf (val))
     {
       if (val > 0)

@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
+#if defined (HAVE_CONFIG_H)
 #  include "config.h"
 #endif
 
@@ -179,7 +179,7 @@ base_ve_model::edit_display_sub (const octave_value& elt, int role) const
     }
   else
     {
-      dim_vector dv = elt.dims ();
+      const dim_vector& dv = elt.dims ();
       str = "[" + dv.str () + " " + elt.class_name () + "]";
     }
 
@@ -294,7 +294,7 @@ base_ve_model::make_description_text () const
       if (! lbl_txt.isEmpty ())
         lbl_txt += " ";
 
-      dim_vector dv = m_value.dims ();
+      const dim_vector& dv = m_value.dims ();
 
       lbl_txt += ("["
                   + QString::fromStdString (dv.str ())
@@ -1007,8 +1007,8 @@ variable_editor_model::setData (const QModelIndex& idx,
 
   QPointer<variable_editor_model> this_vem (this);
 
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this, this_vem, expr, nm, idx] (interpreter& interp)
     {
       // INTERPRETER THREAD
 
@@ -1025,7 +1025,7 @@ variable_editor_model::setData (const QModelIndex& idx,
 
           octave_value val = retrieve_variable (interp, nm);
 
-          emit update_data_signal (val);
+          Q_EMIT update_data_signal (val);
         }
       catch (const execution_exception&)
         {
@@ -1036,7 +1036,7 @@ variable_editor_model::setData (const QModelIndex& idx,
           // This will cause the data in the cell to be reset
           // from the cached octave_value object.
 
-          emit dataChanged (idx, idx);
+          Q_EMIT dataChanged (idx, idx);
         }
     });
 
@@ -1146,14 +1146,14 @@ variable_editor_model::init_from_oct (interpreter& interp)
     {
       octave_value val = retrieve_variable (interp, nm);
 
-      emit update_data_signal (val);
+      Q_EMIT update_data_signal (val);
     }
   catch (const execution_exception&)
     {
       QString msg = (QString ("variable '%1' is invalid or undefined")
                      .arg (QString::fromStdString (nm)));
 
-      emit data_error_signal (msg);
+      Q_EMIT data_error_signal (msg);
     }
 }
 
@@ -1162,8 +1162,8 @@ variable_editor_model::eval_expr_event (const QString& expr_arg)
 {
   std::string expr = expr_arg.toStdString ();
 
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this, expr] (interpreter& interp)
     {
       // INTERPRETER THREAD
 
@@ -1220,9 +1220,9 @@ variable_editor_model::retrieve_variable (interpreter& interp,
 void
 variable_editor_model::evaluation_error (const std::string& expr) const
 {
-  emit user_error_signal ("Evaluation failed",
-                          QString ("failed to evaluate expression: '%1' or result can't be edited")
-                          .arg (QString::fromStdString (expr)));
+  Q_EMIT user_error_signal ("Evaluation failed",
+                            QString ("failed to evaluate expression: '%1' or result can't be edited")
+                            .arg (QString::fromStdString (expr)));
 }
 
 void
@@ -1234,8 +1234,8 @@ variable_editor_model::user_error (const QString& title, const QString& msg)
 void
 variable_editor_model::update_data_cache ()
 {
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this] (interpreter& interp)
     {
       // INTERPRETER_THREAD
 
@@ -1251,7 +1251,7 @@ variable_editor_model::update_data (const octave_value& val)
       QString msg = (QString ("variable '%1' is invalid or undefined")
                      .arg (QString::fromStdString (name ())));
 
-      emit data_error_signal (msg);
+      Q_EMIT data_error_signal (msg);
 
       return;
     }
@@ -1274,8 +1274,8 @@ variable_editor_model::update_data (const octave_value& val)
   // to display.
 
   if (new_rows > 0 && new_cols > 0)
-    emit dataChanged (QAbstractTableModel::index (0, 0),
-                      QAbstractTableModel::index (new_rows-1, new_cols-1));
+    Q_EMIT dataChanged (QAbstractTableModel::index (0, 0),
+                        QAbstractTableModel::index (new_rows-1, new_cols-1));
 
   clear_update_pending ();
 }
@@ -1356,7 +1356,7 @@ variable_editor_model::reset (const octave_value& val)
 
   update_description ();
 
-  emit set_editable_signal (is_editable ());
+  Q_EMIT set_editable_signal (is_editable ());
 }
 
 void
@@ -1372,8 +1372,8 @@ variable_editor_model::invalidate ()
 void
 variable_editor_model::update_description (const QString& description)
 {
-  emit description_changed (description.isEmpty ()
-                            ? make_description_text () : description);
+  Q_EMIT description_changed (description.isEmpty ()
+                              ? make_description_text () : description);
 }
 
 void
@@ -1381,9 +1381,9 @@ variable_editor_model::double_click (const QModelIndex& idx)
 {
   if (requires_sub_editor (idx))
     {
-      QString name = QString::fromStdString(m_rep->name ());
-      emit edit_variable_signal (name + subscript_expression (idx),
-                                 value_at (idx));
+      QString name = QString::fromStdString (m_rep->name ());
+      Q_EMIT edit_variable_signal (name + subscript_expression (idx),
+                                   value_at (idx));
     }
 }
 

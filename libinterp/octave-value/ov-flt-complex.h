@@ -33,7 +33,6 @@
 #include <iosfwd>
 #include <string>
 
-#include "lo-ieee.h"
 #include "mx-base.h"
 #include "str-vec.h"
 
@@ -48,9 +47,9 @@ class octave_value_list;
 
 // Complex scalar values.
 
-class
-OCTINTERP_API
-octave_float_complex : public octave_base_scalar<FloatComplex>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_scalar<FloatComplex>;
+
+class OCTINTERP_API octave_float_complex : public octave_base_scalar<FloatComplex>
 {
 public:
 
@@ -83,8 +82,8 @@ public:
   octave_value any (int = 0) const
   {
     return (scalar != FloatComplex (0, 0)
-            && ! (lo_ieee_isnan (scalar.real ())
-                  || lo_ieee_isnan (scalar.imag ())));
+            && ! (octave::math::isnan (scalar.real ())
+                  || octave::math::isnan (scalar.imag ())));
   }
 
   builtin_type_t builtin_type () const { return btyp_float_complex; }
@@ -197,7 +196,7 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 typedef octave_float_complex octave_float_complex_scalar;

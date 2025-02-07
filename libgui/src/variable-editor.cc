@@ -23,7 +23,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef HAVE_CONFIG_H
+#if defined (HAVE_CONFIG_H)
 #  include "config.h"
 #endif
 
@@ -75,7 +75,7 @@ make_plot_mapper (QMenu *menu)
 
   QSignalMapper *plot_mapper = new QSignalMapper (menu);
 
-  for (int i = 0; i < list.size(); ++i)
+  for (int i = 0; i < list.size (); ++i)
     plot_mapper->setMapping
       (menu->addAction (list.at (i), plot_mapper, SLOT (map ())), list.at (i));
 
@@ -275,9 +275,9 @@ variable_dock_widget::handle_focus_change (QWidget *old, QWidget *now)
             }
         }
 
-      emit variable_focused_signal (objectName ());
+      Q_EMIT variable_focused_signal (objectName ());
     }
-  else if (old == focusWidget())
+  else if (old == focusWidget ())
     {
       if (titleBarWidget () != nullptr)
         {
@@ -291,7 +291,8 @@ variable_dock_widget::handle_focus_change (QWidget *old, QWidget *now)
     }
 }
 
-void variable_dock_widget::resizeEvent (QResizeEvent *)
+void
+variable_dock_widget::resizeEvent (QResizeEvent *)
 {
   if (m_frame)
     m_frame->resize (size ());
@@ -321,7 +322,7 @@ variable_dock_widget::event (QEvent *event)
       m_waiting_for_mouse_button_release = false;
       bool retval = QDockWidget::event (event);
       if (isFloating ())
-        emit queue_unfloat_float ();
+        Q_EMIT queue_unfloat_float ();
       return retval;
     }
 
@@ -334,7 +335,7 @@ variable_dock_widget::unfloat_float ()
   hide ();
   setFloating (false);
   // Avoid a Ubunty Unity issue by queuing this rather than direct.
-  emit queue_float ();
+  Q_EMIT queue_float ();
   m_waiting_for_mouse_move = false;
   m_waiting_for_mouse_button_release = false;
 }
@@ -436,7 +437,7 @@ variable_editor_stack::levelUp ()
   if (name.endsWith (')') || name.endsWith ('}'))
     {
       name.remove (QRegularExpression {"[({][^({]*[)}]$)"});
-      emit edit_variable_signal (name, octave_value ());
+      Q_EMIT edit_variable_signal (name, octave_value ());
     }
 }
 
@@ -463,8 +464,8 @@ variable_editor_stack::save (const QString& format)
   QPointer<variable_editor_stack> this_ves (this);
 
   // No format given, test save default options
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([this, this_ves, format_string] (interpreter& interp)
       {
         // INTERPRETER THREAD
 
@@ -481,7 +482,7 @@ variable_editor_stack::save (const QString& format)
         connect (this, &variable_editor_stack::do_save_signal,
                  this, &variable_editor_stack::do_save);
 
-        emit do_save_signal (format_string, save_opts);
+        Q_EMIT do_save_signal (format_string, save_opts);
       });
 }
 
@@ -518,8 +519,8 @@ variable_editor_stack::do_save (const QString& format, const QString& save_opts)
     return; // No file selected: Just return
 
   // Let the interpreter thread do the saving
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([file, name, format] (interpreter& interp)
       {
         // INTERPRETER THREAD
 
@@ -601,7 +602,7 @@ variable_editor_view::range_selected ()
 
   QVector<int> vect;
   vect << from_row + 1 << to_row + 1 << from_col + 1 << to_col + 1;
-  QList<int> range = QList<int>::fromVector(vect);
+  QList<int> range = QList<int>::fromVector (vect);
 
   return range;
 }
@@ -642,7 +643,7 @@ variable_editor_view::selected_command_requested (const QString& cmd)
     command = QString ("figure (); %1 (%2); title ('%2');")
                         .arg (cmd).arg (variable);
 
-  emit command_signal (command);
+  Q_EMIT command_signal (command);
 }
 
 void
@@ -841,7 +842,7 @@ variable_editor_view::transposeContent ()
   if (! hasFocus ())
     return;
 
-  emit command_signal (QString ("%1 = %1';").arg (objectName ()));
+  Q_EMIT command_signal (QString ("%1 = %1';").arg (objectName ()));
 }
 
 void
@@ -1063,12 +1064,13 @@ HoverToolButton::HoverToolButton (QWidget *parent)
   installEventFilter (this);
 }
 
-bool HoverToolButton::eventFilter (QObject *obj, QEvent *ev)
+bool
+HoverToolButton::eventFilter (QObject *obj, QEvent *ev)
 {
   if (ev->type () == QEvent::HoverEnter)
-    emit hovered_signal ();
+    Q_EMIT hovered_signal ();
   else if (ev->type () == QEvent::MouseButtonPress)
-    emit popup_shown_signal ();
+    Q_EMIT popup_shown_signal ();
 
   return QToolButton::eventFilter (obj, ev);
 }
@@ -1079,12 +1081,13 @@ ReturnFocusToolButton::ReturnFocusToolButton (QWidget *parent)
   installEventFilter (this);
 }
 
-bool ReturnFocusToolButton::eventFilter (QObject *obj, QEvent *ev)
+bool
+ReturnFocusToolButton::eventFilter (QObject *obj, QEvent *ev)
 {
 
   if (ev->type () == QEvent::MouseButtonRelease && isDown ())
     {
-      emit about_to_activate ();
+      Q_EMIT about_to_activate ();
 
       setDown (false);
       QAction *action = defaultAction ();
@@ -1103,11 +1106,12 @@ ReturnFocusMenu::ReturnFocusMenu (QWidget *parent)
   installEventFilter (this);
 }
 
-bool ReturnFocusMenu::eventFilter (QObject *obj, QEvent *ev)
+bool
+ReturnFocusMenu::eventFilter (QObject *obj, QEvent *ev)
 {
   if (ev->type () == QEvent::MouseButtonRelease && underMouse ())
     {
-      emit about_to_activate ();
+      Q_EMIT about_to_activate ();
     }
 
   return QMenu::eventFilter (obj, ev);
@@ -1175,7 +1179,8 @@ variable_editor::variable_editor (QWidget *p)
     make_window ();
 }
 
-void variable_editor::focusInEvent (QFocusEvent *ev)
+void
+variable_editor::focusInEvent (QFocusEvent *ev)
 {
   octave_dock_widget::focusInEvent (ev);
 
@@ -1209,7 +1214,7 @@ void variable_editor::focusInEvent (QFocusEvent *ev)
                 }
             }
           if (! focus_set)
-            setFocus();
+            setFocus ();
         }
     }
 }
@@ -1222,7 +1227,7 @@ variable_editor::~variable_editor ()
   for (long long int i = 0; i < m_variables.size (); i++)
     {
       if (m_variables.at (i) != nullptr)
-        disconnect (m_variables.at (i), SIGNAL (destroyed (QObject*)), 0, 0);
+        disconnect (m_variables.at (i), SIGNAL (destroyed (QObject *)), 0, 0);
     }
 }
 
@@ -1292,18 +1297,18 @@ variable_editor::edit_variable (const QString& name, const octave_value& val)
 
   // Any interpreter_event signal from a variable_editor_stack object is
   // handled the same as for the parent variable_editor object.
-  connect (stack, QOverload<const fcn_callback&>::of (&variable_editor_stack::interpreter_event),
-           this, QOverload<const fcn_callback&>::of (&variable_editor::interpreter_event));
+  connect (stack, qOverload<const fcn_callback&> (&variable_editor_stack::interpreter_event),
+           this, qOverload<const fcn_callback&> (&variable_editor::interpreter_event));
 
-  connect (stack, QOverload<const meth_callback&>::of (&variable_editor_stack::interpreter_event),
-           this, QOverload<const meth_callback&>::of (&variable_editor::interpreter_event));
+  connect (stack, qOverload<const meth_callback&> (&variable_editor_stack::interpreter_event),
+           this, qOverload<const meth_callback&> (&variable_editor::interpreter_event));
 
   connect (stack, &variable_editor_stack::edit_variable_signal,
            this, &variable_editor::edit_variable);
   connect (this, &variable_editor::level_up_signal,
            stack, &variable_editor_stack::levelUp);
   connect (this, &variable_editor::save_signal,
-           stack, [=] () { stack->save (); });
+           stack, [stack] () { stack->save (); });
 
   variable_editor_view *edit_view = stack->edit_view ();
 
@@ -1368,11 +1373,11 @@ variable_editor::edit_variable (const QString& name, const octave_value& val)
   // Any interpreter_event signal from a variable_editor_model object is
   // handled the same as for the parent variable_editor object.
 
-  connect (model, QOverload<const fcn_callback&>::of (&variable_editor_model::interpreter_event),
-           this, QOverload<const fcn_callback&>::of (&variable_editor::interpreter_event));
+  connect (model, qOverload<const fcn_callback&> (&variable_editor_model::interpreter_event),
+           this, qOverload<const fcn_callback&> (&variable_editor::interpreter_event));
 
-  connect (model, QOverload<const meth_callback&>::of (&variable_editor_model::interpreter_event),
-           this, QOverload<const meth_callback&>::of (&variable_editor::interpreter_event));
+  connect (model, qOverload<const meth_callback&> (&variable_editor_model::interpreter_event),
+           this, qOverload<const meth_callback&> (&variable_editor::interpreter_event));
 
   // Must supply a title for a QLabel to be created.  Calling set_title()
   // more than once will add more QLabels.  Could change octave_dock_widget
@@ -1435,13 +1440,13 @@ variable_editor::tab_to_front ()
 void
 variable_editor::refresh ()
 {
-  emit refresh_signal ();
+  Q_EMIT refresh_signal ();
 }
 
 void
 variable_editor::callUpdate (const QModelIndex&, const QModelIndex&)
 {
-  emit updated ();
+  Q_EMIT updated ();
 }
 
 void
@@ -1509,7 +1514,7 @@ variable_editor::notice_settings ()
 void
 variable_editor::closeEvent (QCloseEvent *e)
 {
-  emit finished ();
+  Q_EMIT finished ();
 
   octave_dock_widget::closeEvent (e);
 }
@@ -1587,7 +1592,7 @@ variable_editor::restore_hovered_focus_variable ()
 void
 variable_editor::save ()
 {
-  emit save_signal ();
+  Q_EMIT save_signal ();
 }
 
 void
@@ -1595,32 +1600,33 @@ variable_editor::cutClipboard ()
 {
   copyClipboard ();
 
-  emit clear_content_signal ();
+  Q_EMIT clear_content_signal ();
 }
 
 void
 variable_editor::copyClipboard ()
 {
-  emit copy_clipboard_signal ();
+  Q_EMIT copy_clipboard_signal ();
 }
 
 void
 variable_editor::pasteClipboard ()
 {
-  emit paste_clipboard_signal ();
+  Q_EMIT paste_clipboard_signal ();
 
-  emit updated ();
+  Q_EMIT updated ();
 }
 
 void
 variable_editor::levelUp ()
 {
-  emit level_up_signal ();
+  Q_EMIT level_up_signal ();
 }
 
 // Also updates the font.
 
-void variable_editor::update_colors ()
+void
+variable_editor::update_colors ()
 {
   m_stylesheet = "";
 
@@ -1671,7 +1677,7 @@ variable_editor::add_tool_bar_button (const QIcon& icon,
                                       const char *member)
 {
   QAction *action = new QAction (icon, text, this);
-  connect(action, SIGNAL (triggered ()), receiver, member);
+  connect (action, SIGNAL (triggered ()), receiver, member);
   QToolButton *button = new ReturnFocusToolButton (m_tool_bar);
   button->setDefaultAction (action);
   button->setText (text);
@@ -1697,7 +1703,7 @@ variable_editor::construct_tool_bar ()
                                        tr ("Save"), this, SLOT (save ()));
   addAction (m_save_action);
   m_save_action->setShortcutContext (Qt::WidgetWithChildrenShortcut);
-  m_save_action->setStatusTip(tr("Save variable to a file"));
+  m_save_action->setStatusTip (tr("Save variable to a file"));
 
   QAction *action = new QAction (settings.icon ("document-save-as"),
                                  tr ("Save in format ..."), m_tool_bar);
@@ -1728,15 +1734,15 @@ variable_editor::construct_tool_bar ()
 
   action = add_tool_bar_button (settings.icon ("edit-cut"), tr ("Cut"),
                                 this, SLOT (cutClipboard ()));
-  action->setStatusTip(tr("Cut data to clipboard"));
+  action->setStatusTip (tr("Cut data to clipboard"));
 
   action = add_tool_bar_button (settings.icon ("edit-copy"), tr ("Copy"),
                                 this, SLOT (copyClipboard ()));
-  action->setStatusTip(tr("Copy data to clipboard"));
+  action->setStatusTip (tr("Copy data to clipboard"));
 
   action = add_tool_bar_button (settings.icon ("edit-paste"), tr ("Paste"),
                                 this, SLOT (pasteClipboard ()));
-  action->setStatusTip(tr("Paste clipboard into variable data"));
+  action->setStatusTip (tr("Paste clipboard into variable data"));
 
   m_tool_bar->addSeparator ();
 
@@ -1770,7 +1776,7 @@ variable_editor::construct_tool_bar ()
 
   action = add_tool_bar_button (settings.icon ("go-up"), tr ("Up"), this,
                                 SLOT (levelUp ()));
-  action->setStatusTip(tr("Go one level up in variable hierarchy"));
+  action->setStatusTip (tr("Go one level up in variable hierarchy"));
 
   // The QToolButton mouse-clicks change active window, so connect all
   // HoverToolButton and ReturnFocusToolButton objects to the mechanism
@@ -1806,7 +1812,7 @@ variable_editor::construct_tool_bar ()
                this, &variable_editor::restore_hovered_focus_variable);
     }
 
-  m_tool_bar->setAttribute(Qt::WA_ShowWithoutActivating);
+  m_tool_bar->setAttribute (Qt::WA_ShowWithoutActivating);
   m_tool_bar->setFocusPolicy (Qt::NoFocus);
 
   // Disabled when no tab is present.

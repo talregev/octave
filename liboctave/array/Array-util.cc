@@ -264,7 +264,7 @@ freeze (Array<octave::idx_vector>& ra_idx, const dim_vector& dimensions, int res
 
   int n = ra_idx.numel ();
 
-  assert (n == dimensions.ndims ());
+  liboctave_panic_unless (n == dimensions.ndims ());
 
   retval.resize (n);
 
@@ -337,7 +337,9 @@ all_colon_equiv (const Array<octave::idx_vector>& ra_idx,
 
   int n = frozen_lengths.ndims ();
 
-  assert (idx_n == n);
+  if (idx_n != n)
+    (*current_liboctave_error_handler)
+      ("unexpected: idx_n != n in all_colon_equiv - please report this bug");
 
   for (octave_idx_type i = 0; i < n; i++)
     {
@@ -394,7 +396,7 @@ get_ra_idx (octave_idx_type idx, const dim_vector& dims)
   for (int i = 0; i < n_dims; i++)
     retval(i) = 0;
 
-  assert (idx > 0 || idx < dims.numel ());
+  liboctave_panic_unless (idx > 0 || idx < dims.numel ());
 
   for (octave_idx_type i = 0; i < idx; i++)
     increment_index (retval, dims);
@@ -574,16 +576,10 @@ sub2ind (const dim_vector& dv, const Array<octave::idx_vector>& idxa)
           // Initialized inside the loop so that each call to
           // idx_vector::loop operates from the beginning of IDX_VEC.
 
-          octave_idx_type *idx_vec = idx.fortran_vec ();
+          octave_idx_type *idx_vec = idx.rwdata ();
 
           if (i < len - 1)
-            {
-              octave_idx_type n = dvx(i);
-
-              idxa(i).loop (clen, [=, &idx_vec] (octave_idx_type k) {
-                (*idx_vec++ *= n) += k;
-              });
-            }
+            idxa(i).loop (clen, [n = dvx(i), &idx_vec] (octave_idx_type k) { (*idx_vec++ *= n) += k; });
           else
             idxa(i).copy_data (idx_vec);
         }
@@ -617,7 +613,7 @@ ind2sub (const dim_vector& dv, const octave::idx_vector& idx)
     {
       OCTAVE_LOCAL_BUFFER (Array<octave_idx_type>, rdata, n);
 
-      dim_vector odv = idx.orig_dimensions ();
+      const dim_vector& odv = idx.orig_dimensions ();
       for (octave_idx_type j = 0; j < n; j++)
         rdata[j] = Array<octave_idx_type> (odv);
 

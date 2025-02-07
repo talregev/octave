@@ -59,7 +59,7 @@ public:
 
   ~files_dock_widget () = default;
 
-signals:
+Q_SIGNALS:
 
   //! Emitted, whenever the user requested to open a file.
 
@@ -79,7 +79,7 @@ signals:
 
   //! Emitted, whenever the user requested to run a file.
 
-  void run_file_signal (const QFileInfo& info);
+  void run_file_signal (const QFileInfo& info, int ops);
 
   //! Emitted, whenever wants to search for a file .
 
@@ -98,7 +98,7 @@ signals:
   void modify_path_signal (const QStringList& dir_list, bool rm,
                            bool subdirs);
 
-public slots:
+public Q_SLOTS:
 
   //! Slot for handling a change in directory via double click.
 
@@ -134,7 +134,7 @@ public slots:
 
   void save_settings ();
 
-private slots:
+private Q_SLOTS:
 
   void restore_header_state ();
   void headercontextmenu_requested (const QPoint& pos);
@@ -181,6 +181,9 @@ private slots:
   //!@}
 
 private:
+
+  bool m_first;
+  bool m_header_settings_only;
 
   //! Get currently selected QFileInfo object.
 

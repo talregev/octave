@@ -45,8 +45,7 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 // in ov.cc.
 
 template <typename T>
-class
-range<T, typename std::enable_if<std::is_floating_point<T>::value>::type>
+class range<T, typename std::enable_if<std::is_floating_point<T>::value>::type>
 {
 public:
 
@@ -250,9 +249,9 @@ public:
         // Loop over all values in IDX, executing the lambda
         // expression for each index value.
 
-        T *array = retval.fortran_vec ();
+        T *array = retval.rwdata ();
 
-        idx.loop (n, [=, &array] (octave_idx_type i)
+        idx.loop (n, [this, &array] (octave_idx_type i)
         {
           if (i == 0)
             // Required for proper NaN handling.

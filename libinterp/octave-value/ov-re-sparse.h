@@ -48,9 +48,10 @@
 
 class octave_value_list;
 
-class
-OCTINTERP_API
-octave_sparse_matrix : public octave_base_sparse<SparseMatrix>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API
+octave_base_sparse<SparseMatrix>;
+
+class OCTINTERP_API octave_sparse_matrix : public octave_base_sparse<SparseMatrix>
 {
 public:
 
@@ -150,7 +151,7 @@ public:
 private:
   octave_value map (double (*fcn) (double)) const;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

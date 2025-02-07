@@ -59,8 +59,6 @@ COREFCN_INC = \
   %reldir%/ls-oct-text.h \
   %reldir%/ls-oct-binary.h \
   %reldir%/ls-utils.h \
-  %reldir%/mex.h \
-  %reldir%/mexproto.h \
   %reldir%/mx-type-traits.h \
   %reldir%/mxarray.h \
   %reldir%/oct-errno.h \
@@ -79,6 +77,7 @@ COREFCN_INC = \
   %reldir%/oct.h \
   %reldir%/octave-default-image.h \
   %reldir%/pager.h \
+  %reldir%/panic.h \
   %reldir%/pr-flt-fmt.h \
   %reldir%/pr-output.h \
   %reldir%/procstream.h \
@@ -216,8 +215,8 @@ COREFCN_SRC = \
   %reldir%/mappers.cc \
   %reldir%/matrix_type.cc \
   %reldir%/max.cc \
-  %reldir%/mex.cc \
   %reldir%/mgorth.cc \
+  %reldir%/mxarray.cc \
   %reldir%/nproc.cc \
   %reldir%/oct-fstrm.cc \
   %reldir%/oct-hdf5-types.cc \
@@ -235,6 +234,7 @@ COREFCN_SRC = \
   %reldir%/ordqz.cc \
   %reldir%/ordschur.cc \
   %reldir%/pager.cc \
+  %reldir%/panic.cc \
   %reldir%/perms.cc \
   %reldir%/pinv.cc \
   %reldir%/pow2.cc \
@@ -337,6 +337,7 @@ noinst_LTLIBRARIES += \
 
 %canon_reldir%_libcorefcn_la_CPPFLAGS = \
   $(libinterp_liboctinterp_la_CPPFLAGS) \
+  -DOCTAVE_MEX_SOVERSION="$(OCTAVE_LIBOCTMEX_SOVERSION_MAJOR)" \
   $(FFTW_XCPPFLAGS) \
   $(FONTCONFIG_CPPFLAGS) \
   $(FT2_CPPFLAGS) \

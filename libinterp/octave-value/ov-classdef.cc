@@ -91,11 +91,28 @@ octave_classdef::subsref (const std::string& type,
           m_count++;
           args(0) = octave_value (this);
 
-          // If the number of output arguments is unknown, attempt to set up
-          // a proper value for nargout at least in the simple case where the
-          // cs-list-type expression - i.e., {} or ().x, is the leading one.
-          if (nargout <= 0)
+          octave::cdef_method meth_nargout
+            = cls.find_method ("numArgumentsFromSubscript");
+          if (meth_nargout.ok ())
             {
+              octave_value_list args_nargout (3);
+
+              args_nargout(0) = args(0);
+              args_nargout(1) = args(1);
+              // FIXME: Third argument should be one of the possible values of
+              //        the matlab.mixin.util.IndexingContext enumeration class.
+              args_nargout(2) = octave_value (Matrix ());
+              retval = meth_nargout.execute (args_nargout, 1, true,
+                                             "numArgumentsFromSubscript");
+              
+              nargout = retval(0).strict_int_value
+                ("subsref: return value of 'numArgumentsFromSubscript' must be integer");
+            }
+          else if (nargout <= 0)
+            {
+              // If the number of output arguments is unknown, attempt to set up
+              // a proper value for nargout at least in the simple case where the
+              // cs-list-type expression - i.e., {} or ().x, is the leading one.
               bool maybe_cs_list_query = (type[0] == '.' || type[0] == '{'
                                           || (type.length () > 1 && type[0] == '('
                                               && type[1] == '.'));
@@ -105,9 +122,14 @@ octave_classdef::subsref (const std::string& type,
                   // Set up a proper nargout for the subsref call by calling numel.
                   octave_value_list tmp;
                   int nout;
-                  if (type[0] != '.') tmp = idx.front ();
+                  if (type[0] != '.')
+                    tmp = idx.front ();
+
                   nout = xnumel (tmp);
-                  if (nargout != 0 || nout > 1)
+                  // Take nout as nargout for subsref, unless the index expression 
+                  // is a whole sentence starting with the form id.member and id is
+                  // one element (in that case, nargout remains 0).
+                  if (type[0] != '.' || nout != 1 || nargout < 0)
                     nargout = nout;
                 }
               else if (nargout < 0)
@@ -344,7 +366,7 @@ octave_classdef::print_raw (std::ostream& os, bool) const
 
       increment_indent_level ();
 
-      std::map<std::string, octave::cdef_property> property_map
+      std::map<octave::property_key, octave::cdef_property> property_map
         = cls.get_property_map ();
 
       std::size_t max_len = 0;
@@ -399,13 +421,7 @@ octave_classdef::print_raw (std::ostream& os, bool) const
 
               octave_value val = prop.get_value (m_object, false);
 
-              if (val.ndims () == 2 && val.rows () == 1 && (val.isnumeric () || val.islogical () || val.is_string ()))
-                val.short_disp (os);
-              else
-                {
-                  dim_vector dims = val.dims ();
-                  os << "[" << dims.str () << " " << val.class_name () << "]";
-                }
+              val.short_disp (os);
             }
 
           newline (os);
@@ -657,7 +673,7 @@ octave_classdef_superclass_ref::is_constructed_object (octave::tree_evaluator& t
         {
           octave::tree_parameter_list *ret_list = uf->return_list ();
 
-          if (ret_list && ret_list->length () == 1)
+          if (ret_list && ret_list->size () == 1)
             return (ret_list->front ()->name () == nm);
         }
     }
@@ -737,7 +753,7 @@ is public and if the @code{Hidden} attribute is false.
   if (! cls.ok ())
     error ("invalid class: %s", class_name.c_str ());
 
-  std::map<std::string, cdef_property> property_map =
+  std::map<octave::property_key, cdef_property> property_map =
     cls.get_property_map ();
 
   std::list<std::string> property_names;
@@ -758,7 +774,7 @@ is public and if the @code{Hidden} attribute is false.
       if (hid.bool_value ())
         continue;
 
-      property_names.push_back (pname_prop.first);
+      property_names.push_back (pname_prop.second.get_name ());
     }
 
   if (nargout > 0)
@@ -776,9 +792,9 @@ is public and if the @code{Hidden} attribute is false.
 
 /*
 %!assert (properties ("inputParser"),
-%!        {"CaseSensitive"; "FunctionName"; "KeepUnmatched";
-%!         "Parameters"; "PartialMatching"; "Results";
-%!         "StructExpand"; "Unmatched"; "UsingDefaults"});
+%!        {"CaseSensitive"; "FunctionName"; "KeepUnmatched"; "PartialMatching";
+%!         "StructExpand"; "Parameters"; "Results"; "Unmatched";
+%!         "UsingDefaults"});
 */
 
 // FIXME: Need to implement the -full option.

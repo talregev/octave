@@ -85,6 +85,10 @@ cmdline_options::cmdline_options (int argc, char **argv)
           octave_print_terse_usage_and_exit ();
           break;
 
+        case 'G':
+          m_gui = false;
+          break;
+
         case 'H':
           m_read_history_file = false;
           break;
@@ -94,17 +98,33 @@ cmdline_options::cmdline_options (int argc, char **argv)
           break;
 
         case 'V':
-          m_verbose_flag = true;
+          m_init_trace = true;
           break;
 
-        case 'd':
-          // This is the same as yydebug in parse.y.
-          octave_debug++;
+        // FIXME: Disabled debug option for parser 2023-12-29.
+        // However, uncomment and restore option if Octave adds a debug option
+        // to immediately enter debug mode for a script.
+        // case 'd':
+        //   break;
+
+        case 'e':
+          if (octave_optarg_wrapper ())
+            {
+              if (m_code_to_eval.empty ())
+                m_code_to_eval = octave_optarg_wrapper ();
+              else
+                m_code_to_eval += (std::string (" ")
+                                   + octave_optarg_wrapper ());
+            }
           break;
 
         case 'f':
-          m_read_init_files = false;
+          m_read_user_files = false;
           m_read_site_files = false;
+          break;
+
+        case 'g':
+          m_gui = true;
           break;
 
         case 'h':
@@ -142,17 +162,6 @@ cmdline_options::cmdline_options (int argc, char **argv)
             m_doc_cache_file = octave_optarg_wrapper ();
           break;
 
-        case EVAL_OPTION:
-          if (octave_optarg_wrapper ())
-            {
-              if (m_code_to_eval.empty ())
-                m_code_to_eval = octave_optarg_wrapper ();
-              else
-                m_code_to_eval += (std::string (" ")
-                                   + octave_optarg_wrapper ());
-            }
-          break;
-
         case EXEC_PATH_OPTION:
           if (octave_optarg_wrapper ())
             m_exec_path = octave_optarg_wrapper ();
@@ -162,10 +171,6 @@ cmdline_options::cmdline_options (int argc, char **argv)
 #if defined (HAVE_QSCINTILLA)
           m_experimental_terminal_widget = true;
 #endif
-          break;
-
-        case GUI_OPTION:
-          m_gui = true;
           break;
 
         case IMAGE_PATH_OPTION:
@@ -187,12 +192,8 @@ cmdline_options::cmdline_options (int argc, char **argv)
           m_forced_line_editing = m_line_editing = true;
           break;
 
-        case NO_GUI_OPTION:
-          m_gui = false;
-          break;
-
-        case NO_INIT_FILE_OPTION:
-          m_read_init_files = false;
+        case NO_INIT_USER_OPTION:
+          m_read_user_files = false;
           break;
 
         case NO_INIT_PATH_OPTION:
@@ -203,7 +204,7 @@ cmdline_options::cmdline_options (int argc, char **argv)
           m_line_editing = false;
           break;
 
-        case NO_SITE_FILE_OPTION:
+        case NO_INIT_SITE_OPTION:
           m_read_site_files = false;
           break;
 
@@ -230,7 +231,8 @@ cmdline_options::cmdline_options (int argc, char **argv)
           // return '?', which is handled above.  If we end up here, it is
           // because there was an option but we forgot to handle it.
           // That should be fatal.
-          panic_impossible ();
+
+          error ("unexpected option (= %d) - please reportt this bug", optc);
           break;
         }
     }
@@ -255,12 +257,16 @@ cmdline_options::as_octave_value () const
   m.assign ("no_window_system", no_window_system ());
   m.assign ("persist", persist ());
   m.assign ("read_history_file", read_history_file ());
-  m.assign ("read_init_files", read_init_files ());
+  // FIXME: read_init_files deprecated in Octave 10 in favor of read_user_files
+  m.assign ("read_init_files", read_user_files ());
+  m.assign ("read_user_files", read_user_files ());
   m.assign ("read_site_files", read_site_files ());
   m.assign ("server", server ());
   m.assign ("set_initial_path", set_initial_path ());
   m.assign ("traditional", traditional ());
-  m.assign ("verbose_flag", verbose_flag ());
+  m.assign ("init_trace", init_trace ());
+  // FIXME: --verbose deprecated in Octave 10.  Remove in Octave 12.
+  m.assign ("verbose", init_trace ());
   m.assign ("code_to_eval", code_to_eval ());
   m.assign ("command_line_path", string_vector (command_line_path ()));
   m.assign ("docstrings_file", docstrings_file ());
@@ -489,12 +495,12 @@ Return the command line arguments passed to Octave.
 For example, if you invoked Octave using the command
 
 @example
-octave --no-line-editing --silent
+octave --no-line-editing --quiet
 @end example
 
 @noindent
 @code{argv} would return a cell array of strings with the elements
-@option{--no-line-editing} and @option{--silent}.
+@option{--no-line-editing} and @option{--quiet}.
 
 If you write an executable Octave script, @code{argv} will return the list
 of arguments passed to the script.  @xref{Executable Octave Programs}, for

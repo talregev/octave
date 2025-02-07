@@ -107,6 +107,7 @@ jobs:
             ccache
             git
             icoutils
+            python
             rsvg
             texinfo
 
@@ -158,6 +159,7 @@ jobs:
       - name: configure
         # FIXME: Fix building with Java support.  Override JAVA_HOME for now.
         # FIXME: How do we get a working TeX environment in Cygwin?  Disable building the documentation for now.
+        # FIXME: Exporting symbols for instantiated template classes doesn't work currently. Maybe, test again when Cygwin updated to a newer compiler than GCC 11.4.0?
         run: |
           echo $PATH
           which $CC
@@ -170,14 +172,20 @@ jobs:
           echo $F77 --version
           $F77 --version
           mkdir .build
+          echo "::group::Run configure script"
           cd .build && ../configure \
             --libexecdir=/usr/lib \
             --enable-shared \
             --disable-java \
             --disable-docs \
+            --disable-lib-visibility-flags \
             JAVA_HOME="" \
             EGREP="grep -E" \
             FLIBS="-lgfortran -lquadmath"
+          echo "::endgroup::"
+          echo "::group::Show config.log"
+          cat ./config.log
+          echo "::endgroup::"
 
       - name: build
         # Spawning processes seems to have a big overhead on this platform.  Use a somewhat larger number of parallel processes to compensate for that.
@@ -243,6 +251,28 @@ jobs:
           cd examples/code
           mkoctfile --link-stand-alone embedded.cc -o embedded
           ./embedded.exe
+
+      - name: test Octave packages
+        env:
+          # colon separated list of packages
+          PACKAGE_NAMES: "control:stk"
+        run: |
+          unset CC
+          unset CXX
+          export PATH=$(echo "$PATH" | sed -e "s|/usr/lib/ccache/bin:||g")
+          IFS=':' read -r -a packages <<< "${PACKAGE_NAMES}"
+          for package in "${packages[@]}"; do
+            printf "   \033[0;32m==>\033[0m Octave package \033[0;32m${package}\033[0m\n"
+            echo "::group::Install ${package}"
+            octave --eval "pkg install -verbose -forge ${package}"
+            echo "::endgroup::"
+            echo "::group::Test ${package}"
+            octave --eval "pkg test ${package}"
+            echo "::endgroup::"
+            echo "::group::Test log for ${package}"
+            cat ${GITHUB_WORKSPACE}/fntests.log
+            echo "::endgroup::"
+           done
 
       - name: analyze test suite results
         # Make sure the test summary lists 0 "FAIL"s and no "REGRESSION"

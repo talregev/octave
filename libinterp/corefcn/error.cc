@@ -506,7 +506,13 @@ void
 error_system::vwarning (const char *name, const char *id,
                         const char *fmt, va_list args)
 {
-  flush_stdout ();
+  int warn_opt = warning_enabled (id);
+
+  if (warn_opt == 2)
+    {
+      // Handle this warning as an error.  ERROR_1 won't return.
+      error_1 (id, fmt, args);
+    }
 
   std::string base_msg = format_message (fmt, args);
   std::string msg_string;
@@ -526,12 +532,16 @@ error_system::vwarning (const char *name, const char *id,
   last_warning_id (id);
   last_warning_message (base_msg);
 
-  if (discard_warning_messages ())
+  // If WARN_OPT is 0, then the warning is disabled.  But we sill
+  // still set LAST_WARNING_MESSAGE above.
+  if (discard_warning_messages () || warn_opt == 0)
     return;
 
   tree_evaluator& tw = m_interpreter.get_evaluator ();
 
   bool in_user_code = tw.in_user_code ();
+
+  flush_stdout ();
 
   if (! quiet_warning ())
     {
@@ -588,16 +598,12 @@ error_system::error_1 (const char *id, const char *fmt,
 void
 error_system::vwarning (const char *id, const char *fmt, va_list args)
 {
-  int warn_opt = warning_enabled (id);
-
-  if (warn_opt == 2)
-    {
-      // Handle this warning as an error.
-
-      error_1 (id, fmt, args);
-    }
-  else if (warn_opt == 1)
-    vwarning ("warning", id, fmt, args);
+  // OK, this probably seems strange now, but there is a version of
+  // vwarning that takes the "name" of the warning as an argument,
+  // possibly because "usage" was previously handled as a warning?
+  // For consistent behavior, that function will deal with all the
+  // ON/OFF/ERROR warning state options.
+  vwarning ("warning", id, fmt, args);
 }
 
 void
@@ -633,12 +639,15 @@ error_system::rethrow_error (const std::string& id,
 void
 error_system::vpanic (const char *fmt, va_list args)
 {
-  // Is there any point in trying to write the panic message to the
-  // diary?
+  // Earlier versions of Octave printed a message directly to std::cerr
+  // and called abort.  That might be acceptable behavior for some
+  // programs but for an interactive application like Octave, aborting
+  // the entire program when an internal programming error has been
+  // detected seems unnecessary and certainly provides a much worse user
+  // experience than simply generating an ordinary error message and
+  // attempting to return to the command prompt.
 
-  std::cerr << "panic: " << format_message (fmt, args) << std::endl;
-
-  abort ();
+  ::verror (fmt, args);
 }
 
 void
@@ -750,7 +759,7 @@ error_system::display_warning_options (std::ostream& os)
   else if (all_state == "error")
     os << "By default, warnings are treated as errors.";
   else
-    panic_impossible ();
+    error ("unexpected default warning state '%s' - please report this bug", all_state.c_str ());
 
   if (nel > 1)
     {
@@ -1110,25 +1119,6 @@ parse_error_with_id (const char *id, const char *fmt, ...)
   va_list args;
   va_start (args, fmt);
   vparse_error_with_id (id, fmt, args);
-  va_end (args);
-}
-
-OCTAVE_NORETURN
-void
-vpanic (const char *fmt, va_list args)
-{
-  octave::error_system& es = octave::__get_error_system__ ();
-
-  es.vpanic (fmt, args);
-}
-
-OCTAVE_NORETURN
-void
-panic (const char *fmt, ...)
-{
-  va_list args;
-  va_start (args, fmt);
-  vpanic (fmt, args);
   va_end (args);
 }
 

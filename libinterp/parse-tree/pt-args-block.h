@@ -28,18 +28,20 @@
 
 #include "octave-config.h"
 
+#include <list>
+
 #include "pt-arg-list.h"
 #include "pt-cmd.h"
 #include "pt-exp.h"
 #include "pt-id.h"
 #include "pt-walk.h"
 
-#include "base-list.h"
-
 // FIXME: We could maybe re-think the naming of some of these objects
 // before releasing a version that contains these new classes...
 
 OCTAVE_BEGIN_NAMESPACE(octave)
+
+class comment_list;
 
 class tree_arg_size_spec
 {
@@ -102,10 +104,11 @@ public:
   tree_arg_validation (tree_arg_size_spec *size_spec,
                        tree_identifier *class_name,
                        tree_arg_validation_fcns *validation_fcns,
+                       const token& eq_tok,
                        tree_expression *default_value)
     : m_arg_name (nullptr), m_size_spec (size_spec),
       m_class_name (class_name), m_validation_fcns (validation_fcns),
-      m_default_value (default_value)
+      m_eq_tok (eq_tok), m_default_value (default_value)
   { }
 
   OCTAVE_DISABLE_CONSTRUCT_COPY_MOVE (tree_arg_validation)
@@ -149,20 +152,21 @@ private:
   tree_arg_size_spec *m_size_spec;
   tree_identifier *m_class_name;
   tree_arg_validation_fcns *m_validation_fcns;
+  token m_eq_tok;
   tree_expression *m_default_value;
 };
 
 class tree_args_block_validation_list
-  : public base_list<tree_arg_validation *>
+  : public std::list<tree_arg_validation *>
 {
 public:
 
   tree_args_block_validation_list () { }
 
-  tree_args_block_validation_list (tree_arg_validation *a) { append (a); }
+  tree_args_block_validation_list (tree_arg_validation *a) { push_back (a); }
 
-  tree_args_block_validation_list (const base_list<tree_arg_validation *>& a)
-    : base_list<tree_arg_validation *> (a)
+  tree_args_block_validation_list (const std::list<tree_arg_validation *>& a)
+    : std::list<tree_arg_validation *> (a)
   { }
 
   OCTAVE_DISABLE_COPY_MOVE (tree_args_block_validation_list)
@@ -211,12 +215,8 @@ class tree_arguments_block : public tree_command
 {
 public:
 
-  tree_arguments_block (tree_args_block_attribute_list *attr_list,
-                        tree_args_block_validation_list *validation_list,
-                        int l = -1, int c = -1)
-    : tree_command (l, c), m_attr_list (attr_list),
-      m_validation_list (validation_list),
-      m_lead_comm (nullptr), m_trail_comm (nullptr)
+  tree_arguments_block (const token& args_tok, tree_args_block_attribute_list *attr_list, tree_args_block_validation_list *validation_list, const token& end_tok)
+    : m_args_tok (args_tok), m_attr_list (attr_list), m_validation_list (validation_list), m_end_tok (end_tok)
   { }
 
   OCTAVE_DISABLE_CONSTRUCT_COPY_MOVE (tree_arguments_block)
@@ -225,10 +225,10 @@ public:
   {
     delete m_attr_list;
     delete m_validation_list;
-
-    delete m_lead_comm;
-    delete m_trail_comm;
   }
+
+  filepos beg_pos () const { return m_args_tok.beg_pos (); }
+  filepos end_pos () const { return m_end_tok.end_pos (); }
 
   tree_args_block_attribute_list * attribute_list ()
   {
@@ -240,10 +240,6 @@ public:
     return m_validation_list;
   }
 
-  comment_list * leading_comment () { return m_lead_comm; }
-
-  comment_list * trailing_comment () { return m_trail_comm; }
-
   void accept (tree_walker& tw)
   {
     tw.visit_arguments_block (*this);
@@ -251,15 +247,13 @@ public:
 
 private:
 
+  token m_args_tok;
+
   tree_args_block_attribute_list *m_attr_list;
 
   tree_args_block_validation_list *m_validation_list;
 
-  // Comment preceding ARGUMENTS token.
-  comment_list *m_lead_comm;
-
-  // Comment preceding ENDARGUMENTS token.
-  comment_list *m_trail_comm;
+  token m_end_tok;
 };
 
 OCTAVE_END_NAMESPACE(octave)

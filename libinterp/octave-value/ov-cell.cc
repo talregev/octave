@@ -48,8 +48,6 @@
 #include "oct-hdf5.h"
 #include "unwind-prot.h"
 #include "utils.h"
-#include "ov-base-mat.h"
-#include "ov-base-mat.cc"
 #include "ov-fcn-handle.h"
 #include "ov-re-mat.h"
 #include "ov-scalar.h"
@@ -62,85 +60,6 @@
 #include "ls-hdf5.h"
 #include "ls-utils.h"
 
-// Cell is able to handle octave_value indexing by itself, so just forward
-// everything.
-
-template <>
-octave_value
-octave_base_matrix<Cell>::do_index_op (const octave_value_list& idx,
-                                       bool resize_ok)
-{
-  return m_matrix.index (idx, resize_ok);
-}
-
-template <>
-void
-octave_base_matrix<Cell>::assign (const octave_value_list& idx, const Cell& rhs)
-{
-  m_matrix.assign (idx, rhs);
-}
-
-template <>
-void
-octave_base_matrix<Cell>::assign (const octave_value_list& idx,
-                                  octave_value rhs)
-{
-  // FIXME: Really?
-  if (rhs.iscell ())
-    m_matrix.assign (idx, rhs.cell_value ());
-  else
-    m_matrix.assign (idx, Cell (rhs));
-}
-
-template <>
-void
-octave_base_matrix<Cell>::delete_elements (const octave_value_list& idx)
-{
-  m_matrix.delete_elements (idx);
-}
-
-// FIXME: this list of specializations is becoming so long that we should
-// really ask whether octave_cell should inherit from octave_base_matrix at all.
-
-template <>
-std::string
-octave_base_matrix<Cell>::edit_display (const float_display_format&,
-                                        octave_idx_type i,
-                                        octave_idx_type j) const
-{
-  octave_value val = m_matrix(i, j);
-
-  std::string tname = val.type_name ();
-  dim_vector dv = val.dims ();
-  std::string dimstr = dv.str ();
-  return "[" + dimstr + " " + tname + "]";
-}
-
-template <>
-octave_value
-octave_base_matrix<Cell>::fast_elem_extract (octave_idx_type n) const
-{
-  if (n < m_matrix.numel ())
-    return Cell (m_matrix(n));
-  else
-    return octave_value ();
-}
-
-template <>
-bool
-octave_base_matrix<Cell>::fast_elem_insert (octave_idx_type n,
-    const octave_value& x)
-{
-  const octave_cell *xrep = dynamic_cast<const octave_cell *> (&x.get_rep ());
-
-  bool retval = xrep && xrep->m_matrix.numel () == 1 && n < m_matrix.numel ();
-  if (retval)
-    m_matrix(n) = xrep->m_matrix(0);
-
-  return retval;
-}
-
-template class octave_base_matrix<Cell>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_cell, "cell", "cell");
 
@@ -189,7 +108,7 @@ octave_cell::simple_subsref (char type, octave_value_list& idx, int)
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_cell::simple_subsref - please report this bug");
     }
 
   return retval;
@@ -235,7 +154,7 @@ octave_cell::subsref (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_cell::subsref - please report this bug");
     }
 
   // FIXME: perhaps there should be an
@@ -285,7 +204,7 @@ octave_cell::subsref (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_cell::subsref - please report this bug");
     }
 
   // FIXME: perhaps there should be an
@@ -392,7 +311,7 @@ octave_cell::subsasgn (const std::string& type,
           break;
 
         default:
-          panic_impossible ();
+          error ("unexpected: index not '(', '{', or '.' in octave_cell::subsasgn - please report this bug");
         }
     }
 
@@ -466,7 +385,7 @@ octave_cell::subsasgn (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_cell::subsasgn - please report this bug");
     }
 
   return retval;
@@ -752,7 +671,7 @@ octave_cell::print_raw (std::ostream& os, bool) const
   else
     {
       indent (os);
-      dim_vector dv = m_matrix.dims ();
+      const dim_vector& dv = m_matrix.dims ();
       os << '{' << dv.str () << " Cell Array}";
       newline (os);
     }
@@ -780,7 +699,10 @@ octave_cell::print_name_tag (std::ostream& os, const std::string& name) const
 void
 octave_cell::short_disp (std::ostream& os) const
 {
-  os << (m_matrix.isempty () ? "{}" : "...");
+  // octave_base_matrix<octave_value>::short_disp is not appropriate for
+  // cell arrays.
+
+  octave_base_value::short_disp (os);
 }
 
 #define CELL_ELT_TAG "<cell-element>"
@@ -788,7 +710,7 @@ octave_cell::short_disp (std::ostream& os) const
 bool
 octave_cell::save_ascii (std::ostream& os)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () > 2)
     {
       os << "# ndims: " << dv.ndims () << "\n";
@@ -930,10 +852,10 @@ octave_cell::load_ascii (std::istream& is)
       else if (nr == 0 || nc == 0)
         m_matrix = Cell (nr, nc);
       else
-        panic_impossible ();
+        error ("unexpected dimensions in octave_cell::load_ascii - please report this bug");
     }
   else
-    panic_impossible ();
+    error ("unexpected dimensions keyword (= '%s') octave_cell::load_ascii - please report this bug", kw.c_str ());
 
   return true;
 }
@@ -941,7 +863,7 @@ octave_cell::load_ascii (std::istream& is)
 bool
 octave_cell::save_binary (std::ostream& os, bool save_as_floats)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -1052,7 +974,7 @@ octave_cell::save_hdf5 (octave_hdf5_id loc_id, const char *name,
 {
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);
@@ -1318,7 +1240,7 @@ dimensions.
 
         for (int i = 0; i < nargin; i++)
           dims(i) = (args(i).isempty ()
-                     ? 0 : args(i).xidx_type_value ("cell: dimension must be a scalar integer"));
+                     ? 0 : args(i).strict_idx_type_value ("cell: dimension must be a scalar integer"));
       }
       break;
     }

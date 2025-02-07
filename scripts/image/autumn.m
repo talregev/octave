@@ -30,15 +30,16 @@
 ## This colormap ranges from red through orange to yellow.
 ##
 ## The argument @var{n} must be a scalar.
-## If unspecified, the length of the current colormap, or 64, is used.
+## If @var{n} is not specified the length of the current colormap is used.  If
+## there is no current colormap the default value of 256 is used.
 ## @seealso{colormap}
 ## @end deftypefn
 
 function map = autumn (n)
 
   if (nargin == 1)
-    if (! isscalar (n))
-      error ("autumn: N must be a scalar");
+    if (! (isscalar (n) && isreal (n) && n == fix (n)))
+      error ("autumn: N must be a scalar integer");
     endif
     n = double (n);
   else
@@ -46,7 +47,7 @@ function map = autumn (n)
     if (! isempty (hf))
       n = rows (get (hf, "colormap"));
     else
-      n = 64;
+      n = 256;
     endif
   endif
 
@@ -71,3 +72,22 @@ endfunction
 %!  rgbplot (cmap, "composite");
 %! subplot (2, 1, 2);
 %!  rgbplot (cmap);
+
+
+%!assert (size (autumn ()), [256, 3])
+%!assert (size (autumn (16)), [16, 3])
+
+%!assert (autumn (1), [1, 0, 0])
+%!assert (autumn (true), double ([1, 0, 0]))
+%!assert (autumn (char (1)), double ([1, 0, 0]))
+%!assert (autumn (int32 (1)), double ([1, 0, 0]))
+
+%!assert (autumn (0), zeros (0, 3))
+%!assert (autumn (-1), zeros (0, 3))
+
+%!assert (autumn (11), [ones(1,11); [0:0.1:1]; zeros(1,11)]', eps)
+
+## Input validation
+%!error <N must be a scalar integer> autumn ("foo")
+%!error <N must be a scalar integer> autumn ([1, 2, 3])
+%!error <N must be a scalar integer> autumn ({1, 2, 3})

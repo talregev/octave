@@ -33,7 +33,6 @@
 class octave_value;
 class octave_value_list;
 
-#include "base-list.h"
 #include "pt-array-list.h"
 #include "pt-exp.h"
 #include "pt-walk.h"
@@ -50,8 +49,8 @@ class tree_matrix : public tree_array_list
 {
 public:
 
-  tree_matrix (tree_argument_list *row = nullptr, int l = -1, int c = -1)
-    : tree_array_list (row, l, c)
+  tree_matrix (tree_argument_list *row = nullptr)
+    : tree_array_list (row)
   { }
 
   OCTAVE_DISABLE_COPY_MOVE (tree_matrix)

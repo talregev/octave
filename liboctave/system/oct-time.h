@@ -31,17 +31,6 @@
 #include <iosfwd>
 #include <string>
 
-#if defined (OCTAVE_USE_WINDOWS_API)
-// Some Windows headers must be included in a certain order.
-// Don't include "windows.h" here to avoid potential issues due to that.
-// Instead just define the one type we need for the interface of one function.
-struct OCTAVE_WIN_FILETIME
-{
-  uint32_t dwLowDateTime;
-  uint32_t dwHighDateTime;
-};
-#endif
-
 
 static inline double
 as_double (OCTAVE_TIME_T sec, long usec)
@@ -59,8 +48,7 @@ OCTAVE_BEGIN_NAMESPACE(sys)
 
 class base_tm;
 
-class
-time
+class time
 {
 public:
 
@@ -193,8 +181,7 @@ operator + (const time& t1, const time& t2)
                t1.usec () + t2.usec ());
 }
 
-class
-base_tm
+class base_tm
 {
 public:
 
@@ -306,8 +293,7 @@ protected:
   OCTAVE_API void init (void *p);
 };
 
-class
-localtime : public base_tm
+class localtime : public base_tm
 {
 public:
 
@@ -333,8 +319,7 @@ private:
   OCTAVE_API void init (const time& ot);
 };
 
-class
-gmtime : public base_tm
+class gmtime : public base_tm
 {
 public:
 
@@ -351,8 +336,7 @@ private:
   OCTAVE_API void init (const time& ot);
 };
 
-class
-strptime : public base_tm
+class strptime : public base_tm
 {
 public:
 
@@ -375,8 +359,7 @@ private:
   OCTAVE_API void init (const std::string& str, const std::string& fmt);
 };
 
-class
-cpu_time
+class cpu_time
 {
 public:
 
@@ -422,8 +405,7 @@ private:
   { }
 };
 
-class
-resource_usage
+class resource_usage
 {
 public:
 
@@ -489,14 +471,6 @@ public:
     : m_time (t)
   { }
 
-#if defined (OCTAVE_USE_WINDOWS_API)
-  file_time (OCTAVE_WIN_FILETIME& t)
-  {
-    m_time = (static_cast<OCTAVE_TIME_T> (t.dwHighDateTime)) << 32
-             | (static_cast<OCTAVE_TIME_T> (t.dwLowDateTime));
-  }
-#endif
-
   file_time (const std::string& filename);
 
   file_time (const file_time& ot)
@@ -518,7 +492,7 @@ public:
   {
 #if defined (OCTAVE_USE_WINDOWS_API)
     // FAT file systems have 2 seconds resolution for the modification time.
-    static OCTAVE_TIME_T time_resolution = 20000;
+    static OCTAVE_TIME_T time_resolution = 20000000;
 #else
     // Assume 1 second (see file_stat)
     static OCTAVE_TIME_T time_resolution = 1;
@@ -580,7 +554,7 @@ private:
 
   // The native file time type differs per platform.
   // On POSIX, this is the number of 1 second intervals since the epoch.
-  // On Windows, this is the number of 0.1 ms intervals since a different epoch.
+  // On Windows, this is the number of 100 ns intervals since a different epoch.
   OCTAVE_TIME_T m_time;
 };
 

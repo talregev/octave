@@ -63,8 +63,6 @@
 #include "oct-stream.h"
 #include "ops.h"
 #include "ov-base.h"
-#include "ov-base-mat.h"
-#include "ov-base-mat.cc"
 #include "ov-scalar.h"
 #include "ov-re-mat.h"
 #include "ov-flt-re-mat.h"
@@ -84,8 +82,6 @@
 #include "ls-utils.h"
 #include "ls-hdf5.h"
 
-
-template class octave_base_matrix<NDArray>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_matrix, "matrix", "double");
 
@@ -431,7 +427,7 @@ octave_value
 octave_matrix::convert_to_str_internal (bool, bool, char type) const
 {
   octave_value retval;
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   octave_idx_type nel = dv.numel ();
 
   charNDArray chm (dv);
@@ -473,7 +469,7 @@ octave_matrix::convert_to_str_internal (bool, bool, char type) const
 bool
 octave_matrix::save_ascii (std::ostream& os)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   if (dv.ndims () > 2)
     {
@@ -567,10 +563,10 @@ octave_matrix::load_ascii (std::istream& is)
       else if (nr == 0 || nc == 0)
         m_matrix = Matrix (nr, nc);
       else
-        panic_impossible ();
+        error ("unexpected dimensions in octave_matrix::load_ascii - please report this bug");
     }
   else
-    panic_impossible ();
+    error ("unexpected dimensions keyword (= '%s') octave_matrix::load_ascii - please report this bug", kw.c_str ());
 
   return true;
 }
@@ -579,7 +575,7 @@ bool
 octave_matrix::save_binary (std::ostream& os, bool save_as_floats)
 {
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -659,7 +655,7 @@ octave_matrix::load_binary (std::istream& is, bool swap,
         return false;
 
       NDArray m(dv);
-      double *re = m.fortran_vec ();
+      double *re = m.rwdata ();
       read_doubles (is, re, static_cast<save_type> (tmp), dv.numel (),
                     swap, fmt);
 
@@ -679,7 +675,7 @@ octave_matrix::load_binary (std::istream& is, bool swap,
       if (! is.read (reinterpret_cast<char *> (&tmp), 1))
         return false;
       Matrix m (nr, nc);
-      double *re = m.fortran_vec ();
+      double *re = m.rwdata ();
       octave_idx_type len = static_cast<octave_idx_type> (nr) * nc;
       read_doubles (is, re, static_cast<save_type> (tmp), len, swap, fmt);
 
@@ -699,7 +695,7 @@ octave_matrix::save_hdf5 (octave_hdf5_id loc_id, const char *name,
 
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);
@@ -825,7 +821,7 @@ octave_matrix::load_hdf5 (octave_hdf5_id loc_id, const char *name)
     }
 
   NDArray m (dv);
-  double *re = m.fortran_vec ();
+  double *re = m.rwdata ();
   if (H5Dread (data_hid, H5T_NATIVE_DOUBLE, octave_H5S_ALL, octave_H5S_ALL,
                octave_H5P_DEFAULT, re) >= 0)
     {

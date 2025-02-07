@@ -48,8 +48,9 @@ class octave_value_list;
 
 // Character matrix values.
 
-class
-octave_char_matrix : public octave_base_matrix<charNDArray>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API octave_base_matrix<charNDArray>;
+
+class octave_char_matrix : public octave_base_matrix<charNDArray>
 {
 protected:
 

@@ -32,13 +32,8 @@
 #include "ov-cx-diag.h"
 #include "ov-flt-cx-diag.h"
 #include "ov-re-diag.h"
-#include "ov-base-diag.cc"
 #include "ov-complex.h"
-#include "ov-cx-mat.h"
 #include "ls-utils.h"
-
-
-template class octave_base_diag<ComplexDiagMatrix, ComplexMatrix>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_complex_diag_matrix,
                                      "complex diagonal matrix", "double");
@@ -231,7 +226,7 @@ octave_complex_diag_matrix::load_binary (std::istream& is, bool swap,
     }
 
   ComplexDiagMatrix m (r, c);
-  Complex *im = m.fortran_vec ();
+  Complex *im = m.rwdata ();
   octave_idx_type len = m.length ();
   read_doubles (is, reinterpret_cast<double *> (im),
                 static_cast<save_type> (tmp), 2 * len, swap, fmt);

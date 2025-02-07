@@ -124,7 +124,7 @@ annotation_dialog::get_gui_props ()
   // set props to the values of the gui
   m_props = octave_value_list ();
 
-  Matrix position(1, 4);
+  Matrix position (1, 4);
   position(0) = m_ui->sb_x->value ();
   position(1) = m_ui->sb_y->value ();
   position(2) = m_ui->sb_width->value ();
@@ -133,7 +133,7 @@ annotation_dialog::get_gui_props ()
 
   m_props.append (ovl ("string", m_ui->edit_string->text ().toStdString ()));
   m_props.append (ovl ("fitboxtotext",
-                     m_ui->cb_fit_box_to_text->isChecked () ? "on" : "off"));
+                       m_ui->cb_fit_box_to_text->isChecked () ? "on" : "off"));
 
   // FIXME: only "normalized" units is selectable, change the code below
   //        once more units are added in the UI.
@@ -153,11 +153,11 @@ annotation_dialog::get_gui_props ()
 
   m_props.append (ovl ("fontsize", m_ui->sb_font_size->value ()));
   m_props.append (ovl ("fontweight",
-                     m_ui->cb_font_bold->isChecked () ? "bold" : "normal"));
+                       m_ui->cb_font_bold->isChecked () ? "bold" : "normal"));
   m_props.append (ovl ("fontangle",
-                     m_ui->cb_font_italic->isChecked () ? "italic" : "normal"));
+                       m_ui->cb_font_italic->isChecked () ? "italic" : "normal"));
   m_props.append (ovl ("color", octave::Utils::toRgb (m_ui->btn_color->palette ().
-                     color (QPalette::Button))));
+                       color (QPalette::Button))));
 
   // FIXME: only "none" linestyle is selectable, change the code bellow
   //        once more linestyles are added in the UI.
@@ -243,7 +243,11 @@ annotation_dialog::set_gui_props ()
           if (m_props(1*i +1).is_matrix_type ())
             color = octave::Utils::fromRgb (m_props(2*i +1).matrix_value ());
           else
+#if defined (HAVE_QCOLOR_FROMSTRING)
+            color.fromString (m_props(2*i +1).string_value ());
+#else
             color.setNamedColor (m_props(2*i +1).string_value ().c_str ());
+#endif
 
           if (color.isValid ())
             m_ui->btn_color->setPalette (QPalette (color));

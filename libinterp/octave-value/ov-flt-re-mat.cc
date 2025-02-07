@@ -63,8 +63,6 @@
 #include "oct-stream.h"
 #include "ops.h"
 #include "ov-base.h"
-#include "ov-base-mat.h"
-#include "ov-base-mat.cc"
 #include "ov-scalar.h"
 #include "ov-float.h"
 #include "ov-flt-complex.h"
@@ -83,8 +81,6 @@
 #include "ls-utils.h"
 #include "ls-hdf5.h"
 
-
-template class octave_base_matrix<FloatNDArray>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_float_matrix, "float matrix",
                                      "single");
@@ -328,7 +324,7 @@ octave_value
 octave_float_matrix::convert_to_str_internal (bool, bool, char type) const
 {
   octave_value retval;
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   octave_idx_type nel = dv.numel ();
 
   charNDArray chm (dv);
@@ -370,7 +366,7 @@ octave_float_matrix::convert_to_str_internal (bool, bool, char type) const
 bool
 octave_float_matrix::save_ascii (std::ostream& os)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   if (dv.ndims () > 2)
     {
@@ -464,10 +460,10 @@ octave_float_matrix::load_ascii (std::istream& is)
       else if (nr == 0 || nc == 0)
         m_matrix = FloatMatrix (nr, nc);
       else
-        panic_impossible ();
+        error ("unexpected dimensions in octave_float_matrix::load_ascii - please report this bug");
     }
   else
-    panic_impossible ();
+    error ("unexpected dimensions keyword (= '%s') octave_float_matrix::load_ascii - please report this bug", kw.c_str ());
 
   return true;
 }
@@ -475,7 +471,7 @@ octave_float_matrix::load_ascii (std::istream& is)
 bool
 octave_float_matrix::save_binary (std::ostream& os, bool)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -545,7 +541,7 @@ octave_float_matrix::load_binary (std::istream& is, bool swap,
         return false;
 
       FloatNDArray m(dv);
-      float *re = m.fortran_vec ();
+      float *re = m.rwdata ();
       read_floats (is, re, static_cast<save_type> (tmp), dv.numel (),
                    swap, fmt);
 
@@ -565,7 +561,7 @@ octave_float_matrix::load_binary (std::istream& is, bool swap,
       if (! is.read (reinterpret_cast<char *> (&tmp), 1))
         return false;
       FloatMatrix m (nr, nc);
-      float *re = m.fortran_vec ();
+      float *re = m.rwdata ();
       octave_idx_type len = static_cast<octave_idx_type> (nr) * nc;
       read_floats (is, re, static_cast<save_type> (tmp), len, swap, fmt);
 
@@ -584,7 +580,7 @@ octave_float_matrix::save_hdf5 (octave_hdf5_id loc_id, const char *name, bool)
 
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);
@@ -698,7 +694,7 @@ octave_float_matrix::load_hdf5 (octave_hdf5_id loc_id, const char *name)
     }
 
   FloatNDArray m (dv);
-  float *re = m.fortran_vec ();
+  float *re = m.rwdata ();
   if (H5Dread (data_hid, H5T_NATIVE_FLOAT, octave_H5S_ALL, octave_H5S_ALL,
                octave_H5P_DEFAULT, re) >= 0)
     {

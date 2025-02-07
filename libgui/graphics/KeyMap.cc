@@ -201,7 +201,14 @@ namespace KeyMap
     keyMapper[Qt::Key_twosuperior] = "twosuperior";
     keyMapper[Qt::Key_threesuperior] = "threesuperior";
     keyMapper[Qt::Key_acute] = "acute";
+    // FIXME: Should the following value be changed to "micro"?  The string is,
+    //        e.g., used as the value of the field "Key" that is passed to the
+    //        "KeyPressFcn" callback.
+#if defined (HAVE_QT_KEY_MICRO)
+    keyMapper[Qt::Key_micro] = "mu";
+#else
     keyMapper[Qt::Key_mu] = "mu";
+#endif
     keyMapper[Qt::Key_paragraph] = "paragraph";
     keyMapper[Qt::Key_periodcentered] = "periodcentered";
     keyMapper[Qt::Key_cedilla] = "cedilla";
@@ -250,7 +257,8 @@ namespace KeyMap
     return keyMapper;
   }
 
-  std::string qKeyToKeyString (int key)
+  std::string
+  qKeyToKeyString (int key)
   {
     static const QMap<int, std::string> keyMapper = makeKeyMapper ();
 

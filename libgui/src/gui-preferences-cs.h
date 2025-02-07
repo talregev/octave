@@ -56,7 +56,8 @@ const unsigned int cs_colors_count = 4;
 extern gui_pref cs_colors[];
 
 const QStringList
-cs_color_names = {
+cs_color_names =
+{
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Foreground"),
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Background"),
   QT_TRANSLATE_NOOP ("octave::settings_dialog", "Selection"),
@@ -66,5 +67,10 @@ cs_color_names = {
 extern gui_pref cs_focus_cmd;
 
 extern gui_pref cs_dbg_location;
+
+// Some constants for the experimental console widget
+const QColor cs_error_color (Qt::red);
+const double cs_error_interp[2] = {1.0, 0.4};
+const double cs_prompt_interp[2] = {0.8, 0.4};
 
 #endif

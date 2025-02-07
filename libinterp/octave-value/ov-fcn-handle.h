@@ -182,9 +182,7 @@ protected:
 
 OCTAVE_END_NAMESPACE(octave)
 
-class
-OCTINTERP_API
-octave_fcn_handle : public octave_base_value
+class OCTINTERP_API octave_fcn_handle : public octave_base_value
 {
 public:
 
@@ -383,7 +381,7 @@ private:
 
   octave::base_fcn_handle * get_rep () const { return m_rep.get (); }
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 extern bool

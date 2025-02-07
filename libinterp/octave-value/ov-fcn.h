@@ -40,6 +40,7 @@
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
+class filepos;
 class stack_frame;
 class tree_evaluator;
 class tree_walker;
@@ -48,9 +49,7 @@ OCTAVE_END_NAMESPACE(octave)
 
 // Functions.
 
-class
-OCTINTERP_API
-octave_function : public octave_base_value
+class OCTINTERP_API octave_function : public octave_base_value
 {
 public:
 
@@ -75,6 +74,9 @@ public:
   virtual std::string fcn_file_name () const { return ""; }
 
   virtual std::string src_file_name () const { return ""; }
+
+  virtual octave::filepos beg_pos () const;
+  virtual octave::filepos end_pos () const;
 
   // The name to show in the profiler (also used as map-key).
   virtual std::string profiler_name () const { return name (); }

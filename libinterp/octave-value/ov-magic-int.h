@@ -47,8 +47,7 @@ class octave_value_list;
 // type conversion.
 
 template <typename T>
-class
-octave_base_magic_int : public octave_base_scalar<T>
+class octave_base_magic_int : public octave_base_scalar<T>
 {
 public:
 
@@ -275,9 +274,7 @@ public:
   octave_value map (octave_base_value::unary_mapper_t umap) const;
 };
 
-class
-OCTINTERP_API
-octave_magic_uint : public octave_base_magic_int<octave_uint64>
+class OCTINTERP_API octave_magic_uint : public octave_base_magic_int<octave_uint64>
 {
 public:
 
@@ -298,12 +295,10 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
-class
-OCTINTERP_API
-octave_magic_int : public octave_base_magic_int<octave_int64>
+class OCTINTERP_API octave_magic_int : public octave_base_magic_int<octave_int64>
 {
 public:
 
@@ -324,7 +319,7 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

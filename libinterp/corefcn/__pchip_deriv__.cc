@@ -75,14 +75,14 @@ Undocumented internal function.
 
               F77_INT ierr;
               const F77_INT incfd = (rows ? to_f77_int (2*nyr) : 2);
-              volatile const octave_idx_type inc = (rows ? 2 : 2*nyr);
-              volatile octave_idx_type k = 0;
+              const octave_idx_type inc = (rows ? 2 : 2*nyr);
+              octave_idx_type k = 0;
 
-              for (volatile octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
+              for (octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
                 {
                   F77_XFCN (pchim, PCHIM, (nx, xvec.data (),
                                            reinterpret_cast<float const *> (ymat.data ()) + k * inc,
-                                           reinterpret_cast<float *> (dmat.fortran_vec ()) + k * inc,
+                                           reinterpret_cast<float *> (dmat.rwdata ()) + k * inc,
                                            incfd, ierr));
 
                   if (ierr < 0)
@@ -91,7 +91,7 @@ Undocumented internal function.
 
                   F77_XFCN (pchim, PCHIM, (nx, xvec.data (),
                                            reinterpret_cast<float const *> (ymat.data ()) + 1 + k * inc,
-                                           reinterpret_cast<float *> (dmat.fortran_vec ()) + 1 + k * inc,
+                                           reinterpret_cast<float *> (dmat.rwdata ()) + 1 + k * inc,
                                            incfd, ierr));
 
                   if (ierr < 0)
@@ -117,14 +117,14 @@ Undocumented internal function.
 
               F77_INT ierr;
               const F77_INT incfd = (rows ? to_f77_int (nyr) : 1);
-              volatile const octave_idx_type inc = (rows ? 1 : nyr);
-              volatile octave_idx_type k = 0;
+              const octave_idx_type inc = (rows ? 1 : nyr);
+              octave_idx_type k = 0;
 
-              for (volatile octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
+              for (octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
                 {
                   F77_XFCN (pchim, PCHIM, (nx, xvec.data (),
                                            ymat.data () + k * inc,
-                                           dmat.fortran_vec () + k * inc,
+                                           dmat.rwdata () + k * inc,
                                            incfd, ierr));
 
                   k++;
@@ -158,14 +158,14 @@ Undocumented internal function.
 
               F77_INT ierr;
               const F77_INT incfd = (rows ? to_f77_int (2*nyr) : 2);
-              volatile const octave_idx_type inc = (rows ? 2 : 2*nyr);
-              volatile octave_idx_type k = 0;
+              const octave_idx_type inc = (rows ? 2 : 2*nyr);
+              octave_idx_type k = 0;
 
-              for (volatile octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
+              for (octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
                 {
                   F77_XFCN (dpchim, DPCHIM, (nx, xvec.data (),
                                              reinterpret_cast<double const *> (ymat.data ()) + k * inc,
-                                             reinterpret_cast<double *> (dmat.fortran_vec ()) + k * inc,
+                                             reinterpret_cast<double *> (dmat.rwdata ()) + k * inc,
                                              incfd, ierr));
 
                   if (ierr < 0)
@@ -174,7 +174,7 @@ Undocumented internal function.
 
                   F77_XFCN (dpchim, DPCHIM, (nx, xvec.data (),
                                              reinterpret_cast<double const *> (ymat.data ()) + 1 + k * inc,
-                                             reinterpret_cast<double *> (dmat.fortran_vec ()) + 1 + k * inc,
+                                             reinterpret_cast<double *> (dmat.rwdata ()) + 1 + k * inc,
                                              incfd, ierr));
 
                   if (ierr < 0)
@@ -200,14 +200,14 @@ Undocumented internal function.
 
               F77_INT ierr;
               const F77_INT incfd = (rows ? to_f77_int (nyr) : 1);
-              volatile const octave_idx_type inc = (rows ? 1 : nyr);
-              volatile octave_idx_type k = 0;
+              const octave_idx_type inc = (rows ? 1 : nyr);
+              octave_idx_type k = 0;
 
-              for (volatile octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
+              for (octave_idx_type i = (rows ? nyr : nyc); i > 0; i--)
                 {
                   F77_XFCN (dpchim, DPCHIM, (nx, xvec.data (),
                                              ymat.data () + k * inc,
-                                             dmat.fortran_vec () + k * inc,
+                                             dmat.rwdata () + k * inc,
                                              incfd, ierr));
                   k++;
 

@@ -104,7 +104,7 @@ public:
   java_local_ref (JNIEnv *env, T obj)
     : m_jobj (obj), m_detached (false), m_env (env) { }
 
-  ~java_local_ref (void) { release (); }
+  ~java_local_ref () { release (); }
 
   T& operator = (T obj)
   {
@@ -119,7 +119,7 @@ public:
   operator bool () const { return (m_jobj != 0); }
   operator T () { return m_jobj; }
 
-  void detach (void) { m_detached = true; }
+  void detach () { m_detached = true; }
 
 protected:
 
@@ -129,11 +129,11 @@ protected:
 
 private:
 
-  java_local_ref (void)
+  java_local_ref ()
     : m_jobj (0), m_detached (false), m_env (0)
   { }
 
-  void release (void)
+  void release ()
   {
     if (m_env && m_jobj && ! m_detached)
       m_env->DeleteLocalRef (m_jobj);
@@ -641,6 +641,7 @@ get_jvm_lib_path_from_registry ()
 
   return jvm_lib_path;
 }
+
 #endif
 
 //! Initialize the java virtual machine (jvm) and field #jvm if necessary.
@@ -903,6 +904,14 @@ thread_jni_env ()
   return env;
 }
 
+#else
+
+OCTAVE_NORETURN static void
+error_unexpected (const char *name)
+{
+  error ("unexpected call to %s when HAVE_JAVA is not defined - please report this bug", name);
+}
+
 #endif
 
 bool
@@ -925,7 +934,7 @@ octave_java::is_java_string () const
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::is_java_string");
 
 #endif
 }
@@ -957,7 +966,7 @@ octave_java::is_instance_of (const std::string& cls_name) const
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::is_instance_of");
 
 #endif
 }
@@ -1444,7 +1453,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
           const JAVA_TYPE ## Array jarr = reinterpret_cast<JAVA_TYPE ## Array> (jobj); \
           const jsize len = jni_env->GetArrayLength (jarr); \
           OCTAVE_ID ## NDArray d (dim_vector (len, 1)); \
-          JAVA_TYPE *buffer = reinterpret_cast<JAVA_TYPE *> (d.fortran_vec ()); \
+          JAVA_TYPE *buffer = reinterpret_cast<JAVA_TYPE *> (d.rwdata ()); \
           jni_env->Get ## JAVA_TYPE_CAP ## ArrayRegion (jarr, 0, len, buffer); \
           retval = d; \
           break; \
@@ -1497,7 +1506,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                                        (jni_env->CallObjectMethod (jobj,
                                            mID)));
                   jni_env->GetDoubleArrayRegion (dv, 0, m.numel (),
-                                                 m.fortran_vec ());
+                                                 m.rwdata ());
                   retval = m;
                   break;
                 }
@@ -1513,7 +1522,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                                              mID)));
                       jni_env->GetByteArrayRegion (dv, 0, m.numel (),
                                                    reinterpret_cast<jbyte *>
-                                                   (m.fortran_vec ()));
+                                                   (m.rwdata ()));
                       retval = m;
                       break;
                     }
@@ -1527,7 +1536,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                                              mID)));
                       jni_env->GetByteArrayRegion (dv, 0, m.numel (),
                                                    reinterpret_cast<jbyte *>
-                                                   (m.fortran_vec ()));
+                                                   (m.rwdata ()));
                       retval = m;
                       break;
                     }
@@ -1544,7 +1553,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                                             mID)));
                       jni_env->GetIntArrayRegion (dv, 0, m.numel (),
                                                   reinterpret_cast<jint *>
-                                                  (m.fortran_vec ()));
+                                                  (m.rwdata ()));
                       retval = m;
                       break;
                     }
@@ -1558,7 +1567,7 @@ box (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                                             mID)));
                       jni_env->GetIntArrayRegion (dv, 0, m.numel (),
                                                   reinterpret_cast<jint *>
-                                                  (m.fortran_vec ()));
+                                                  (m.rwdata ()));
                       retval = m;
                       break;
                     }
@@ -1613,7 +1622,7 @@ box_more (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                 {
                   Matrix m (1, len);
                   jni_env->GetDoubleArrayRegion (jarr, 0, len,
-                                                 m.fortran_vec ());
+                                                 m.rwdata ());
                   retval = m;
                 }
               else
@@ -1648,7 +1657,7 @@ box_more (JNIEnv *jni_env, void *jobj_arg, void *jcls_arg)
                           m.resize (cols, rows);
                         }
                       jni_env->GetDoubleArrayRegion
-                      (row, 0, cols, m.fortran_vec () + r * cols);
+                      (row, 0, cols, m.rwdata () + r * cols);
                     }
                   retval = m.transpose ();
                 }
@@ -1826,7 +1835,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
     {
       Matrix m = val.matrix_value ();
       jdoubleArray dv = jni_env->NewDoubleArray (m.numel ());
-      jni_env->SetDoubleArrayRegion (dv, 0, m.numel (), m.fortran_vec ());
+      jni_env->SetDoubleArrayRegion (dv, 0, m.numel (), m.rwdata ());
       jobj = dv;
       jcls = jni_env->GetObjectClass (jobj);
     }
@@ -1836,7 +1845,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
     {
       jclass_ref mcls (jni_env, find_octave_class (jni_env,
                        "org/octave/Matrix"));
-      dim_vector dims = val.dims ();
+      const dim_vector& dims = val.dims ();
       jintArray_ref iv (jni_env, jni_env->NewIntArray (dims.ndims ()));
       jint *iv_data = jni_env->GetIntArrayElements (jintArray (iv), nullptr);
 
@@ -1850,7 +1859,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
           NDArray m = val.array_value ();
           jdoubleArray_ref dv (jni_env, jni_env->NewDoubleArray (m.numel ()));
           jni_env->SetDoubleArrayRegion (jdoubleArray (dv), 0, m.numel (),
-                                         m.fortran_vec ());
+                                         m.rwdata ());
           jmethodID mID = jni_env->GetMethodID (mcls, "<init>", "([D[I)V");
           jobj = jni_env->NewObject (jclass (mcls), mID, jdoubleArray (dv),
                                      jintArray (iv));
@@ -1862,7 +1871,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
           jbyteArray_ref bv (jni_env, jni_env->NewByteArray (m.numel ()));
           jni_env->SetByteArrayRegion (jbyteArray (bv), 0, m.numel (),
                                        reinterpret_cast<jbyte *>
-                                       (m.fortran_vec ()));
+                                       (m.rwdata ()));
           jmethodID mID = jni_env->GetMethodID (mcls, "<init>", "([B[I)V");
           jobj = jni_env->NewObject
                  (jclass (mcls), mID, jbyteArray (bv), jintArray (iv));
@@ -1874,7 +1883,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
           jbyteArray_ref bv (jni_env, jni_env->NewByteArray (m.numel ()));
           jni_env->SetByteArrayRegion (jbyteArray (bv), 0, m.numel (),
                                        reinterpret_cast<jbyte *>
-                                       (m.fortran_vec ()));
+                                       (m.rwdata ()));
           jmethodID mID = jni_env->GetMethodID (mcls, "<init>", "([B[I)V");
           jobj = jni_env->NewObject
                  (jclass (mcls), mID, jbyteArray (bv), jintArray (iv));
@@ -1886,7 +1895,7 @@ unbox (JNIEnv *jni_env, const octave_value& val, jobject_ref& jobj,
           jintArray_ref v (jni_env, jni_env->NewIntArray (m.numel ()));
           jni_env->SetIntArrayRegion (jintArray (v), 0, m.numel (),
                                       reinterpret_cast<jint *>
-                                      (m.fortran_vec ()));
+                                      (m.rwdata ()));
           jmethodID mID = jni_env->GetMethodID (mcls, "<init>", "([I[I)V");
           jobj = jni_env->NewObject
                  (jclass (mcls), mID, jintArray (v), jintArray (iv));
@@ -2183,7 +2192,7 @@ octave_java::dims () const
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::dims");
 
 #endif
 }
@@ -2248,7 +2257,7 @@ octave_java::subsref (const std::string& type,
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::subsref");
 
 #endif
 }
@@ -2338,7 +2347,7 @@ octave_java::subsasgn (const std::string& type,
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::subsasgn");
 
 #endif
 }
@@ -2360,7 +2369,7 @@ octave_java::map_keys () const
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::map_keys");
 
 #endif
 }
@@ -2386,7 +2395,7 @@ octave_java::convert_to_str_internal (bool, bool force, char type) const
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::convert_to_str_internal");
 
 #endif
 }
@@ -2496,7 +2505,7 @@ octave_java::do_javaMethod (void *jni_env_arg, const std::string& name,
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaMethod");
 
 #endif
 }
@@ -2517,7 +2526,7 @@ octave_java::do_javaMethod (const std::string& name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaMethod");
 
 #endif
 }
@@ -2577,7 +2586,7 @@ octave_java::do_javaMethod (void *jni_env_arg,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaMethod");
 
 #endif
 }
@@ -2600,7 +2609,7 @@ octave_java::do_javaMethod (const std::string& class_name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaMethod");
 
 #endif
 }
@@ -2656,7 +2665,7 @@ octave_java::do_javaObject (void *jni_env_arg, const std::string& name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaObject");
 
 #endif
 }
@@ -2677,7 +2686,7 @@ octave_java::do_javaObject (const std::string& name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_javaObject");
 
 #endif
 }
@@ -2723,7 +2732,7 @@ octave_java::do_java_get (void *jni_env_arg, const std::string& name)
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_get");
 
 #endif
 }
@@ -2742,7 +2751,7 @@ octave_java::do_java_get (const std::string& name)
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_get");
 
 #endif
 }
@@ -2790,7 +2799,7 @@ octave_java::do_java_get (void *jni_env_arg, const std::string& class_name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_get");
 
 #endif
 }
@@ -2811,7 +2820,7 @@ octave_java::do_java_get (const std::string& class_name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_get");
 
 #endif
 }
@@ -2858,7 +2867,7 @@ octave_java::do_java_set (void *jni_env_arg, const std::string& name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_set");
 
 #endif
 }
@@ -2878,7 +2887,7 @@ octave_java::do_java_set (const std::string& name, const octave_value& val)
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_set");
 
 #endif
 }
@@ -2929,7 +2938,7 @@ octave_java::do_java_set (void *jni_env_arg, const std::string& class_name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_set");
 
 #endif
 }
@@ -2952,7 +2961,7 @@ octave_java::do_java_set (const std::string& class_name,
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::do_java_set");
 
 #endif
 }
@@ -3002,7 +3011,7 @@ octave_java::init (void *jobj_arg, void *jcls_arg)
   // This shouldn't happen because construction of octave_java
   // objects is supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::init");
 
 #endif
 }
@@ -3031,7 +3040,7 @@ octave_java::release ()
   // This shouldn't happen because construction of octave_java objects is
   // supposed to be impossible if Java is not available.
 
-  panic_impossible ();
+  error_unexpected ("octave_java::release");
 
 #endif
 }

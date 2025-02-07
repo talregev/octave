@@ -31,13 +31,8 @@
 
 #include "ov-re-diag.h"
 #include "ov-flt-re-diag.h"
-#include "ov-base-diag.cc"
 #include "ov-scalar.h"
-#include "ov-re-mat.h"
 #include "ls-utils.h"
-
-
-template class octave_base_diag<DiagMatrix, Matrix>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_diag_matrix, "diagonal matrix",
                                      "double");
@@ -296,7 +291,7 @@ octave_diag_matrix::load_binary (std::istream& is, bool swap,
     }
 
   DiagMatrix m (r, c);
-  double *re = m.fortran_vec ();
+  double *re = m.rwdata ();
   octave_idx_type len = m.length ();
   read_doubles (is, re, static_cast<save_type> (tmp), len, swap, fmt);
 

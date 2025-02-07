@@ -278,10 +278,10 @@ lu<Matrix>::lu (const Matrix& a)
   F77_INT mn = (a_nr < a_nc ? a_nr : a_nc);
 
   m_ipvt.resize (dim_vector (mn, 1));
-  F77_INT *pipvt = m_ipvt.fortran_vec ();
+  F77_INT *pipvt = m_ipvt.rwdata ();
 
   m_a_fact = a;
-  double *tmp_data = m_a_fact.fortran_vec ();
+  double *tmp_data = m_a_fact.rwdata ();
 
   F77_INT info = 0;
 
@@ -315,8 +315,8 @@ lu<Matrix>::update (const ColumnVector& u, const ColumnVector& v)
 
   ColumnVector utmp = u;
   ColumnVector vtmp = v;
-  F77_XFCN (dlu1up, DLU1UP, (m, n, l.fortran_vec (), m, r.fortran_vec (),
-                             k, utmp.fortran_vec (), vtmp.fortran_vec ()));
+  F77_XFCN (dlu1up, DLU1UP, (m, n, l.rwdata (), m, r.rwdata (),
+                             k, utmp.rwdata (), vtmp.rwdata ()));
 }
 
 template <>
@@ -342,13 +342,13 @@ lu<Matrix>::update (const Matrix& u, const Matrix& v)
   if (u_nr != m || v_nr != n || u_nc != v_nc)
     (*current_liboctave_error_handler) ("luupdate: dimensions mismatch");
 
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       ColumnVector utmp = u.column (i);
       ColumnVector vtmp = v.column (i);
-      F77_XFCN (dlu1up, DLU1UP, (m, n, l.fortran_vec (),
-                                 m, r.fortran_vec (), k,
-                                 utmp.fortran_vec (), vtmp.fortran_vec ()));
+      F77_XFCN (dlu1up, DLU1UP, (m, n, l.rwdata (),
+                                 m, r.rwdata (), k,
+                                 utmp.rwdata (), vtmp.rwdata ()));
     }
 }
 
@@ -376,9 +376,9 @@ lu<Matrix>::update_piv (const ColumnVector& u, const ColumnVector& v)
   ColumnVector vtmp = v;
   OCTAVE_LOCAL_BUFFER (double, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  F77_XFCN (dlup1up, DLUP1UP, (m, n, l.fortran_vec (),
-                               m, r.fortran_vec (), k,
-                               m_ipvt.fortran_vec (),
+  F77_XFCN (dlup1up, DLUP1UP, (m, n, l.rwdata (),
+                               m, r.rwdata (), k,
+                               m_ipvt.rwdata (),
                                utmp.data (), vtmp.data (), w));
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) -= 1; // decrement
 }
@@ -408,13 +408,13 @@ lu<Matrix>::update_piv (const Matrix& u, const Matrix& v)
 
   OCTAVE_LOCAL_BUFFER (double, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       ColumnVector utmp = u.column (i);
       ColumnVector vtmp = v.column (i);
-      F77_XFCN (dlup1up, DLUP1UP, (m, n, l.fortran_vec (),
-                                   m, r.fortran_vec (), k,
-                                   m_ipvt.fortran_vec (),
+      F77_XFCN (dlup1up, DLUP1UP, (m, n, l.rwdata (),
+                                   m, r.rwdata (), k,
+                                   m_ipvt.rwdata (),
                                    utmp.data (), vtmp.data (), w));
     }
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) -= 1; // decrement
@@ -431,10 +431,10 @@ lu<FloatMatrix>::lu (const FloatMatrix& a)
   F77_INT mn = (a_nr < a_nc ? a_nr : a_nc);
 
   m_ipvt.resize (dim_vector (mn, 1));
-  F77_INT *pipvt = m_ipvt.fortran_vec ();
+  F77_INT *pipvt = m_ipvt.rwdata ();
 
   m_a_fact = a;
-  float *tmp_data = m_a_fact.fortran_vec ();
+  float *tmp_data = m_a_fact.rwdata ();
 
   F77_INT info = 0;
 
@@ -469,9 +469,9 @@ lu<FloatMatrix>::update (const FloatColumnVector& u,
 
   FloatColumnVector utmp = u;
   FloatColumnVector vtmp = v;
-  F77_XFCN (slu1up, SLU1UP, (m, n, l.fortran_vec (),
-                             m, r.fortran_vec (), k,
-                             utmp.fortran_vec (), vtmp.fortran_vec ()));
+  F77_XFCN (slu1up, SLU1UP, (m, n, l.rwdata (),
+                             m, r.rwdata (), k,
+                             utmp.rwdata (), vtmp.rwdata ()));
 }
 
 template <>
@@ -497,13 +497,13 @@ lu<FloatMatrix>::update (const FloatMatrix& u, const FloatMatrix& v)
   if (u_nr != m || v_nr != n || u_nc != v_nc)
     (*current_liboctave_error_handler) ("luupdate: dimensions mismatch");
 
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       FloatColumnVector utmp = u.column (i);
       FloatColumnVector vtmp = v.column (i);
-      F77_XFCN (slu1up, SLU1UP, (m, n, l.fortran_vec (),
-                                 m, r.fortran_vec (), k,
-                                 utmp.fortran_vec (), vtmp.fortran_vec ()));
+      F77_XFCN (slu1up, SLU1UP, (m, n, l.rwdata (),
+                                 m, r.rwdata (), k,
+                                 utmp.rwdata (), vtmp.rwdata ()));
     }
 }
 
@@ -532,9 +532,9 @@ lu<FloatMatrix>::update_piv (const FloatColumnVector& u,
   FloatColumnVector vtmp = v;
   OCTAVE_LOCAL_BUFFER (float, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  F77_XFCN (slup1up, SLUP1UP, (m, n, l.fortran_vec (),
-                               m, r.fortran_vec (), k,
-                               m_ipvt.fortran_vec (),
+  F77_XFCN (slup1up, SLUP1UP, (m, n, l.rwdata (),
+                               m, r.rwdata (), k,
+                               m_ipvt.rwdata (),
                                utmp.data (), vtmp.data (), w));
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) -= 1; // decrement
 }
@@ -564,13 +564,13 @@ lu<FloatMatrix>::update_piv (const FloatMatrix& u, const FloatMatrix& v)
 
   OCTAVE_LOCAL_BUFFER (float, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       FloatColumnVector utmp = u.column (i);
       FloatColumnVector vtmp = v.column (i);
-      F77_XFCN (slup1up, SLUP1UP, (m, n, l.fortran_vec (),
-                                   m, r.fortran_vec (), k,
-                                   m_ipvt.fortran_vec (),
+      F77_XFCN (slup1up, SLUP1UP, (m, n, l.rwdata (),
+                                   m, r.rwdata (), k,
+                                   m_ipvt.rwdata (),
                                    utmp.data (), vtmp.data (), w));
     }
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) -= 1; // decrement
@@ -587,10 +587,10 @@ lu<ComplexMatrix>::lu (const ComplexMatrix& a)
   F77_INT mn = (a_nr < a_nc ? a_nr : a_nc);
 
   m_ipvt.resize (dim_vector (mn, 1));
-  F77_INT *pipvt = m_ipvt.fortran_vec ();
+  F77_INT *pipvt = m_ipvt.rwdata ();
 
   m_a_fact = a;
-  Complex *tmp_data = m_a_fact.fortran_vec ();
+  Complex *tmp_data = m_a_fact.rwdata ();
 
   F77_INT info = 0;
 
@@ -626,10 +626,10 @@ lu<ComplexMatrix>::update (const ComplexColumnVector& u,
 
   ComplexColumnVector utmp = u;
   ComplexColumnVector vtmp = v;
-  F77_XFCN (zlu1up, ZLU1UP, (m, n, F77_DBLE_CMPLX_ARG (l.fortran_vec ()), m,
-                             F77_DBLE_CMPLX_ARG (r.fortran_vec ()), k,
-                             F77_DBLE_CMPLX_ARG (utmp.fortran_vec ()),
-                             F77_DBLE_CMPLX_ARG (vtmp.fortran_vec ())));
+  F77_XFCN (zlu1up, ZLU1UP, (m, n, F77_DBLE_CMPLX_ARG (l.rwdata ()), m,
+                             F77_DBLE_CMPLX_ARG (r.rwdata ()), k,
+                             F77_DBLE_CMPLX_ARG (utmp.rwdata ()),
+                             F77_DBLE_CMPLX_ARG (vtmp.rwdata ())));
 }
 
 template <>
@@ -655,16 +655,16 @@ lu<ComplexMatrix>::update (const ComplexMatrix& u, const ComplexMatrix& v)
   if (u_nr != m || v_nr != n || u_nc != v_nc)
     (*current_liboctave_error_handler) ("luupdate: dimensions mismatch");
 
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       ComplexColumnVector utmp = u.column (i);
       ComplexColumnVector vtmp = v.column (i);
       F77_XFCN (zlu1up, ZLU1UP, (m, n,
-                                 F77_DBLE_CMPLX_ARG (l.fortran_vec ()),
-                                 m, F77_DBLE_CMPLX_ARG (r.fortran_vec ()),
+                                 F77_DBLE_CMPLX_ARG (l.rwdata ()),
+                                 m, F77_DBLE_CMPLX_ARG (r.rwdata ()),
                                  k,
-                                 F77_DBLE_CMPLX_ARG (utmp.fortran_vec ()),
-                                 F77_DBLE_CMPLX_ARG (vtmp.fortran_vec ())));
+                                 F77_DBLE_CMPLX_ARG (utmp.rwdata ()),
+                                 F77_DBLE_CMPLX_ARG (vtmp.rwdata ())));
     }
 }
 
@@ -693,9 +693,9 @@ lu<ComplexMatrix>::update_piv (const ComplexColumnVector& u,
   ComplexColumnVector vtmp = v;
   OCTAVE_LOCAL_BUFFER (Complex, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  F77_XFCN (zlup1up, ZLUP1UP, (m, n, F77_DBLE_CMPLX_ARG (l.fortran_vec ()),
-                               m, F77_DBLE_CMPLX_ARG (r.fortran_vec ()), k,
-                               m_ipvt.fortran_vec (),
+  F77_XFCN (zlup1up, ZLUP1UP, (m, n, F77_DBLE_CMPLX_ARG (l.rwdata ()),
+                               m, F77_DBLE_CMPLX_ARG (r.rwdata ()), k,
+                               m_ipvt.rwdata (),
                                F77_CONST_DBLE_CMPLX_ARG (utmp.data ()),
                                F77_CONST_DBLE_CMPLX_ARG (vtmp.data ()),
                                F77_DBLE_CMPLX_ARG (w)));
@@ -728,15 +728,15 @@ lu<ComplexMatrix>::update_piv (const ComplexMatrix& u,
 
   OCTAVE_LOCAL_BUFFER (Complex, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       ComplexColumnVector utmp = u.column (i);
       ComplexColumnVector vtmp = v.column (i);
       F77_XFCN (zlup1up, ZLUP1UP, (m, n,
-                                   F77_DBLE_CMPLX_ARG (l.fortran_vec ()),
+                                   F77_DBLE_CMPLX_ARG (l.rwdata ()),
                                    m,
-                                   F77_DBLE_CMPLX_ARG (r.fortran_vec ()),
-                                   k, m_ipvt.fortran_vec (),
+                                   F77_DBLE_CMPLX_ARG (r.rwdata ()),
+                                   k, m_ipvt.rwdata (),
                                    F77_CONST_DBLE_CMPLX_ARG (utmp.data ()),
                                    F77_CONST_DBLE_CMPLX_ARG (vtmp.data ()),
                                    F77_DBLE_CMPLX_ARG (w)));
@@ -755,10 +755,10 @@ lu<FloatComplexMatrix>::lu (const FloatComplexMatrix& a)
   F77_INT mn = (a_nr < a_nc ? a_nr : a_nc);
 
   m_ipvt.resize (dim_vector (mn, 1));
-  F77_INT *pipvt = m_ipvt.fortran_vec ();
+  F77_INT *pipvt = m_ipvt.rwdata ();
 
   m_a_fact = a;
-  FloatComplex *tmp_data = m_a_fact.fortran_vec ();
+  FloatComplex *tmp_data = m_a_fact.rwdata ();
 
   F77_INT info = 0;
 
@@ -794,10 +794,10 @@ lu<FloatComplexMatrix>::update (const FloatComplexColumnVector& u,
 
   FloatComplexColumnVector utmp = u;
   FloatComplexColumnVector vtmp = v;
-  F77_XFCN (clu1up, CLU1UP, (m, n, F77_CMPLX_ARG (l.fortran_vec ()), m,
-                             F77_CMPLX_ARG (r.fortran_vec ()), k,
-                             F77_CMPLX_ARG (utmp.fortran_vec ()),
-                             F77_CMPLX_ARG (vtmp.fortran_vec ())));
+  F77_XFCN (clu1up, CLU1UP, (m, n, F77_CMPLX_ARG (l.rwdata ()), m,
+                             F77_CMPLX_ARG (r.rwdata ()), k,
+                             F77_CMPLX_ARG (utmp.rwdata ()),
+                             F77_CMPLX_ARG (vtmp.rwdata ())));
 }
 
 template <>
@@ -824,14 +824,14 @@ lu<FloatComplexMatrix>::update (const FloatComplexMatrix& u,
   if (u_nr != m || v_nr != n || u_nc != v_nc)
     (*current_liboctave_error_handler) ("luupdate: dimensions mismatch");
 
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       FloatComplexColumnVector utmp = u.column (i);
       FloatComplexColumnVector vtmp = v.column (i);
-      F77_XFCN (clu1up, CLU1UP, (m, n, F77_CMPLX_ARG (l.fortran_vec ()),
-                                 m, F77_CMPLX_ARG (r.fortran_vec ()), k,
-                                 F77_CMPLX_ARG (utmp.fortran_vec ()),
-                                 F77_CMPLX_ARG (vtmp.fortran_vec ())));
+      F77_XFCN (clu1up, CLU1UP, (m, n, F77_CMPLX_ARG (l.rwdata ()),
+                                 m, F77_CMPLX_ARG (r.rwdata ()), k,
+                                 F77_CMPLX_ARG (utmp.rwdata ()),
+                                 F77_CMPLX_ARG (vtmp.rwdata ())));
     }
 }
 
@@ -860,9 +860,9 @@ lu<FloatComplexMatrix>::update_piv (const FloatComplexColumnVector& u,
   FloatComplexColumnVector vtmp = v;
   OCTAVE_LOCAL_BUFFER (FloatComplex, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  F77_XFCN (clup1up, CLUP1UP, (m, n, F77_CMPLX_ARG (l.fortran_vec ()),
-                               m, F77_CMPLX_ARG (r.fortran_vec ()), k,
-                               m_ipvt.fortran_vec (),
+  F77_XFCN (clup1up, CLUP1UP, (m, n, F77_CMPLX_ARG (l.rwdata ()),
+                               m, F77_CMPLX_ARG (r.rwdata ()), k,
+                               m_ipvt.rwdata (),
                                F77_CONST_CMPLX_ARG (utmp.data ()),
                                F77_CONST_CMPLX_ARG (vtmp.data ()),
                                F77_CMPLX_ARG (w)));
@@ -895,13 +895,13 @@ lu<FloatComplexMatrix>::update_piv (const FloatComplexMatrix& u,
 
   OCTAVE_LOCAL_BUFFER (FloatComplex, w, m);
   for (F77_INT i = 0; i < m; i++) m_ipvt(i) += 1; // increment
-  for (volatile F77_INT i = 0; i < u_nc; i++)
+  for (F77_INT i = 0; i < u_nc; i++)
     {
       FloatComplexColumnVector utmp = u.column (i);
       FloatComplexColumnVector vtmp = v.column (i);
-      F77_XFCN (clup1up, CLUP1UP, (m, n, F77_CMPLX_ARG (l.fortran_vec ()),
-                                   m, F77_CMPLX_ARG (r.fortran_vec ()), k,
-                                   m_ipvt.fortran_vec (),
+      F77_XFCN (clup1up, CLUP1UP, (m, n, F77_CMPLX_ARG (l.rwdata ()),
+                                   m, F77_CMPLX_ARG (r.rwdata ()), k,
+                                   m_ipvt.rwdata (),
                                    F77_CONST_CMPLX_ARG (utmp.data ()),
                                    F77_CONST_CMPLX_ARG (vtmp.data ()),
                                    F77_CMPLX_ARG (w)));

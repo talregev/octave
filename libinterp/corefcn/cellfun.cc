@@ -188,7 +188,7 @@ try_cellfun_internal_ops (const octave_value_list& args, int nargin)
       if (nargin != 3)
         error (R"(cellfun: not enough arguments for "size")");
 
-      int d = args(2).nint_value () - 1;
+      int d = args(2).strict_int_value () - 1;
 
       if (d < 0)
         error ("cellfun: K must be a positive integer");
@@ -197,7 +197,7 @@ try_cellfun_internal_ops (const octave_value_list& args, int nargin)
 
       for (octave_idx_type count = 0; count < k; count++)
         {
-          dim_vector dv = f_args.elem (count).dims ();
+          const dim_vector& dv = f_args.elem (count).dims ();
           if (d < dv.ndims ())
             result(count) = static_cast<double> (dv(d));
           else
@@ -589,6 +589,8 @@ nevermind:
 
                           retv[j] = val.resize (fdims);
                         }
+                      else
+                        error ("cellfun: function returned fewer than nargout values");
                     }
                 }
               else
@@ -609,6 +611,8 @@ nevermind:
                                               idx_type, idx_list, val);
                             }
                         }
+                      else
+                        error ("cellfun: function returned fewer than nargout values");
                     }
                 }
             }
@@ -661,7 +665,11 @@ nevermind:
                 have_some_output = true;
 
               for (int j = 0; j < num_to_copy; j++)
-                results[j](count) = tmp(j);
+                {
+                  if (tmp(j).is_undefined ())
+                    error ("cellfun: function returned fewer than nargout values");
+                  results[j](count) = tmp(j);
+                }
             }
         }
 
@@ -1332,6 +1340,8 @@ arrayfun (@@str2num, [1234],
                                 error_with_id ("Octave:invalid-fun-call",
                                                "arrayfun: all values must be scalars when UniformOutput = true");
                             }
+                          else
+                            error ("arrayfun: function returned fewer than nargout values");
                         }
                     }
                   else
@@ -1355,6 +1365,8 @@ arrayfun (@@str2num, [1234],
                                                    "arrayfun: all values must be scalars when UniformOutput = true");
                                 }
                             }
+                          else
+                            error ("arrayfun: function returned fewer than nargout values");
                         }
                     }
                 }
@@ -1414,7 +1426,11 @@ arrayfun (@@str2num, [1234],
                     have_some_output = true;
 
                   for (int j = 0; j < num_to_copy; j++)
-                    results[j](count) = tmp(j);
+                    {
+                      if (tmp(j).is_undefined ())
+                        error ("arrayfun: function returned fewer than nargout values");
+                      results[j](count) = tmp(j);
+                    }
                 }
             }
 
@@ -1803,7 +1819,7 @@ do_object2cell (const octave_value& obj, const Array<int>& dimv)
   if (! dimv.isempty ())
     error ("num2cell (A, dim) not implemented for class objects");
 
-  dim_vector dv = get_object_dims (array);
+  const dim_vector& dv = get_object_dims (array);
 
   retval.resize (dv);
 
@@ -2004,8 +2020,9 @@ static Cell
 do_mat2cell_2d (const Array2D& a, const Array<octave_idx_type> *d, int nd)
 {
   Cell retval;
-  error_unless (nd == 1 || nd == 2);
-  error_unless (a.ndims () == 2);
+
+  panic_unless (nd == 1 || nd == 2);
+  panic_unless (a.ndims () == 2);
 
   if (mat2cell_mismatch (a.dims (), d, nd))
     return retval;
@@ -2061,7 +2078,8 @@ Cell
 do_mat2cell_nd (const ArrayND& a, const Array<octave_idx_type> *d, int nd)
 {
   Cell retval;
-  error_unless (nd >= 1);
+
+  panic_unless (nd >= 1);
 
   if (mat2cell_mismatch (a.dims (), d, nd))
     return retval;
@@ -2143,7 +2161,8 @@ Cell
 do_mat2cell (octave_value& a, const Array<octave_idx_type> *d, int nd)
 {
   Cell retval;
-  error_unless (nd >= 1);
+
+  panic_unless (nd >= 1);
 
   if (mat2cell_mismatch (a.dims (), d, nd))
     return retval;

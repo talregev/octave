@@ -81,7 +81,7 @@ enter_shortcut::keyPressEvent (QKeyEvent *e)
       if (modifiers & Qt::MetaModifier)
         key |= Qt::META;
 
-      setText (QKeySequence (key).toString ());
+      setText (QKeySequence (key).toString (QKeySequence::NativeText));
     }
 }
 
@@ -246,10 +246,20 @@ shortcut_edit_dialog::shortcut_edit_dialog
 
   setLayout (box);
 
-  connect (direct, &QCheckBox::stateChanged,
+  connect (direct,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+           &QCheckBox::checkStateChanged,
+#else
+           &QCheckBox::stateChanged,
+#endif
            m_edit_actual, &enter_shortcut::handle_direct_shortcut);
 
-  connect (shift, &QCheckBox::stateChanged,
+  connect (shift,
+#if defined (HAVE_QCHECKBOX_CHECKSTATECHANGED)
+           &QCheckBox::checkStateChanged,
+#else
+           &QCheckBox::stateChanged,
+#endif
            m_edit_actual, &enter_shortcut::handle_shift_modifier);
 
   connect (this, &QDialog::finished,
@@ -287,7 +297,7 @@ shortcut_edit_dialog::finished (int result)
   // organized the sections as child groups instead of using a colon in
   // the settings key to separate the section from the shortcut name.
 
- // Note that m_settings_key doesn't begin with the sc_group prefix.
+  // Note that m_settings_key doesn't begin with the sc_group prefix.
 
   QString my_section = get_shortcut_section (m_settings_key);
   if (my_section.contains ('_'))    // get top level section
@@ -347,7 +357,7 @@ shortcut_edit_dialog::finished (int result)
                                       QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
 
       if (ret == QMessageBox::Yes)
-        emit set_shortcut (other_settings_key, "");
+        Q_EMIT set_shortcut (other_settings_key, "");
       else
         return;
     }
@@ -456,7 +466,17 @@ shortcuts_tree_widget::shortcuts_tree_widget (QWidget *parent)
 
   QList<QString> shortcut_settings_keys
     = all_shortcut_preferences::keys ();
-  shortcut_settings_keys.sort ();
+
+  // Sort the keys with respect to the description, by adding
+  // descriptions as keys and the settings keys as values to a map.
+  // Use QMultiMap since descriptions might not be unique.
+  QMultiMap <QString, QString> shortcut_settings_map;
+  for (const auto& settings_key : shortcut_settings_keys)
+    {
+      const sc_pref scpref = all_shortcut_preferences::value (settings_key);
+      shortcut_settings_map.insert (scpref.description (), settings_key);
+    }
+  shortcut_settings_keys = shortcut_settings_map.values ();
 
   gui_settings settings;
 

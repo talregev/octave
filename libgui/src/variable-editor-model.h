@@ -194,16 +194,16 @@ public:
   Qt::ItemFlags flags (const QModelIndex& idx) const;
 
   bool insertRows (int row, int count,
-                   const QModelIndex& parent = QModelIndex());
+                   const QModelIndex& parent = QModelIndex ());
 
   bool removeRows (int row, int count,
-                   const QModelIndex& parent = QModelIndex());
+                   const QModelIndex& parent = QModelIndex ());
 
   bool insertColumns (int column, int count,
-                      const QModelIndex& parent = QModelIndex());
+                      const QModelIndex& parent = QModelIndex ());
 
   bool removeColumns (int column, int count,
-                      const QModelIndex& parent = QModelIndex());
+                      const QModelIndex& parent = QModelIndex ());
 
   // Is cell at idx complex enough to require a sub editor?
 
@@ -276,7 +276,7 @@ public:
 
   void maybe_resize_columns (int cols);
 
-signals:
+Q_SIGNALS:
 
   void update_data_signal (const octave_value& val);
 
@@ -293,7 +293,7 @@ signals:
   void interpreter_event (const fcn_callback& fcn);
   void interpreter_event (const meth_callback& meth);
 
-public slots:
+public Q_SLOTS:
 
   void update_data (const octave_value& val);
 
@@ -301,7 +301,7 @@ public slots:
 
   void double_click (const QModelIndex& idx);
 
-private slots:
+private Q_SLOTS:
 
   void data_error (const QString& msg);
 

@@ -30,15 +30,16 @@
 ## black with each index change.
 ##
 ## The argument @var{n} must be a scalar.
-## If unspecified, the length of the current colormap, or 64, is used.
+## If @var{n} is not specified the length of the current colormap is used.  If
+## there is no current colormap the default value of 256 is used.
 ## @seealso{colormap}
 ## @end deftypefn
 
 function map = flag (n)
 
   if (nargin == 1)
-    if (! isscalar (n))
-      error ("flag: N must be a scalar");
+    if (! (isscalar (n) && isreal (n) && n == fix (n)))
+      error ("flag: N must be a scalar integer");
     endif
     n = double (n);
   else
@@ -46,7 +47,7 @@ function map = flag (n)
     if (! isempty (hf))
       n = rows (get (hf, "colormap"));
     else
-      n = 64;
+      n = 256;
     endif
   endif
   if (n == 1)
@@ -68,3 +69,36 @@ endfunction
 %!  rgbplot (cmap, "composite");
 %! subplot (2, 1, 2);
 %!  rgbplot (cmap);
+
+
+
+%!assert (size (flag ()), [256, 3])
+%!assert (size (flag (16)), [16, 3])
+
+%!assert (flag (1), [1, 0, 0])
+%!assert (flag (true), double ([1, 0, 0]))
+%!assert (flag (char (1)), double ([1, 0, 0]))
+%!assert (flag (int32 (1)), double ([1, 0, 0]))
+
+%!assert (flag (0), zeros (0, 3))
+%!assert (flag (-1), zeros (0, 3))
+
+%!test
+%! a = [1,   0,   0;
+%!      1,   1,   1;
+%!      0,   0,   1;
+%!      0,   0,   0;
+%!      1,   0,   0;
+%!      1,   1,   1;
+%!      0,   0,   1;
+%!      0,   0,   0;
+%!      1,   0,   0;
+%!      1,   1,   1;
+%!      0,   0,   1;
+%!      0,   0,   0];
+%! assert (flag (12), a, eps)
+
+## Input validation
+%!error <N must be a scalar integer> flag ("foo")
+%!error <N must be a scalar integer> flag ([1, 2, 3])
+%!error <N must be a scalar integer> flag ({1, 2, 3})

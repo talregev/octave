@@ -30,10 +30,9 @@
 #include <QGuiApplication>
 #include <QScreen>
 
-// This header is only needed for the new terminal widget.
-#if defined (HAVE_QSCINTILLA)
-#  include "command-widget.h"
-#endif
+// This header is only needed for the new terminal widget but we can
+// include regardless of whether QScintilla is available.
+#include "command-widget.h"
 
 // This header is only needed for the old terminal widget.
 #include "QTerminal.h"
@@ -72,10 +71,10 @@ terminal_dock_widget::terminal_dock_widget (QWidget *p,
                widget, &command_widget::insert_interpreter_output);
 
       connect (this, &terminal_dock_widget::execute_command_signal,
-              con, &console::execute_command);
+               con, &console::execute_command);
 
       connect (this, &terminal_dock_widget::new_command_line_signal,
-              con, &console::new_command_line);
+               con, &console::new_command_line);
 
       m_terminal = widget;
 #endif
@@ -92,11 +91,11 @@ terminal_dock_widget::terminal_dock_widget (QWidget *p,
       connect (this, &terminal_dock_widget::visibilityChanged,
                widget, &QTerminal::handle_visibility_changed);
 
-      connect (widget, QOverload<const fcn_callback&>::of (&QTerminal::interpreter_event),
-               this, QOverload<const fcn_callback&>::of (&terminal_dock_widget::interpreter_event));
+      connect (widget, qOverload<const fcn_callback&> (&QTerminal::interpreter_event),
+               this, qOverload<const fcn_callback&> (&terminal_dock_widget::interpreter_event));
 
-      connect (widget, QOverload<const meth_callback&>::of (&QTerminal::interpreter_event),
-               this, QOverload<const meth_callback&>::of (&terminal_dock_widget::interpreter_event));
+      connect (widget, qOverload<const meth_callback&> (&QTerminal::interpreter_event),
+               this, qOverload<const meth_callback&> (&terminal_dock_widget::interpreter_event));
 
       m_terminal = widget;
     }
@@ -122,10 +121,10 @@ terminal_dock_widget::terminal_dock_widget (QWidget *p,
   font.setPointSize
     (settings.int_value (cs_font_size));
 
-  QFontMetrics metrics(font);
+  QFontMetrics metrics (font);
 
-  int win_x =  metrics.maxWidth()*80;
-  int win_y =  metrics.height()*25;
+  int win_x =  metrics.maxWidth ()*80;
+  int win_y =  metrics.height ()*25;
 
   int max_x = QGuiApplication::primaryScreen ()->availableGeometry ().width ();
   int max_y = QGuiApplication::primaryScreen ()->availableGeometry ().height ();
@@ -141,32 +140,39 @@ terminal_dock_widget::terminal_dock_widget (QWidget *p,
     make_window ();
 }
 
-bool terminal_dock_widget::has_focus () const
+bool
+terminal_dock_widget::has_focus () const
 {
   QWidget *w = widget ();
   return w->hasFocus ();
 }
 
-QTerminal * terminal_dock_widget::get_qterminal ()
+QTerminal *
+terminal_dock_widget::get_qterminal ()
 {
   return (m_experimental_terminal_widget
           ? nullptr : dynamic_cast<QTerminal *> (m_terminal));
 }
 
-#if defined (HAVE_QSCINTILLA)
-command_widget * terminal_dock_widget::get_command_widget ()
+command_widget *
+terminal_dock_widget::get_command_widget ()
 {
+#if defined (HAVE_QSCINTILLA)
   return (m_experimental_terminal_widget
           ? dynamic_cast<command_widget *> (m_terminal) : nullptr);
-}
+#else
+  return nullptr;
 #endif
-
-void terminal_dock_widget::notice_settings ()
-{
-  emit settings_changed ();
 }
 
-void terminal_dock_widget::init_command_prompt ()
+void
+terminal_dock_widget::notice_settings ()
+{
+  Q_EMIT settings_changed ();
+}
+
+void
+terminal_dock_widget::init_command_prompt ()
 {
   if (m_experimental_terminal_widget)
     {
@@ -178,7 +184,8 @@ void terminal_dock_widget::init_command_prompt ()
     }
 }
 
-void terminal_dock_widget::init_control_d_shortcut_behavior ()
+void
+terminal_dock_widget::init_control_d_shortcut_behavior ()
 {
   gui_settings settings;
 
@@ -210,7 +217,7 @@ void terminal_dock_widget::init_control_d_shortcut_behavior ()
               break;
             }
         }
-   }
+    }
 }
 
 OCTAVE_END_NAMESPACE(octave)

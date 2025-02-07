@@ -35,7 +35,7 @@
 OCTAVE_BEGIN_NAMESPACE(octave)
 
 FigureWindow::FigureWindow (QWidget *xparent)
-: FigureWindowBase (xparent)
+  : FigureWindowBase (xparent)
 {
   // set icon from application resources
   setWindowIcon (QIcon (global_icon_paths.at (ICON_THEME_OCTAVE)));
@@ -51,10 +51,11 @@ FigureWindow::createPopupMenu ()
   return nullptr;
 }
 
-void FigureWindow::showEvent (QShowEvent *ev)
+void
+FigureWindow::showEvent (QShowEvent *ev)
 {
   QMainWindow::showEvent (ev);
-  emit figureWindowShown();
+  Q_EMIT figureWindowShown ();
 }
 
 OCTAVE_END_NAMESPACE(octave)

@@ -44,6 +44,7 @@
 
 #include "gui-preferences-ws.h"
 #include "gui-settings.h"
+#include "gui-utils.h"
 #include "workspace-view.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
@@ -53,7 +54,8 @@ workspace_view::workspace_view (QWidget *p)
     m_view (new QTableView (this)),
     m_filter_checkbox (new QCheckBox ()),
     m_filter (new QComboBox (this)),
-    m_filter_widget (new QWidget (this))
+    m_filter_widget (new QWidget (this)),
+    m_first (true)
 {
   set_title (tr ("Workspace"));
   setStatusTip (tr ("View the variables in the active workspace."));
@@ -149,13 +151,6 @@ workspace_view::workspace_view (QWidget *p)
 
   if (! p)
     make_window ();
-
-  // Initialize column order and width of the workspace. From this post,
-  // https://www.qtcentre.org/threads/26675-QTableView-saving-restoring-columns-widths
-  // this might fail if done directly in the constructor. This effect shows
-  // up in the GUI since Qt 6.6.x. As a solution, the following timer ensures
-  // that the header is restored when the event loop is idle.
-  QTimer::singleShot (0, this, SLOT(restore_header_state ()));
 }
 
 void
@@ -168,10 +163,11 @@ workspace_view::restore_header_state ()
       (settings.value (ws_column_state.settings_key ()).toByteArray ());
 }
 
-void workspace_view::setModel (workspace_model *model)
+void
+workspace_view::setModel (workspace_model *model)
 {
   m_filter_model.setSourceModel (model);
-  m_filter_model.setFilterKeyColumn(0);
+  m_filter_model.setFilterKeyColumn (0);
 
   m_view->setModel (&m_filter_model);
 
@@ -193,10 +189,17 @@ workspace_view::notice_settings ()
 {
   gui_settings settings;
 
-  m_model->notice_settings (); // update colors of model first
+  if (m_first)
+    m_first = false;
+  else
+    {
+      // Save current state in case some settings are messing up the state
+      settings.setValue (ws_column_state.settings_key (),
+                         m_view->horizontalHeader ()->saveState ());
+      settings.sync ();
+    }
 
-  for (int i = 0; i < ws_columns_shown.length (); i++)
-    m_view->setColumnHidden (i + 1, ! settings.value (ws_columns_shown_keys.at (i), true).toBool ());
+  m_model->notice_settings (); // update colors of model first
 
   QString tool_tip;
 
@@ -218,6 +221,14 @@ workspace_view::notice_settings ()
     }
 
   setToolTip (tool_tip);
+
+  // Initialize column order, visibility and width of the file browser. From this post,
+  // https://www.qtcentre.org/threads/26675-QTableView-saving-restoring-columns-widths
+  // this might fail if done directly after other actions. This effect shows
+  // up in the GUI since Qt 6.6.x. As a solution, the following timer ensures
+  // that the header is restored when the event loop is idle.
+
+  QTimer::singleShot (0, this, SLOT(restore_header_state ()));
 }
 
 void
@@ -246,7 +257,8 @@ workspace_view::save_settings ()
   octave_dock_widget::save_settings ();
 }
 
-void workspace_view::set_filter_focus (bool focus)
+void
+workspace_view::set_filter_focus (bool focus)
 {
   if (focus)
     {
@@ -284,14 +296,7 @@ workspace_view::filter_activate (bool state)
 void
 workspace_view::update_filter_history ()
 {
-  QString text = m_filter->currentText ();   // get current text
-  int index = m_filter->findText (text);     // and its actual index
-
-  if (index > -1)
-    m_filter->removeItem (index);    // remove if already existing
-
-  m_filter->insertItem (0, text);    // (re)insert at beginning
-  m_filter->setCurrentIndex (0);
+  combobox_insert_current_item (m_filter, QString ());
 }
 
 void
@@ -309,7 +314,7 @@ workspace_view::header_contextmenu_requested (const QPoint& mpos)
                           &sig_mapper, SLOT (map ()));
       sig_mapper.setMapping (action, i);
       action->setCheckable (true);
-      action->setChecked (settings.value (ws_columns_shown_keys.at (i), true).toBool ());
+      action->setChecked (! m_view->isColumnHidden (i+1));
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
@@ -326,17 +331,7 @@ workspace_view::header_contextmenu_requested (const QPoint& mpos)
 void
 workspace_view::toggle_header (int col)
 {
-  gui_settings settings;
-
-  QString key = ws_columns_shown_keys.at (col);
-  bool shown = settings.value (key, true).toBool ();
-
-  m_view->setColumnHidden (col + 1, shown);
-
-  settings.setValue (key, ! shown);
-  settings.sync ();
-
-  octave_dock_widget::save_settings ();
+  m_view->setColumnHidden (col + 1, ! m_view->isColumnHidden (col + 1));
 }
 
 void
@@ -421,7 +416,7 @@ workspace_view::handle_contextmenu_copy_value ()
   QModelIndex index = m_view->currentIndex ();
 
   if (index.isValid ())
-    emit copy_variable_value_to_clipboard (get_var_name (index));
+    Q_EMIT copy_variable_value_to_clipboard (get_var_name (index));
 }
 
 void
@@ -444,7 +439,7 @@ workspace_view::handle_contextmenu_rename ()
                                 QLineEdit::Normal, var_name, &ok);
 
       if (ok && ! new_name.isEmpty ())
-        emit rename_variable_signal (var_name, new_name);
+        Q_EMIT rename_variable_signal (var_name, new_name);
     }
 }
 
@@ -454,7 +449,7 @@ workspace_view::handle_contextmenu_edit ()
   QModelIndex index = m_view->currentIndex ();
 
   if (index.isValid ())
-    emit edit_variable_signal (get_var_name (index));
+    Q_EMIT edit_variable_signal (get_var_name (index));
 }
 
 void
@@ -532,7 +527,7 @@ workspace_view::relay_contextmenu_command (const QString& cmdname, bool str)
       else
         var_name = get_var_name (index);
 
-      emit command_requested (cmdname + " (" + var_name + ");");
+      Q_EMIT command_requested (cmdname + " (" + var_name + ");");
     }
 }
 

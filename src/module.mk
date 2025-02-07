@@ -15,6 +15,7 @@ SRC_DIR_CPPFLAGS = \
   -Iliboctave/wrappers -I$(srcdir)/liboctave/wrappers \
   -Ilibinterp -I$(srcdir)/libinterp \
   -Ilibinterp/corefcn -I$(srcdir)/libinterp/corefcn \
+  -Ilibmex -I$(srcdir)/libmex \
   -I$(srcdir)/src
 
 EXTRA_DIST += \
@@ -56,6 +57,7 @@ if AMCOND_BUILD_QT_GUI
 endif
 
 OCTAVE_CORE_LIBS = \
+  libmex/liboctmex.la \
   libinterp/liboctinterp.la \
   liboctave/liboctave.la \
   libgnu/libgnu.la
@@ -147,7 +149,8 @@ nodist_%canon_reldir%_mkoctfile_SOURCES = %reldir%/mkoctfile.cc
 
 %canon_reldir%_mkoctfile_CPPFLAGS = \
   $(SRC_DIR_CPPFLAGS) \
-  $(OCTAVE_CPPFLAGS)
+  $(OCTAVE_CPPFLAGS) \
+  -DOCTAVE_MEX_SOVERSION="$(OCTAVE_LIBOCTMEX_SOVERSION_MAJOR)"
 
 %canon_reldir%_octave_config_SOURCES =
 
@@ -181,7 +184,7 @@ if AMCOND_RELOCATE_ALL
 endif
 
 %reldir%/$(host_triplet)-mkoctfile$(BUILD_EXEEXT): %reldir%/$(host_triplet)-mkoctfile.cc
-	$(BUILD_CXX) -o %reldir%/$(host_triplet)-mkoctfile$(BUILD_EXEEXT) $(OCTAVE_REPLACE_PREFIX_CPPFLAGS) -DCROSS=1 $(DEFAULT_INCLUDES) $(BUILD_CXXFLAGS) $(BUILD_LDFLAGS) -I$(srcdir)/src %reldir%/$(host_triplet)-mkoctfile.cc
+	$(BUILD_CXX) -o %reldir%/$(host_triplet)-mkoctfile$(BUILD_EXEEXT) $(OCTAVE_REPLACE_PREFIX_CPPFLAGS) -DOCTAVE_MEX_SOVERSION="$(OCTAVE_LIBOCTMEX_SOVERSION_MAJOR)" -DCROSS=1 $(DEFAULT_INCLUDES) $(BUILD_CXXFLAGS) $(BUILD_LDFLAGS) -I$(srcdir)/src %reldir%/$(host_triplet)-mkoctfile.cc
 
 %reldir%/$(host_triplet)-mkoctfile.cc: %reldir%/mkoctfile.in.cc build-aux/subst-cross-config-vals.sh | %reldir%/$(octave_dirstamp)
 	$(AM_V_GEN)$(call simple-filter-rule,build-aux/subst-cross-config-vals.sh)

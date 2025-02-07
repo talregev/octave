@@ -62,7 +62,7 @@ octave_perm_matrix::subsref (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_perm_matrix::subsref - please report this bug");
     }
 
   return retval.next_subsref (type, idx);
@@ -397,7 +397,7 @@ octave_perm_matrix::load_binary (std::istream& is, bool swap,
 
   MArray<octave_idx_type> m (dim_vector (sz, 1));
 
-  if (! is.read (reinterpret_cast<char *> (m.fortran_vec ()), m.byte_size ()))
+  if (! is.read (reinterpret_cast<char *> (m.rwdata ()), m.byte_size ()))
     return false;
 
   if (swap)
@@ -442,7 +442,7 @@ octave_perm_matrix::as_mxArray (bool interleaved) const
 bool
 octave_perm_matrix::print_as_scalar () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   return (dv.all_ones () || dv.any_zero ());
 }
@@ -510,8 +510,6 @@ octave_perm_matrix::short_disp (std::ostream& os) const
       octave_idx_type max_elts = 10;
       octave_idx_type elts = 0;
 
-      octave_idx_type nel = m_matrix.numel ();
-
       octave_idx_type nr = m_matrix.rows ();
       octave_idx_type nc = m_matrix.columns ();
 
@@ -530,25 +528,37 @@ octave_perm_matrix::short_disp (std::ostream& os) const
                 os << tmp.substr (pos);
               else if (! tmp.empty ())
                 os << tmp[0];
-
-              if (++elts >= max_elts)
-                goto done;
+              elts++;
 
               if (j < nc - 1)
-                os << ", ";
+                {
+                  os << ", ";
+
+                  if (elts >= max_elts)
+                    {
+                      os << "...";
+                      goto done;
+                    }
+                }
             }
 
-          if (i < nr - 1 && elts < max_elts)
-            os << "; ";
+          if (i < nr - 1)
+            {
+              os << "; ";
+
+              if (elts >= max_elts)
+                {
+                  os << "...";
+                  goto done;
+                }
+            }
         }
 
     done:
-
-      if (nel <= max_elts)
-        os << ']';
+      os << ']';
     }
   else
-    os << "...";
+    octave_base_value::short_disp (os);
 }
 
 octave_base_value *

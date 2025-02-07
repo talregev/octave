@@ -35,8 +35,10 @@ class octave_value_list;
 
 #include "str-vec.h"
 
-#include "base-list.h"
+#include "pt-delimiter-list.h"
+#include "pt-exp.h"
 #include "pt-walk.h"
+#include "token.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
@@ -47,23 +49,53 @@ class tree_expression;
 // Argument lists.  Used to hold the list of expressions that are the
 // arguments in a function call or index expression.
 
-class tree_argument_list : public base_list<tree_expression *>
+class tree_argument_list : public std::list<tree_expression *>
 {
 public:
 
   typedef tree_expression *element_type;
 
-  tree_argument_list ()
-    : m_list_includes_magic_tilde (false), m_simple_assign_lhs (false)
-  { }
+  tree_argument_list () { }
 
-  tree_argument_list (tree_expression *t)
-    : m_list_includes_magic_tilde (false), m_simple_assign_lhs (false)
-  { append (t); }
+  tree_argument_list (tree_expression *t) { push_back (t); }
 
   OCTAVE_DISABLE_COPY_MOVE (tree_argument_list)
 
   ~tree_argument_list ();
+
+  tree_argument_list * mark_in_delims (const token& open_delim, const token& close_delim)
+  {
+    m_delims.push (open_delim, close_delim);
+    return this;
+  }
+
+  filepos beg_pos () const
+  {
+    if (m_delims.empty ())
+      {
+        if (empty ())
+          return filepos ();
+
+        tree_expression *elt = front ();
+        return elt->beg_pos ();
+      }
+
+    return m_delims.beg_pos ();
+  }
+
+  filepos end_pos () const
+  {
+    if (m_delims.empty ())
+      {
+        if (empty ())
+          return filepos ();
+
+        tree_expression *elt = back ();
+        return elt->end_pos ();
+      }
+
+    return m_delims.end_pos ();
+  }
 
   bool has_magic_tilde () const
   {
@@ -83,7 +115,7 @@ public:
     return retval;
   }
 
-  void append (const element_type& s);
+  void push_back (const element_type& s);
 
   void mark_as_simple_assign_lhs () { m_simple_assign_lhs = true; }
 
@@ -106,9 +138,11 @@ public:
 
 private:
 
-  bool m_list_includes_magic_tilde;
+  bool m_list_includes_magic_tilde {false};
 
-  bool m_simple_assign_lhs;
+  bool m_simple_assign_lhs {false};
+
+  tree_delimiter_list m_delims;
 };
 
 OCTAVE_END_NAMESPACE(octave)

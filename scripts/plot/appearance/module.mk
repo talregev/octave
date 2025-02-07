@@ -24,8 +24,8 @@ FCN_FILE_DIRS += \
   %reldir%/camup.m \
   %reldir%/camva.m \
   %reldir%/camzoom.m \
-  %reldir%/caxis.m \
   %reldir%/clabel.m \
+  %reldir%/clim.m \
   %reldir%/daspect.m \
   %reldir%/datetick.m \
   %reldir%/diffuse.m \
@@ -38,10 +38,12 @@ FCN_FILE_DIRS += \
   %reldir%/orient.m \
   %reldir%/pbaspect.m \
   %reldir%/rticks.m \
+  %reldir%/rticklabels.m \
   %reldir%/shading.m \
   %reldir%/specular.m \
   %reldir%/text.m \
   %reldir%/thetaticks.m \
+  %reldir%/tticklabels.m \
   %reldir%/title.m \
   %reldir%/view.m \
   %reldir%/whitebg.m \

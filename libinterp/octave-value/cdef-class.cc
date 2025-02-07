@@ -385,6 +385,8 @@ void
 cdef_class::cdef_class_rep::install_property (const cdef_property& prop)
 {
   m_property_map[prop.get_name ()] = prop;
+  // Register the insertion rank of this property
+  m_property_rank_map[prop.get_name ()] = m_member_count;
 
   m_member_count++;
 }
@@ -392,7 +394,7 @@ cdef_class::cdef_class_rep::install_property (const cdef_property& prop)
 Cell
 cdef_class::cdef_class_rep::get_properties (int mode)
 {
-  std::map<std::string, cdef_property> props;
+  std::map<property_key, cdef_property> props;
 
   props = get_property_map (mode);
 
@@ -406,10 +408,10 @@ cdef_class::cdef_class_rep::get_properties (int mode)
   return c;
 }
 
-std::map<std::string, cdef_property>
+std::map<property_key, cdef_property>
 cdef_class::cdef_class_rep::get_property_map (int mode)
 {
-  std::map<std::string, cdef_property> props;
+  std::map<property_key, cdef_property> props;
 
   find_properties (props, mode);
 
@@ -417,15 +419,32 @@ cdef_class::cdef_class_rep::get_property_map (int mode)
 }
 
 void
-cdef_class::cdef_class_rep::find_properties (std::map<std::string,
-    cdef_property>& props,
-    int mode)
+cdef_class::cdef_class_rep::find_properties
+  (std::map<property_key, cdef_property>& props, int mode)
 {
+  std::set<std::string> prop_names;
+
+  // The only reason we are introducing 'prop_names' is to keep
+  // track of property names and avoid returning duplicates.
+  // There is no easy way to do it based on 'props', which is going
+  // to use complex keys of type 'property_key'.
+  find_properties_aux (props, prop_names, mode);
+}
+
+void
+cdef_class::cdef_class_rep::find_properties_aux
+  (std::map<property_key, cdef_property>& props,
+   std::set<std::string>& prop_names, int mode)
+{
+  // 'offset' starts at 0 and is incremented whenever we move
+  // in the class ancestry list.
+  static unsigned int property_offset {0};
+
   for (const auto& it : m_property_map)
     {
       std::string nm = it.second.get_name ();
 
-      if (props.find (nm) == props.end ())
+      if (prop_names.find (nm) == prop_names.end ())
         {
           if (mode == property_inherited)
             {
@@ -436,9 +455,14 @@ cdef_class::cdef_class_rep::find_properties (std::map<std::string,
                 continue;
             }
 
-          props[nm] = it.second;
+          const property_key pk =
+            std::make_pair (property_offset + m_property_rank_map[nm], nm);
+          props[pk] = it.second;
+          prop_names.insert (nm);
         }
     }
+
+  property_offset += m_member_count;
 
   // Look into superclasses
 
@@ -448,11 +472,13 @@ cdef_class::cdef_class_rep::find_properties (std::map<std::string,
     {
       cdef_class cls = lookup_class (super_classes(i));
 
-      cls.get_rep ()->find_properties (props,
-                                       (mode == property_all
-                                        ? property_all
-                                        : property_inherited));
+      cls.get_rep ()->find_properties_aux (props, prop_names,
+                                           (mode == property_all
+                                            ? property_all
+                                            : property_inherited));
     }
+
+  property_offset = 0;
 }
 
 void
@@ -721,21 +747,70 @@ cdef_class::cdef_class_rep::get_method (int line) const
       const octave_value& fcn = i->second.get_function ();
       octave_user_code *user_code = fcn.user_code_value ();
 
-      if (user_code == nullptr)
+      if (! user_code)
         continue;
 
-      octave_user_function* pfcn
-        = dynamic_cast<octave_user_function*> (user_code);
+      octave_user_function *pfcn
+        = dynamic_cast<octave_user_function *> (user_code);
 
-      if (pfcn == nullptr)
+      if (! pfcn)
         continue;
 
-      const int e = pfcn->ending_line ();
-      if (line <= e && e <= closest_match_end_line && pfcn->is_defined ()
-          && pfcn->is_user_code ())
+      octave::filepos end_pos = pfcn->end_pos ();
+
+      int end_line = end_pos.line ();
+
+      if (line <= end_line && end_line <= closest_match_end_line
+          && pfcn->is_defined () && pfcn->is_user_code ())
         {
           closest_match = fcn;
-          closest_match_end_line = e;
+          closest_match_end_line = end_line;
+        }
+    }
+
+  // repeat the same for set and get methods of properties
+  for (auto i = m_property_map.cbegin (); i != m_property_map.cend (); ++i)
+    {
+      const octave_value& get_meth = i->second.get ("GetMethod");
+      if (get_meth.is_function_handle ())
+        {
+          octave_user_function *pfcn
+            = get_meth.user_function_value ();
+
+          if (! pfcn)
+            continue;
+
+          octave::filepos end_pos = pfcn->end_pos ();
+
+          int end_line = end_pos.line ();
+
+          if (line <= end_line && end_line <= closest_match_end_line
+              && pfcn->is_defined () && pfcn->is_user_code ())
+            {
+              closest_match = get_meth;
+              closest_match_end_line = end_line;
+            }
+        }
+
+      const octave_value& set_meth = i->second.get ("SetMethod");
+      if (set_meth.is_function_handle ())
+        {
+          octave_user_function *pfcn
+            = set_meth.user_function_value ();
+
+          if (! pfcn)
+            continue;
+
+          octave::filepos end_pos = pfcn->end_pos ();
+
+          int end_line = end_pos.line ();
+
+          if (line <= end_line && end_line <= closest_match_end_line
+              && pfcn->is_defined () && pfcn->is_user_code ())
+            {
+              closest_match = set_meth;
+              closest_match_end_line = end_line;
+            }
         }
     }
 
@@ -808,7 +883,7 @@ cdef_class::cdef_class_rep::construct_object (const octave_value_list& args)
           obj = empty_package;
         }
       else
-        panic_impossible ();
+        error ("expecting meta class, property, method, or package in cdef_class::cdef_class_rep::construct_object - please report this bug");
 
       return obj;
     }
@@ -969,7 +1044,7 @@ cdef_class::make_meta_class (interpreter& interp,
 
       // Method blocks
 
-      std::list<tree_classdef_methods_block *> mb_list = b->methods_list ();
+      std::list<tree_classdef_methods_block *> mb_list = b->method_list ();
 
       load_path& lp = interp.get_load_path ();
 
@@ -1083,7 +1158,7 @@ cdef_class::make_meta_class (interpreter& interp,
       //        evaluating default value expressions.
 
       std::list<tree_classdef_properties_block *> pb_list
-        = b->properties_list ();
+        = b->property_list ();
 
       for (auto& pb_p : pb_list)
         {

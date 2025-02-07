@@ -60,7 +60,7 @@ octave_base_matrix<MT>::simple_subsref (char type, octave_value_list& idx, int)
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_base_matrix<T>::simple_subsref - please report this bug");
     }
 }
 
@@ -86,7 +86,7 @@ octave_base_matrix<MT>::subsref (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unpexpected: index not '(', '{', or '.' in - octave_base_matrix<MT>::subsref please report this bug");
     }
 
   return retval.next_subsref (type, idx);
@@ -145,7 +145,7 @@ octave_base_matrix<MT>::subsasgn (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unpexpected: index not '(', '{', or '.' in - octave_base_matrix<MT>::subsasgn please report this bug");
     }
 
   return retval;
@@ -260,7 +260,7 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx, const MT& rhs)
       switch (n_idx)
         {
         case 0:
-          panic_impossible ();
+          error ("unexpected: zero indices in octave_base_matrix<MT>::assign - please report this bug");
           break;
 
         case 1:
@@ -323,8 +323,6 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx,
 
   int nd = m_matrix.ndims ();
 
-  MT mrhs (dim_vector (1, 1), rhs);
-
   // If we catch an indexing error in index_vector, we flag an error in
   // index k.  Ensure it is the right value before each idx_vector call.
   // Same variable as used in the for loop in the default case.
@@ -336,7 +334,7 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx,
       switch (n_idx)
         {
         case 0:
-          panic_impossible ();
+          error ("unexpected: zero indices in octave_base_matrix<MT>::assign - please report this bug");
           break;
 
         case 1:
@@ -347,7 +345,10 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx,
             if (i.is_scalar () && i(0) < m_matrix.numel ())
               m_matrix(i(0)) = rhs;
             else
-              m_matrix.assign (i, mrhs);
+              {
+                MT mrhs (dim_vector (1, 1), rhs);
+                m_matrix.assign (i, mrhs);
+              }
           }
           break;
 
@@ -363,7 +364,10 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx,
                 && i(0) < m_matrix.rows () && j(0) < m_matrix.columns ())
               m_matrix(i(0), j(0)) = rhs;
             else
-              m_matrix.assign (i, j, mrhs);
+              {
+                MT mrhs (dim_vector (1, 1), rhs);
+                m_matrix.assign (i, j, mrhs);
+              }
           }
           break;
 
@@ -395,7 +399,10 @@ octave_base_matrix<MT>::assign (const octave_value_list& idx,
                 m_matrix(j) = rhs;
               }
             else
-              m_matrix.assign (idx_vec, mrhs);
+              {
+                MT mrhs (dim_vector (1, 1), rhs);
+                m_matrix.assign (idx_vec, mrhs);
+              }
           }
           break;
         }
@@ -446,7 +453,7 @@ bool
 octave_base_matrix<MT>::is_true () const
 {
   bool retval = false;
-  dim_vector dv = m_matrix.dims ();
+  const dim_vector& dv = m_matrix.dims ();
   int nel = dv.numel ();
 
   if (nel > 0)
@@ -471,7 +478,7 @@ template <typename MT>
 bool
 octave_base_matrix<MT>::print_as_scalar () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   return (dv.all_ones () || dv.any_zero ());
 }
@@ -504,8 +511,6 @@ octave_base_matrix<MT>::short_disp (std::ostream& os) const
       octave_idx_type max_elts = 10;
       octave_idx_type elts = 0;
 
-      octave_idx_type nel = m_matrix.numel ();
-
       octave_idx_type nr = m_matrix.rows ();
       octave_idx_type nc = m_matrix.columns ();
 
@@ -523,25 +528,37 @@ octave_base_matrix<MT>::short_disp (std::ostream& os) const
                 os << tmp.substr (pos);
               else if (! tmp.empty ())
                 os << tmp[0];
-
-              if (++elts >= max_elts)
-                goto done;
+              elts++;
 
               if (j < nc - 1)
-                os << ", ";
+                {
+                  os << ", ";
+
+                  if (elts >= max_elts)
+                    {
+                      os << "...";
+                      goto done;
+                    }
+                }
             }
 
-          if (i < nr - 1 && elts < max_elts)
-            os << "; ";
+          if (i < nr - 1)
+            {
+              os << "; ";
+
+              if (elts >= max_elts)
+                {
+                  os << "...";
+                  goto done;
+                }
+            }
         }
 
     done:
-
-      if (nel <= max_elts)
-        os << ']';
+      os << ']';
     }
   else
-    os << "...";
+    octave_base_value::short_disp (os);
 }
 
 template <typename MT>

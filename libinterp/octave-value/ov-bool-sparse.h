@@ -47,9 +47,10 @@
 
 class octave_value_list;
 
-class
-OCTINTERP_API
-octave_sparse_bool_matrix : public octave_base_sparse<SparseBoolMatrix>
+extern template class OCTINTERP_EXTERN_TEMPLATE_API
+octave_base_sparse<SparseBoolMatrix>;
+
+class OCTINTERP_API octave_sparse_bool_matrix : public octave_base_sparse<SparseBoolMatrix>
 {
 public:
 
@@ -152,7 +153,7 @@ public:
 
 protected:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

@@ -908,7 +908,7 @@ Convert byte stream @var{native_bytes} to UTF-8 using @var{codepage}.
                codepage, std::strerror (errno));
     }
 
-  unwind_action free_utf8_str ([=] () { ::free (utf8_str); });
+  unwind_action free_utf8_str ([utf8_str] () { ::free (utf8_str); });
 
   octave_idx_type len = length;
 
@@ -953,7 +953,7 @@ Convert UTF-8 string @var{utf8_str} to byte stream @var{native_bytes} using
                codepage, std::strerror (errno));
     }
 
-  unwind_action free_native_bytes ([=] () { ::free (native_bytes); });
+  unwind_action free_native_bytes ([native_bytes] () { ::free (native_bytes); });
 
   octave_idx_type len = length;
 
@@ -1221,7 +1221,7 @@ whos ans
   int width = -1;
 
   if (nargin > 1 && ! args(1).isempty ())
-    width = args(1).xint_value ("list_in_columns: WIDTH must be an integer");
+    width = args(1).strict_int_value ("list_in_columns: WIDTH must be an integer");
 
   std::string prefix;
 

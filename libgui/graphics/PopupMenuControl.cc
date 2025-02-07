@@ -64,14 +64,15 @@ PopupMenuControl::PopupMenuControl (octave::interpreter& interp,
 
   update (uicontrol::properties::ID_VALUE);
 
-  connect (box, QOverload<int>::of (&QComboBox::activated),
+  connect (box, qOverload<int> (&QComboBox::activated),
            this, &PopupMenuControl::currentIndexChanged);
 }
 
 PopupMenuControl::~PopupMenuControl ()
 { }
 
-void PopupMenuControl::update (int pId)
+void
+PopupMenuControl::update (int pId)
 {
   uicontrol::properties& up = properties<uicontrol> ();
   QComboBox *box = qWidget<QComboBox> ();
@@ -94,9 +95,9 @@ void PopupMenuControl::update (int pId)
           }
         else
           {
-            emit gh_set_event (m_handle, "value",
-                               octave_value (box->count () > 0 ? 1.0 : 0.0),
-                               false);
+            Q_EMIT gh_set_event (m_handle, "value",
+                                 octave_value (box->count () > 0 ? 1.0 : 0.0),
+                                 false);
           }
       }
       m_blockUpdate = false;
@@ -139,9 +140,9 @@ PopupMenuControl::currentIndexChanged (int index)
 {
   if (! m_blockUpdate)
     {
-      emit gh_set_event (m_handle, "value", octave_value (double (index + 1)),
-                         false);
-      emit gh_callback_event (m_handle, "callback");
+      Q_EMIT gh_set_event (m_handle, "value",
+                           octave_value (double (index + 1)), false);
+      Q_EMIT gh_callback_event (m_handle, "callback");
     }
 }
 

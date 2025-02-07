@@ -58,10 +58,6 @@
 #include "oct-stream.h"
 #include "ops.h"
 #include "ov-base.h"
-#include "ov-base-mat.h"
-#include "ov-base-mat.cc"
-#include "ov-base-scalar.h"
-#include "ov-base-scalar.cc"
 #include "ov-base-int.h"
 #include "ov-int-traits.h"
 #include "pr-output.h"
@@ -160,7 +156,7 @@ octave_value
 octave_base_int_matrix<T>::convert_to_str_internal (bool, bool, char type) const
 {
   octave_value retval;
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
   octave_idx_type nel = dv.numel ();
 
   charNDArray chm (dv);
@@ -177,8 +173,8 @@ octave_base_int_matrix<T>::convert_to_str_internal (bool, bool, char type) const
 
       val_type ival = tmp.value ();
 
-      static const bool is_signed = std::numeric_limits<val_type>::is_signed;
-      static const bool can_be_larger_than_uchar_max
+      static constexpr bool is_signed = std::numeric_limits<val_type>::is_signed;
+      static constexpr bool can_be_larger_than_uchar_max
         = octave_base_int_helper_traits<val_type>::can_be_larger_than_uchar_max;
 
       if (octave_base_int_helper<val_type, is_signed,
@@ -288,7 +284,7 @@ template <typename T>
 bool
 octave_base_int_matrix<T>::save_ascii (std::ostream& os)
 {
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
 
   os << "# ndims: " << dv.ndims () << "\n";
 
@@ -334,7 +330,7 @@ template <typename T>
 bool
 octave_base_int_matrix<T>::save_binary (std::ostream& os, bool)
 {
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -394,7 +390,7 @@ octave_base_int_matrix<T>::load_binary (std::istream& is, bool swap,
 
   T m (dv);
 
-  if (! is.read (reinterpret_cast<char *> (m.fortran_vec ()), m.byte_size ()))
+  if (! is.read (reinterpret_cast<char *> (m.rwdata ()), m.byte_size ()))
     return false;
 
   if (swap)
@@ -434,7 +430,7 @@ octave_base_int_matrix<T>::save_hdf5_internal (octave_hdf5_id loc_id,
 #if defined (HAVE_HDF5)
 
   hid_t save_type_hid = save_type;
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);
@@ -537,7 +533,7 @@ octave_base_int_matrix<T>::load_hdf5_internal (octave_hdf5_id loc_id,
 
   T m (dv);
   if (H5Dread (data_hid, save_type_hid, octave_H5S_ALL, octave_H5S_ALL,
-               octave_H5P_DEFAULT, m.fortran_vec ()) >= 0)
+               octave_H5P_DEFAULT, m.rwdata ()) >= 0)
     {
       retval = true;
       this->m_matrix = m;
@@ -578,8 +574,8 @@ octave_base_int_scalar<T>::convert_to_str_internal (bool, bool, char type) const
 
   val_type ival = tmp.value ();
 
-  static const bool is_signed = std::numeric_limits<val_type>::is_signed;
-  static const bool can_be_larger_than_uchar_max
+  static constexpr bool is_signed = std::numeric_limits<val_type>::is_signed;
+  static constexpr bool can_be_larger_than_uchar_max
     = octave_base_int_helper_traits<val_type>::can_be_larger_than_uchar_max;
 
   if (octave_base_int_helper<val_type, is_signed,

@@ -49,6 +49,7 @@
 #include "documentation-dock-widget.h"
 #include "files-dock-widget.h"
 #include "gui-settings.h"
+#include "gui-preferences-sc.h"
 #include "history-dock-widget.h"
 #include "interpreter-qobject.h"
 #include "main-window.h"
@@ -75,7 +76,8 @@
 
 // Bug #55940 (Disable App Nap on Mac)
 #if defined (Q_OS_MAC)
-static void disable_app_nap ()
+static void
+disable_app_nap ()
 {
   Class process_info_class;
   SEL process_info_selector;
@@ -141,7 +143,8 @@ message_handler (QtMsgType, const QMessageLogContext&, const QString&)
 //! Reimplement QApplication::notify.  Octave's own exceptions are
 //! caught and rethrown in the interpreter thread.
 
-bool octave_qapplication::notify (QObject *receiver, QEvent *ev)
+bool
+octave_qapplication::notify (QObject *receiver, QEvent *ev)
 {
   try
     {
@@ -149,8 +152,8 @@ bool octave_qapplication::notify (QObject *receiver, QEvent *ev)
     }
   catch (execution_exception& ee)
     {
-      emit interpreter_event
-        ([=] ()
+      Q_EMIT interpreter_event
+        ([ee] ()
          {
            // INTERPRETER THREAD
            throw ee;
@@ -237,11 +240,11 @@ base_qobject::base_qobject (qt_application& app_context, bool gui_app)
   // Handle any interpreter_event signal from the octave_qapplication
   // object here.
 
-  connect (m_qapplication, QOverload<const fcn_callback&>::of (&octave_qapplication::interpreter_event),
-           this, QOverload<const fcn_callback&>::of (&base_qobject::interpreter_event));
+  connect (m_qapplication, qOverload<const fcn_callback&> (&octave_qapplication::interpreter_event),
+           this, qOverload<const fcn_callback&> (&base_qobject::interpreter_event));
 
-  connect (m_qapplication, QOverload<const meth_callback&>::of (&octave_qapplication::interpreter_event),
-           this, QOverload<const meth_callback&>::of (&base_qobject::interpreter_event));
+  connect (m_qapplication, qOverload<const meth_callback&> (&octave_qapplication::interpreter_event),
+           this, qOverload<const meth_callback&> (&base_qobject::interpreter_event));
 
   if (m_app_context.experimental_terminal_widget ())
     {
@@ -386,7 +389,8 @@ base_qobject::~base_qobject ()
   string_vector::delete_c_str_vec (m_argv);
 }
 
-void base_qobject::config_translators ()
+void
+base_qobject::config_translators ()
 {
   if (m_translators_installed)
     return;
@@ -400,9 +404,12 @@ void base_qobject::config_translators ()
   m_qapplication->installTranslator (m_qsci_tr);
 
   m_translators_installed = true;
+
+  init_all_shortcuts ();  // after translators are loaded
 }
 
-void base_qobject::start_main_thread ()
+void
+base_qobject::start_main_thread ()
 {
   // Note: if using the new experimental terminal widget, we defer
   // initializing and executing the interpreter until the main event
@@ -422,7 +429,8 @@ void base_qobject::start_main_thread ()
   m_main_thread->start ();
 }
 
-int base_qobject::exec ()
+int
+base_qobject::exec ()
 {
   int status = m_qapplication->exec ();
 
@@ -439,12 +447,14 @@ int base_qobject::exec ()
 
 // Provided for convenience.  Will be removed once we eliminate the
 // old terminal widget.
-bool base_qobject::experimental_terminal_widget () const
+bool
+base_qobject::experimental_terminal_widget () const
 {
   return m_app_context.experimental_terminal_widget ();
 }
 
-bool base_qobject::gui_running () const
+bool
+base_qobject::gui_running () const
 {
   return m_app_context.gui_running ();
 }
@@ -576,8 +586,8 @@ base_qobject::history_widget (main_window *mw)
       connect (qt_link (), &qt_interpreter_events::clear_history_signal,
                m_history_widget, &history_dock_widget::clear_history);
 
-      emit interpreter_event
-        ([=] (interpreter& interp) {
+      Q_EMIT interpreter_event
+        ([] (interpreter& interp) {
           // INTERPRETER THREAD
 
           event_manager& xevmgr = interp.get_event_manager ();
@@ -615,9 +625,9 @@ base_qobject::workspace_widget (main_window *mw)
 
       connect (m_workspace_widget,
                &workspace_view::copy_variable_value_to_clipboard,
-               [=] (const QString& var_name) {
-                 emit interpreter_event
-                   ([=] (interpreter& interp)
+               [this] (const QString& var_name) {
+                 Q_EMIT interpreter_event
+                   ([var_name] (interpreter& interp)
                     {
                       // INTERPRETER THREAD
 
@@ -638,9 +648,9 @@ base_qobject::workspace_widget (main_window *mw)
                });
 
       connect (m_workspace_widget, &workspace_view::rename_variable_signal,
-               [=] (const QString& old_name, const QString& new_name) {
-                 emit interpreter_event
-                   ([=] (interpreter& interp) {
+               [this] (const QString& old_name, const QString& new_name) {
+                 Q_EMIT interpreter_event
+                   ([old_name, new_name] (interpreter& interp) {
                      // INTERPRETER THREAD
 
                      symbol_scope scope = interp.get_current_scope ();
@@ -663,9 +673,9 @@ base_qobject::workspace_widget (main_window *mw)
                });
 
       connect (m_workspace_widget, &workspace_view::edit_variable_signal,
-               [=] (const QString& var_name) {
-                 emit interpreter_event
-                   ([=] (interpreter& interp) {
+               [this] (const QString& var_name) {
+                 Q_EMIT interpreter_event
+                   ([var_name] (interpreter& interp) {
                      // INTERPRETER THREAD
 
                      std::string name = var_name.toStdString ();
@@ -677,8 +687,8 @@ base_qobject::workspace_widget (main_window *mw)
                    });
                });
 
-      emit interpreter_event
-        ([=] (interpreter& interp) {
+      Q_EMIT interpreter_event
+        ([] (interpreter& interp) {
           // INTERPRETER THREAD
 
           event_manager& xevmgr = interp.get_event_manager ();
@@ -725,7 +735,8 @@ base_qobject::variable_editor_widget (main_window *mw)
   return m_variable_editor_widget;
 }
 
-QPointer<community_news> base_qobject::community_news_widget (int serial)
+QPointer<community_news>
+base_qobject::community_news_widget (int serial)
 {
   if (! m_community_news)
     m_community_news
@@ -734,7 +745,8 @@ QPointer<community_news> base_qobject::community_news_widget (int serial)
   return m_community_news;
 }
 
-QPointer<release_notes> base_qobject::release_notes_widget ()
+QPointer<release_notes>
+base_qobject::release_notes_widget ()
 {
   if (! m_release_notes)
     m_release_notes = QPointer<release_notes> (new release_notes ());
@@ -742,7 +754,8 @@ QPointer<release_notes> base_qobject::release_notes_widget ()
   return m_release_notes;
 }
 
-bool base_qobject::confirm_shutdown ()
+bool
+base_qobject::confirm_shutdown ()
 {
   // Currently, we forward to main_window::confirm_shutdown instead of
   // just displaying a dialog box here because the main_window also
@@ -751,7 +764,8 @@ bool base_qobject::confirm_shutdown ()
   return m_main_window ? m_main_window->confirm_shutdown () : true;
 }
 
-void base_qobject::start_gui (bool gui_app)
+void
+base_qobject::start_gui (bool gui_app)
 {
   if (m_app_context.experimental_terminal_widget ())
     {
@@ -795,7 +809,8 @@ void base_qobject::start_gui (bool gui_app)
     }
 }
 
-void base_qobject::show_terminal_window ()
+void
+base_qobject::show_terminal_window ()
 {
   terminal_dock_widget *widget
     = (m_terminal_widget
@@ -808,7 +823,8 @@ void base_qobject::show_terminal_window ()
     }
 }
 
-void base_qobject::show_documentation_window (const QString& file)
+void
+base_qobject::show_documentation_window (const QString& file)
 {
   documentation_dock_widget *widget
     = (m_documentation_widget
@@ -823,7 +839,8 @@ void base_qobject::show_documentation_window (const QString& file)
     }
 }
 
-void base_qobject::show_file_browser_window ()
+void
+base_qobject::show_file_browser_window ()
 {
   files_dock_widget *widget
     = m_file_browser_widget ? m_file_browser_widget : file_browser_widget ();
@@ -835,7 +852,8 @@ void base_qobject::show_file_browser_window ()
     }
 }
 
-void base_qobject::show_command_history_window ()
+void
+base_qobject::show_command_history_window ()
 {
   history_dock_widget *widget
     = m_history_widget ? m_history_widget : history_widget ();
@@ -847,7 +865,8 @@ void base_qobject::show_command_history_window ()
     }
 }
 
-void base_qobject::show_workspace_window ()
+void
+base_qobject::show_workspace_window ()
 {
   workspace_view *widget
     = m_workspace_widget ? m_workspace_widget : workspace_widget ();
@@ -859,8 +878,9 @@ void base_qobject::show_workspace_window ()
     }
 }
 
-void base_qobject::show_variable_editor_window (const QString& name,
-                                                const octave_value& value)
+void
+base_qobject::show_variable_editor_window (const QString& name,
+    const octave_value& value)
 {
   variable_editor *widget
     = (m_variable_editor_widget
@@ -876,7 +896,8 @@ void base_qobject::show_variable_editor_window (const QString& name,
   widget->edit_variable (name, value);
 }
 
-void base_qobject::handle_variable_editor_update ()
+void
+base_qobject::handle_variable_editor_update ()
 {
   // Called when the variable editor emits the updated signal.  The size
   // of a variable may have changed, so we refresh the workspace in the
@@ -896,7 +917,8 @@ void base_qobject::handle_variable_editor_update ()
      });
 }
 
-void base_qobject::show_community_news (int serial)
+void
+base_qobject::show_community_news (int serial)
 {
   // Ensure widget exists.
   community_news_widget (serial);
@@ -904,7 +926,8 @@ void base_qobject::show_community_news (int serial)
   m_community_news->display ();
 }
 
-void base_qobject::show_release_notes ()
+void
+base_qobject::show_release_notes ()
 {
   // Ensure widget exists.
   release_notes_widget ();
@@ -912,10 +935,11 @@ void base_qobject::show_release_notes ()
   m_release_notes->display ();
 }
 
-void base_qobject::execute_command (const QString& command)
+void
+base_qobject::execute_command (const QString& command)
 {
-  emit interpreter_event
-    ([=] (interpreter& interp)
+  Q_EMIT interpreter_event
+    ([command] (interpreter& interp)
     {
       // INTERPRETER THREAD
 
@@ -930,7 +954,8 @@ void base_qobject::execute_command (const QString& command)
     });
 }
 
-void base_qobject::close_gui ()
+void
+base_qobject::close_gui ()
 {
   if (m_app_context.experimental_terminal_widget ())
     {
@@ -941,7 +966,7 @@ void base_qobject::close_gui ()
       // returning to the command line?
 
       interpreter_event
-        ([=] (interpreter& interp)
+        ([] (interpreter& interp)
         {
           // INTERPRETER THREAD
 
@@ -957,12 +982,14 @@ void base_qobject::close_gui ()
     }
 }
 
-void base_qobject::interpreter_ready ()
+void
+base_qobject::interpreter_ready ()
 {
   m_interpreter_ready = true;
 }
 
-void base_qobject::interpreter_event (const fcn_callback& fcn)
+void
+base_qobject::interpreter_event (const fcn_callback& fcn)
 {
   // The following is a direct function call across threads.  It works
   // because it is accessing a thread-safe queue of events that
@@ -974,7 +1001,8 @@ void base_qobject::interpreter_event (const fcn_callback& fcn)
   m_interpreter_qobj->interpreter_event (fcn);
 }
 
-void base_qobject::interpreter_event (const meth_callback& meth)
+void
+base_qobject::interpreter_event (const meth_callback& meth)
 {
   // The following is a direct function call across threads.  It works
   // because it is accessing a thread-safe queue of events that
@@ -986,7 +1014,8 @@ void base_qobject::interpreter_event (const meth_callback& meth)
   m_interpreter_qobj->interpreter_event (meth);
 }
 
-void base_qobject::interpreter_interrupt ()
+void
+base_qobject::interpreter_interrupt ()
 {
   m_interpreter_qobj->interrupt ();
 }
@@ -994,26 +1023,30 @@ void base_qobject::interpreter_interrupt ()
 // FIXME: Should we try to make the pause, stop, and resume actions
 // work for both the old and new terminal widget?
 
-void base_qobject::interpreter_pause ()
+void
+base_qobject::interpreter_pause ()
 {
   if (m_app_context.experimental_terminal_widget ())
     m_interpreter_qobj->pause ();
 }
 
-void base_qobject::interpreter_stop ()
+void
+base_qobject::interpreter_stop ()
 {
   if (m_app_context.experimental_terminal_widget ())
     m_interpreter_qobj->stop ();
 }
 
-void base_qobject::interpreter_resume ()
+void
+base_qobject::interpreter_resume ()
 {
   if (m_app_context.experimental_terminal_widget ())
     m_interpreter_qobj->resume ();
 }
 
-void base_qobject::copy_image_to_clipboard (const QString& file,
-                                            bool remove_file)
+void
+base_qobject::copy_image_to_clipboard (const QString& file,
+                                       bool remove_file)
 {
   QClipboard *clipboard = QApplication::clipboard ();
 

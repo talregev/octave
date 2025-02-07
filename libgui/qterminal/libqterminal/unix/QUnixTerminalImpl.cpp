@@ -57,7 +57,7 @@ void QUnixTerminalImpl::initialize()
     connect(m_terminalView, SIGNAL(customContextMenuRequested(QPoint)),
             this, SLOT(handleCustomContextMenuRequested(QPoint)));
 
-    connect (m_terminalView, SIGNAL (interrupt_signal (void)),
+    connect (m_terminalView, SIGNAL (interrupt_signal ()),
              this, SLOT (terminal_interrupt ()));
 
 #ifdef Q_OS_MAC
@@ -146,7 +146,7 @@ QUnixTerminalImpl::~QUnixTerminalImpl()
     dup2 (fdstdout, STDOUT_FILENO);
     dup2 (fdstderr, STDERR_FILENO);
 
-    emit destroyed();
+    Q_EMIT destroyed();
 }
 
 void QUnixTerminalImpl::setTerminalFont(const QFont &font)

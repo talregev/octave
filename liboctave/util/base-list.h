@@ -28,6 +28,8 @@
 
 #include "octave-config.h"
 
+#warning "using <base-list.h> is discouraged - use <list> instead"
+
 #include <cstdlib>
 
 #include <list>
@@ -35,8 +37,7 @@
 OCTAVE_BEGIN_NAMESPACE(octave)
 
 template <typename elt_type>
-class
-base_list
+class base_list
 {
 public:
 

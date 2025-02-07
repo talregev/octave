@@ -50,11 +50,11 @@ public:
   ~octave_qscintilla () = default;
 
   enum
-    {
-      ST_NONE = 0,
-      ST_LINE_COMMENT,
-      ST_BLOCK_COMMENT
-    };
+  {
+    ST_NONE = 0,
+    ST_LINE_COMMENT,
+    ST_BLOCK_COMMENT
+  };
 
   virtual void contextMenuEvent (QContextMenuEvent *e);
   virtual void setCursorPosition (int line, int col);
@@ -84,7 +84,7 @@ public:
   void replace_all (const QString& o_str, const QString& n_str,
                     bool re, bool cs, bool wo);
 
-signals:
+Q_SIGNALS:
 
   void update_rowcol_indicator_signal (int line, int col);
   void execute_command_in_terminal_signal (const QString&);
@@ -96,21 +96,21 @@ signals:
   void show_symbol_tooltip_signal (const QPoint&, const QString&);
   void context_menu_break_condition_signal (int);
   void context_menu_break_once (int);
-  void ctx_menu_run_finished_signal (bool, int, QPointer<QTemporaryFile>,
+  void ctx_menu_run_finished_signal (int, QPointer<QTemporaryFile>,
                                      QPointer<QTemporaryFile>, bool, bool);
   void focus_console_after_command_signal ();
 
   void interpreter_event (const fcn_callback& fcn);
   void interpreter_event (const meth_callback& meth);
 
-public slots:
+public Q_SLOTS:
 
   void handle_enter_debug_mode ();
   void handle_exit_debug_mode ();
 
-private slots:
+private Q_SLOTS:
 
-  void ctx_menu_run_finished (bool, int, QPointer<QTemporaryFile>,
+  void ctx_menu_run_finished (int, QPointer<QTemporaryFile>,
                               QPointer<QTemporaryFile>, bool, bool);
 
   void contextmenu_help (bool);

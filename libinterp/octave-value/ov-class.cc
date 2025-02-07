@@ -134,7 +134,7 @@ octave_class::octave_class (const octave_map& m, const std::string& id,
               // distribute the elements of the parent object to
               // the elements of MAP.
 
-              dim_vector parent_dims = parent.dims ();
+              const dim_vector& parent_dims = parent.dims ();
 
               m_map.resize (parent_dims);
 
@@ -331,7 +331,7 @@ octave_class::size ()
     }
   else
     {
-      dim_vector dv = dims ();
+      const dim_vector& dv = dims ();
 
       int nd = dv.ndims ();
 
@@ -438,7 +438,7 @@ octave_class::subsref (const std::string& type,
           break;
 
         default:
-          panic_impossible ();
+          error ("unpexpected: index not '(', '{', or '.' in - octave_class::subsref please report this bug");
         }
 
       // FIXME: perhaps there should be an
@@ -465,11 +465,28 @@ octave_class::subsref (const std::string& type,
           m_count++;
           args(0) = octave_value (this);
 
-          // If the number of output arguments is unknown, attempt to set up
-          // a proper value for nargout at least in the simple case where the
-          // cs-list-type expression - i.e., {} or ().x, is the leading one.
-          if (nargout <= 0)
+          octave_value meth_nargout
+            = symtab.find_method ("numArgumentsFromSubscript", class_name ());
+          if (meth_nargout.is_defined ())
             {
+              octave_value_list args_nargout (3);
+
+              args_nargout(0) = args(0);
+              args_nargout(1) = args(1);
+              // FIXME: Third argument should be one of the possible values of
+              //        the matlab.mixin.util.IndexingContext enumeration class.
+              args_nargout(2) = octave_value (Matrix ());
+              retval = interp.feval (meth_nargout.function_value (),
+                                     args_nargout, 1);
+              
+              nargout = retval(0).strict_int_value
+                ("subsref: return value of 'numArgumentsFromSubscript' must be integer");
+            }
+          else if (nargout <= 0)
+            {
+              // If the number of output arguments is unknown, attempt to set up
+              // a proper value for nargout at least in the simple case where the
+              // cs-list-type expression - i.e., {} or ().x, is the leading one.
               bool maybe_cs_list_query = (type[0] == '.' || type[0] == '{'
                                           || (type.length () > 1 && type[0] == '('
                                               && type[1] == '.'));
@@ -479,9 +496,14 @@ octave_class::subsref (const std::string& type,
                   // Set up a proper nargout for the subsref call by calling numel.
                   octave_value_list tmp;
                   int nout;
-                  if (type[0] != '.') tmp = idx.front ();
+                  if (type[0] != '.')
+                    tmp = idx.front ();
+
                   nout = xnumel (tmp);
-                  if (nargout != 0 || nout > 1)
+                  // Take nout as nargout for subsref, unless the index expression 
+                  // is a whole sentence starting with the form id.member and id is
+                  // one element (in that case, nargout remains 0).
+                  if (type[0] != '.' || nout != 1 || nargout < 0)
                     nargout = nout;
                 }
               else if (nargout < 0)
@@ -748,7 +770,7 @@ octave_class::subsasgn_common (const octave_value& obj,
           break;
 
         default:
-          panic_impossible ();
+          error ("unpexpected: index not '(', '{', or '.' in - octave_class::subsasgn_common please report this bug");
         }
     }
 
@@ -833,7 +855,7 @@ octave_class::subsasgn_common (const octave_value& obj,
       break;
 
     default:
-      panic_impossible ();
+      error ("unpexpected: index not '(', '{', or '.' in - octave_class::subsref please report this bug");
     }
 
   return retval;
@@ -1285,7 +1307,7 @@ octave_class::load_ascii (std::istream& is)
       m_c_name = classname;
     }
   else
-    panic_impossible ();
+    error ("unexpected: len < 0 in octave_class::load_ascii - please report this bug");
 
   return true;
 }
@@ -1412,7 +1434,7 @@ octave_class::load_binary (std::istream& is, bool swap,
   else if (len == 0)
     m_map = octave_map (dim_vector (1, 1));
   else
-    panic_impossible ();
+    error ("unexpected: len < 0 in octave_class::load_binary - please report this bug");
 
   return success;
 }
@@ -2090,8 +2112,7 @@ class octave_inline;
 // The following class can be removed once the
 // octave_value::function_value method is removed.
 
-class
-octave_inline_fcn : public octave_function
+class octave_inline_fcn : public octave_function
 {
 public:
 
@@ -2129,8 +2150,7 @@ private:
 //   return class_name () == "inline";
 // }
 
-class
-octave_inline : public octave_class
+class octave_inline : public octave_class
 {
 public:
 

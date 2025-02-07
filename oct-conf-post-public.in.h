@@ -150,7 +150,7 @@ octave_unused_parameter (const T&)
 #  define OCTAVE_EXCEPTION_API OCTAVE_EXPORT
 #  if defined (_WIN32) || defined (__CYGWIN__)
 #    define OCTAVE_TEMPLATE_API
-#    if defined(__MINGW32__)
+#    if defined (__MINGW32__)
 #      define OCTAVE_EXTERN_TEMPLATE_API OCTAVE_EXPORT
 #      define OCTAVE_CLASS_TEMPLATE_INSTANTIATION_API
 #    else
@@ -183,7 +183,7 @@ octave_unused_parameter (const T&)
 #  define OCTINTERP_EXCEPTION_API OCTAVE_EXPORT
 #  if defined (_WIN32) || defined (__CYGWIN__)
 #    define OCTINTERP_TEMPLATE_API
-#    if defined(__MINGW32__)
+#    if defined (__MINGW32__)
 #      define OCTINTERP_EXTERN_TEMPLATE_API OCTAVE_EXPORT
 #      define OCTINTERP_CLASS_TEMPLATE_INSTANTIATION_API
 #    else
@@ -216,7 +216,7 @@ octave_unused_parameter (const T&)
 #  define OCTARRAY_EXCEPTION_API OCTAVE_EXPORT
 #  if defined (_WIN32) || defined (__CYGWIN__)
 #    define OCTARRAY_TEMPLATE_API
-#    if defined(__MINGW32__)
+#    if defined (__MINGW32__)
 #      define OCTARRAY_EXTERN_TEMPLATE_API OCTAVE_EXPORT
 #      define OCTARRAY_CLASS_TEMPLATE_INSTANTIATION_API
 #    else
@@ -249,7 +249,7 @@ octave_unused_parameter (const T&)
 #  define OCTGRAPHICS_EXCEPTION_API OCTAVE_EXPORT
 #  if defined (_WIN32) || defined (__CYGWIN__)
 #    define OCTGRAPHICS_TEMPLATE_API
-#    if defined(__MINGW32__)
+#    if defined (__MINGW32__)
 #      define OCTGRAPHICS_EXTERN_TEMPLATE_API OCTAVE_EXPORT
 #      define OCTGRAPHICS_CLASS_TEMPLATE_INSTANTIATION_API
 #    else
@@ -276,13 +276,46 @@ octave_unused_parameter (const T&)
 #  define OCTGRAPHICS_OVERRIDABLE_FUNC_API
 #endif
 
+/* API macros for liboctmex */
+#if defined (OCTMEX_DLL)
+#  define OCTMEX_API OCTAVE_EXPORT
+#  define OCTMEX_EXCEPTION_API OCTAVE_EXPORT
+#  if defined (_WIN32) || defined (__CYGWIN__)
+#    define OCTMEX_TEMPLATE_API
+#    if defined (__MINGW32__)
+#      define OCTMEX_EXTERN_TEMPLATE_API OCTAVE_EXPORT
+#      define OCTMEX_CLASS_TEMPLATE_INSTANTIATION_API
+#    else
+#      define OCTMEX_EXTERN_TEMPLATE_API
+#      define OCTMEX_CLASS_TEMPLATE_INSTANTIATION_API OCTAVE_EXPORT
+#    endif
+#    define OCTMEX_OVERRIDABLE_FUNC_API OCTAVE_EXPORT
+#  else
+#    define OCTMEX_TEMPLATE_API OCTAVE_EXPORT
+#    define OCTMEX_EXTERN_TEMPLATE_API OCTAVE_EXPORT
+#    define OCTMEX_CLASS_TEMPLATE_INSTANTIATION_API
+#    define OCTMEX_OVERRIDABLE_FUNC_API
+#  endif
+#else
+#  define OCTMEX_API OCTAVE_IMPORT
+#  if defined (_WIN32) || defined (__CYGWIN__)
+#    define OCTMEX_EXCEPTION_API OCTAVE_IMPORT
+#  else
+#    define OCTMEX_EXCEPTION_API OCTAVE_EXPORT
+#  endif
+#  define OCTMEX_TEMPLATE_API
+#  define OCTMEX_EXTERN_TEMPLATE_API OCTAVE_IMPORT
+#  define OCTMEX_CLASS_TEMPLATE_INSTANTIATION_API
+#  define OCTMEX_OVERRIDABLE_FUNC_API
+#endif
+
 /* API macros for libgui */
 #if defined (OCTGUI_DLL)
 #  define OCTGUI_API OCTAVE_EXPORT
 #  define OCTGUI_EXCEPTION_API OCTAVE_EXPORT
 #  if defined (_WIN32) || defined (__CYGWIN__)
 #    define OCTGUI_TEMPLATE_API
-#    if defined(__MINGW32__)
+#    if defined (__MINGW32__)
 #      define OCTGUI_EXTERN_TEMPLATE_API OCTAVE_EXPORT
 #      define OCTGUI_CLASS_TEMPLATE_INSTANTIATION_API
 #    else
@@ -418,10 +451,4 @@ typedef OCTAVE_F77_INT_TYPE octave_f77_int_type;
 
 #if defined (OCTAVE_ENABLE_OPENMP)
 #  define HAVE_OPENMP 1
-#endif
-
-#if defined (OCTAVE_ENABLE_FLOAT_TRUNCATE)
-#  define OCTAVE_FLOAT_TRUNCATE volatile
-#else
-#  define OCTAVE_FLOAT_TRUNCATE
 #endif

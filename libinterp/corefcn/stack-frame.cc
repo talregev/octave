@@ -30,6 +30,7 @@
 #include <iostream>
 
 #include "lo-regexp.h"
+#include "lo-sysdep.h"
 #include "str-vec.h"
 
 #include "defun.h"
@@ -48,6 +49,7 @@
 #include "syminfo.h"
 #include "symrec.h"
 #include "symscope.h"
+#include "utils.h"
 #include "variables.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
@@ -190,6 +192,14 @@ public:
     return m_static_link->varref (sym);
   }
 
+  std::string inputname (int n, bool ids_only) const
+  {
+    // Look in closest stack frame that contains values (either the
+    // top scope, or a user-defined function or script).
+
+    return m_static_link->inputname (n, ids_only);
+  }
+
   void mark_scope (const symbol_record& sym, scope_flags flag)
   {
     // Look in closest stack frame that contains values (either the
@@ -314,6 +324,11 @@ public:
   octave_value varval (const symbol_record& sym) const;
 
   octave_value& varref (const symbol_record& sym);
+
+  std::string inputname (int n, bool ids_only) const
+  {
+    return m_access_link->inputname (n, ids_only);
+  }
 
   void mark_scope (const symbol_record& sym, scope_flags flag);
 
@@ -551,6 +566,8 @@ public:
 
   octave_value& varref (const symbol_record& sym);
 
+  std::string inputname (int n, bool ids_only) const;
+
   void mark_scope (const symbol_record& sym, scope_flags flag);
 
   void display (bool follow = true) const;
@@ -620,6 +637,14 @@ public:
   octave_value varval (const symbol_record& sym) const;
 
   octave_value& varref (const symbol_record& sym);
+
+  std::string inputname (int, bool) const
+  {
+    if (m_index == 0)
+      error ("invalid call to inputname outside of a function");
+
+    return "";
+  }
 
   void mark_scope (const symbol_record& sym, scope_flags flag);
 
@@ -1132,7 +1157,7 @@ stack_frame::make_symbol_info_list (const std::list<symbol_record>& symrec_list)
       symbol_info syminf (sym.name (), value, sym.is_formal (),
                           is_global (sym), is_persistent (sym));
 
-      symbol_stats.append (syminf);
+      symbol_stats.push_back (syminf);
     }
 
   return symbol_stats;
@@ -1277,7 +1302,7 @@ stack_frame::size () const
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::size () - please report this bug");
 }
 
 void
@@ -1287,7 +1312,7 @@ stack_frame::resize (std::size_t)
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::resize () - please report this bug");
 }
 
 stack_frame::scope_flags
@@ -1297,7 +1322,7 @@ stack_frame::get_scope_flag (std::size_t) const
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::get_scope_flag (std::size_t) - please report this bug");
 }
 
 void
@@ -1307,7 +1332,7 @@ stack_frame::set_scope_flag (std::size_t, scope_flags)
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::get_scope_flag (std::size_t, scope_flags) - please report this bug");
 }
 
 void
@@ -1364,7 +1389,7 @@ stack_frame::varval (std::size_t) const
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::varval (std::size_t) - please report this bug");
 }
 
 octave_value&
@@ -1374,7 +1399,16 @@ stack_frame::varref (std::size_t)
   // scope_stack_frame objects.  Anything else indicates an error in
   // the implementation.
 
-  panic_impossible ();
+  error ("unexpected call to stack_frame::varref (std::size_t) - please report this bug");
+}
+
+std::string
+stack_frame::inputname (int, bool) const
+{
+  // This function should only be called for user_fcn_stack_frame.
+  // Anything else indicates an error in the implementation.
+
+  error ("unexpected call to stack_frame::inputname (int, bool) - please report this bug");
 }
 
 void
@@ -1448,6 +1482,24 @@ stack_frame::display_stopped_in_message (std::ostream& os) const
 
       os << " [" << fcn_file_name () << "] " << std::endl;
     }
+}
+
+void
+stack_frame::debug_list (std::ostream& os, int num_lines) const
+{
+  std::string file_name = fcn_file_name ();
+
+  int target_line = line ();
+  int start = std::max (target_line - num_lines/2, 0);
+  int end = target_line + num_lines/2;
+
+  display_file_lines (os, fcn_file_name (), start, end, target_line, "-->", "dblist");
+}
+
+void
+stack_frame::debug_type (std::ostream& os, int start_line, int end_line) const
+{
+  display_file_lines (os, fcn_file_name (), start_line, end_line, -1, "", "dbtype");
 }
 
 void
@@ -1653,7 +1705,8 @@ script_stack_frame::resize_and_update_script_offsets (const symbol_record& sym)
   // scope.  If the symbol wasn't present before, it should be outside
   // the range so we need to resize then update offsets.
 
-  panic_unless (data_offset >= size ());
+  if (data_offset < size ())
+    error ("unexpected: data_offset < size () in script_stack_frame::resize_and_update_script_offsets - please report this bug");
 
   resize (data_offset+1);
 
@@ -1706,7 +1759,8 @@ script_stack_frame::lookup_symbol (const std::string& name) const
 
   if (sym)
     {
-      panic_unless (sym.frame_offset () == 0);
+      if (sym.frame_offset () != 0)
+        error ("unexpected: sym.frame_offset () != 0 in script_stack_frame::lookup_symbol - please report this bug");
 
       return sym;
     }
@@ -1736,7 +1790,9 @@ script_stack_frame::insert_symbol (const std::string& name)
       // All symbol records in a script scope should have zero offset,
       // which means we redirect our lookup using
       // lexical_frame_offsets and values_offets.
-      panic_unless (sym.frame_offset () == 0);
+
+      if (sym.frame_offset () != 0)
+        error ("unexpected: sym.frame_offset () != 0 in script_stack_frame::insert_symbol - please report this bug");
 
       return sym;
     }
@@ -1746,7 +1802,8 @@ script_stack_frame::insert_symbol (const std::string& name)
 
   sym = scope.find_symbol (name);
 
-  panic_unless (sym.is_valid ());
+  if (! sym.is_valid ())
+    error ("unexpected: sym is not valid in script_stack_frame::insert_symbol - please report this bug");
 
   resize_and_update_script_offsets (sym);
 
@@ -2290,7 +2347,8 @@ user_fcn_stack_frame::insert_symbol (const std::string& name)
 
   sym = scope.find_symbol (name);
 
-  panic_unless (sym.is_valid ());
+  if (! sym.is_valid ())
+    error ("unexpected: sym is not valid in user_fcn_stack_frame::insert_symbol - please report this bug");
 
   return sym;
 }
@@ -2402,6 +2460,25 @@ user_fcn_stack_frame::varref (const symbol_record& sym)
   error ("internal error: invalid switch case");
 }
 
+std::string
+user_fcn_stack_frame::inputname (int n, bool ids_only) const
+{
+  std::string name;
+
+  Array<std::string> arg_names
+    = m_auto_vars.at (stack_frame::ARG_NAMES).cellstr_value ();
+
+  if (n >= 0 && n < arg_names.numel ())
+    {
+      name = arg_names(n);
+
+      if (ids_only && ! m_static_link->is_variable (name))
+        name = "";
+    }
+
+  return name;
+}
+
 void
 user_fcn_stack_frame::mark_scope (const symbol_record& sym, scope_flags flag)
 {
@@ -2464,7 +2541,8 @@ scope_stack_frame::insert_symbol (const std::string& name)
 
   sym = m_scope.find_symbol (name);
 
-  panic_unless (sym.is_valid ());
+  if (! sym.is_valid ())
+    error ("unexpected: sym is not valid in scope_stack_frame::insert_symbol - please report this bug");
 
   return sym;
 }

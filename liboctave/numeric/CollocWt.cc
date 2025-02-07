@@ -27,7 +27,6 @@
 #  include "config.h"
 #endif
 
-#include <cassert>
 #include <cmath>
 
 #include <limits>
@@ -152,12 +151,12 @@ jcobi (octave_idx_type n, octave_idx_type n0, octave_idx_type n1,
        double alpha, double beta, double *dif1, double *dif2,
        double *dif3, double *root)
 {
-  assert (n0 == 0 || n0 == 1);
-  assert (n1 == 0 || n1 == 1);
+  liboctave_panic_unless (n0 == 0 || n0 == 1);
+  liboctave_panic_unless (n1 == 0 || n1 == 1);
 
   octave_idx_type nt = n + n0 + n1;
 
-  assert (nt >= 1);
+  liboctave_panic_unless (nt >= 1);
 
   // -- first evaluation of coefficients in recursion formulas.
   // -- recursion coefficients are stored in dif1 and dif2.
@@ -314,17 +313,17 @@ dfopr (octave_idx_type n, octave_idx_type n0, octave_idx_type n1,
        octave_idx_type i, octave_idx_type id, double *dif1,
        double *dif2, double *dif3, double *root, double *vect)
 {
-  assert (n0 == 0 || n0 == 1);
-  assert (n1 == 0 || n1 == 1);
+  liboctave_panic_unless (n0 == 0 || n0 == 1);
+  liboctave_panic_unless (n1 == 0 || n1 == 1);
 
   octave_idx_type nt = n + n0 + n1;
 
-  assert (nt >= 1);
+  liboctave_panic_unless (nt >= 1);
 
-  assert (id == 1 || id == 2 || id == 3);
+  liboctave_panic_unless (id == 1 || id == 2 || id == 3);
 
   if (id != 3)
-    assert (i >= 0 && i < nt);
+    liboctave_panic_unless (i >= 0 && i < nt);
 
   // Evaluate discretization matrices and Gaussian quadrature weights.
   // Quadrature weights are normalized to sum to one.
@@ -426,23 +425,23 @@ CollocWt::init ()
     return;
 
   Array<double> dif1 (dim_vector (nt, 1));
-  double *pdif1 = dif1.fortran_vec ();
+  double *pdif1 = dif1.rwdata ();
 
   Array<double> dif2 (dim_vector (nt, 1));
-  double *pdif2 = dif2.fortran_vec ();
+  double *pdif2 = dif2.rwdata ();
 
   Array<double> dif3 (dim_vector (nt, 1));
-  double *pdif3 = dif3.fortran_vec ();
+  double *pdif3 = dif3.rwdata ();
 
   Array<double> vect (dim_vector (nt, 1));
-  double *pvect = vect.fortran_vec ();
+  double *pvect = vect.rwdata ();
 
   m_r.resize (nt, 1);
   m_q.resize (nt, 1);
   m_A.resize (nt, nt);
   m_B.resize (nt, nt);
 
-  double *pr = m_r.fortran_vec ();
+  double *pr = m_r.rwdata ();
 
   // Compute roots.
 
@@ -479,7 +478,7 @@ CollocWt::init ()
   // Gaussian quadrature weights.
 
   id = 3;
-  double *pq = m_q.fortran_vec ();
+  double *pq = m_q.rwdata ();
   dfopr (m_n, m_inc_left, m_inc_right, id, id, pdif1, pdif2, pdif3, pr, pq);
 
   m_initialized = 1;

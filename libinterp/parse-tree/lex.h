@@ -48,8 +48,7 @@ extern bool iskeyword (const std::string& s);
 
 // For communication between the lexer and parser.
 
-class
-lexical_feedback
+class lexical_feedback
 {
 public:
 
@@ -326,9 +325,12 @@ public:
 
   void reset ();
 
-  int previous_token_value () const;
+  int previous_token_id () const;
+  token * previous_token ();
+  const token * previous_token () const;
 
-  bool previous_token_value_is (int tok_val) const;
+  bool previous_token_is (int tok_id) const;
+  bool previous_token_is (const token *tok) const;
 
   void mark_previous_token_trailing_space ();
 
@@ -481,7 +483,7 @@ public:
   std::string m_current_input_line;
 
   // The text of the current comment, used to gather comment lines
-  // before storing in m_comment_buf.
+  // before storing in m_comment_list.
   std::string m_comment_text;
 
   // The text of functions entered on the command line.
@@ -524,8 +526,7 @@ public:
 // initialize if everything is grouped in a parent class rather than
 // listing all the members in the base_lexer class.
 
-class
-base_lexer : public lexical_feedback
+class base_lexer : public lexical_feedback
 {
 public:
 
@@ -558,53 +559,8 @@ public:
     bool m_eof;
   };
 
-  // Collect comment text.
-
-  class
-  comment_buffer
-  {
-  public:
-
-    comment_buffer () : m_comment_list (nullptr) { }
-
-    OCTAVE_DISABLE_COPY_MOVE (comment_buffer)
-
-    ~comment_buffer () { delete m_comment_list; }
-
-    void append (const std::string& s, comment_elt::comment_type t, bool uses_hash_char)
-    {
-      if (! m_comment_list)
-        m_comment_list = new comment_list ();
-
-      m_comment_list->append (s, t, uses_hash_char);
-    }
-
-    // Caller is expected to delete the returned value.
-
-    comment_list * get_comment ()
-    {
-      comment_list *retval = m_comment_list;
-
-      m_comment_list = nullptr;
-
-      return retval;
-    }
-
-    void reset ()
-    {
-      delete m_comment_list;
-
-      m_comment_list = nullptr;
-    }
-
-  private:
-
-    comment_list *m_comment_list;
-  };
-
   base_lexer (interpreter& interp)
-    : lexical_feedback (interp), m_scanner (nullptr), m_input_buf (),
-      m_comment_buf ()
+    : lexical_feedback (interp), m_scanner (nullptr), m_input_buf ()
   {
     init ();
   }
@@ -647,7 +603,7 @@ public:
 
   bool inside_any_object_index ();
 
-  int make_keyword_token (const std::string& s);
+  token * make_keyword_token (const std::string& s);
 
   bool fq_identifier_contains_keyword (const std::string& s);
 
@@ -661,7 +617,12 @@ public:
 
   void finish_comment (comment_elt::comment_type typ);
 
-  comment_list * get_comment () { return m_comment_buf.get_comment (); }
+  comment_list get_comment_list ()
+  {
+    comment_list retval = m_comment_list;
+    m_comment_list.clear ();
+    return retval;
+  }
 
   int handle_close_bracket (int bracket_type);
 
@@ -669,9 +630,9 @@ public:
 
   int handle_superclass_identifier ();
 
-  int handle_meta_identifier ();
+  token * make_meta_identifier_token (const std::string& cls);
 
-  int handle_fq_identifier ();
+  token * make_fq_identifier_token (const std::string& ident);
 
   int handle_identifier ();
 
@@ -689,13 +650,17 @@ public:
 
   void warn_deprecated_syntax (const std::string& msg);
 
+  int syntax_error (const std::string& msg);
+  int syntax_error (const std::string& msg, const filepos& pos);
+  int syntax_error (const std::string& msg, const filepos& beg_pos, const filepos& end_pos);
+
   void push_token (token *);
 
   token * current_token ();
 
   std::size_t pending_token_count () const;
 
-  void display_token (int tok);
+  void display_token (int tok_id);
 
   void fatal_error (const char *msg);
 
@@ -713,8 +678,8 @@ public:
   // Object that reads and buffers input.
   input_buffer m_input_buf;
 
-  // Object that collects comment text.
-  comment_buffer m_comment_buf;
+  // List of collected comments.
+  comment_list m_comment_list;
 
   virtual std::string input_source () const { return "unknown"; }
 
@@ -736,27 +701,25 @@ public:
 
   void display_start_state () const;
 
-  bool maybe_unput_comma_before_unary_op (int tok);
+  bool maybe_unput_comma_before_unary_op (int tok_id);
 
-  int handle_op (int tok, bool bos = false, bool compat = true);
+  int handle_op (int tok_id, bool bos = false, bool compat = true);
 
   int finish_command_arg ();
 
-  int handle_token (int tok, token *tok_val = nullptr);
+  int handle_token (int tok_id);
+  int handle_token (token *tok);
 
-  int count_token (int tok);
+  int count_token_internal (int tok_id);
 
-  int count_token_internal (int tok);
-
-  int show_token (int tok);
+  int show_token (int tok_id);
 
 protected:
 
   std::stack<int> start_state_stack;
 };
 
-class
-lexer : public base_lexer
+class lexer : public base_lexer
 {
 public:
 
@@ -825,8 +788,7 @@ template <> int base_lexer::handle_number<2> ();
 template <> int base_lexer::handle_number<10> ();
 template <> int base_lexer::handle_number<16> ();
 
-class
-push_lexer : public base_lexer
+class push_lexer : public base_lexer
 {
 public:
 

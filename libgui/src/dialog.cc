@@ -65,19 +65,21 @@ QUIWidgetCreator::QUIWidgetCreator ()
            this, &QUIWidgetCreator::handle_create_filedialog);
 }
 
-QString QUIWidgetCreator::rm_amp (const QString& text)
+QString
+QUIWidgetCreator::rm_amp (const QString& text)
 {
   QString text_wo_amp = text;
   text_wo_amp.replace (QRegularExpression {"&(\\w)"}, "\\1");
   return text_wo_amp;
 }
 
-QString QUIWidgetCreator::message_dialog (const QString& message,
-                                          const QString& title,
-                                          const QString& icon,
-                                          const QStringList& buttons,
-                                          const QString& defbutton,
-                                          const QStringList& role)
+QString
+QUIWidgetCreator::message_dialog (const QString& message,
+                                  const QString& title,
+                                  const QString& icon,
+                                  const QStringList& buttons,
+                                  const QString& defbutton,
+                                  const QStringList& role)
 {
   QMutexLocker autolock (&m_mutex);
 
@@ -95,7 +97,7 @@ QString QUIWidgetCreator::message_dialog (const QString& message,
   if (xicon.isEmpty ())
     xicon = "none";
 
-  emit create_dialog (message, title, xicon, buttons, defbutton, role);
+  Q_EMIT create_dialog (message, title, xicon, buttons, defbutton, role);
 
   // Wait while the user is responding to message box.
   wait ();
@@ -117,8 +119,8 @@ QUIWidgetCreator::list_dialog (const QStringList& list, const QString& mode,
 
   QMutexLocker autolock (&m_mutex);
 
-  emit create_listview (list, mode, wd, ht, initial, name,
-                        prompt, ok_string, cancel_string);
+  Q_EMIT create_listview (list, mode, wd, ht, initial, name,
+                          prompt, ok_string, cancel_string);
 
   // Wait while the user is responding to message box.
   wait ();
@@ -130,18 +132,19 @@ QUIWidgetCreator::list_dialog (const QStringList& list, const QString& mode,
 // Create a message dialog with specified string, buttons and
 // decorative text.
 
-QStringList QUIWidgetCreator::input_dialog (const QStringList& prompt,
-                                            const QString& title,
-                                            const QFloatList& nr,
-                                            const QFloatList& nc,
-                                            const QStringList& defaults)
+QStringList
+QUIWidgetCreator::input_dialog (const QStringList& prompt,
+                                const QString& title,
+                                const QFloatList& nr,
+                                const QFloatList& nc,
+                                const QStringList& defaults)
 {
   if (prompt.isEmpty ())
     return QStringList ();
 
   QMutexLocker autolock (&m_mutex);
 
-  emit create_inputlayout (prompt, title, nr, nc, defaults);
+  Q_EMIT create_inputlayout (prompt, title, nr, nc, defaults);
 
   // Wait while the user is responding to message box.
   wait ();
@@ -150,15 +153,16 @@ QStringList QUIWidgetCreator::input_dialog (const QStringList& prompt,
   return m_string_list;
 };
 
-QStringList QUIWidgetCreator::file_dialog (const QStringList& filters,
-                                           const QString& title,
-                                           const QString& filename,
-                                           const QString& dirname,
-                                           const QString& multimode)
+QStringList
+QUIWidgetCreator::file_dialog (const QStringList& filters,
+                               const QString& title,
+                               const QString& filename,
+                               const QString& dirname,
+                               const QString& multimode)
 {
   QMutexLocker autolock (&m_mutex);
 
-  emit create_filedialog (filters, title, filename, dirname, multimode);
+  Q_EMIT create_filedialog (filters, title, filename, dirname, multimode);
 
   // Wait while the user is responding to dialog.
   wait ();
@@ -173,12 +177,13 @@ QStringList QUIWidgetCreator::file_dialog (const QStringList& filters,
   return retval;
 }
 
-void QUIWidgetCreator::handle_create_dialog (const QString& message,
-                                             const QString& title,
-                                             const QString& icon,
-                                             const QStringList& button,
-                                             const QString& defbutton,
-                                             const QStringList& role)
+void
+QUIWidgetCreator::handle_create_dialog (const QString& message,
+                                        const QString& title,
+                                        const QString& icon,
+                                        const QStringList& button,
+                                        const QString& defbutton,
+                                        const QStringList& role)
 {
   MessageDialog *message_dialog
     = new MessageDialog (message, title, icon, button, defbutton, role);
@@ -190,7 +195,8 @@ void QUIWidgetCreator::handle_create_dialog (const QString& message,
   message_dialog->show ();
 }
 
-void QUIWidgetCreator::dialog_button_clicked (QAbstractButton *button)
+void
+QUIWidgetCreator::dialog_button_clicked (QAbstractButton *button)
 {
   // button is NULL when dialog is closed.
   if (button)
@@ -222,14 +228,15 @@ void QUIWidgetCreator::dialog_button_clicked (QAbstractButton *button)
 // Create a list dialog with specified list, initially selected, mode,
 // view size and decorative text.
 
-void QUIWidgetCreator::handle_create_listview (const QStringList& list,
-                                               const QString& mode,
-                                               int wd, int ht,
-                                               const QIntList& initial,
-                                               const QString& name,
-                                               const QStringList& prompt,
-                                               const QString& ok_string,
-                                               const QString& cancel_string)
+void
+QUIWidgetCreator::handle_create_listview (const QStringList& list,
+    const QString& mode,
+    int wd, int ht,
+    const QIntList& initial,
+    const QString& name,
+    const QStringList& prompt,
+    const QString& ok_string,
+    const QString& cancel_string)
 {
   ListDialog *list_dialog
     = new ListDialog (list, mode, wd, ht, initial,
@@ -242,8 +249,9 @@ void QUIWidgetCreator::handle_create_listview (const QStringList& list,
   list_dialog->show ();
 }
 
-void QUIWidgetCreator::list_select_finished (const QIntList& selected,
-                                             int button_pressed)
+void
+QUIWidgetCreator::list_select_finished (const QIntList& selected,
+                                        int button_pressed)
 {
   // Store the value so that builtin functions can retrieve.
 
@@ -257,11 +265,12 @@ void QUIWidgetCreator::list_select_finished (const QIntList& selected,
 // Create an input dialog with specified prompts and defaults, title
 // and row/column size specifications.
 
-void QUIWidgetCreator::handle_create_inputlayout (const QStringList& prompt,
-                                                  const QString& title,
-                                                  const QFloatList& nr,
-                                                  const QFloatList& nc,
-                                                  const QStringList& defaults)
+void
+QUIWidgetCreator::handle_create_inputlayout (const QStringList& prompt,
+    const QString& title,
+    const QFloatList& nr,
+    const QFloatList& nc,
+    const QStringList& defaults)
 {
   InputDialog *input_dialog
     = new InputDialog (prompt, title, nr, nc, defaults);
@@ -273,8 +282,9 @@ void QUIWidgetCreator::handle_create_inputlayout (const QStringList& prompt,
   input_dialog->show ();
 }
 
-void QUIWidgetCreator::input_finished (const QStringList& input,
-                                       int button_pressed)
+void
+QUIWidgetCreator::input_finished (const QStringList& input,
+                                  int button_pressed)
 {
   // Store the value so that builtin functions can retrieve.
 
@@ -285,11 +295,12 @@ void QUIWidgetCreator::input_finished (const QStringList& input,
   wake_all ();
 }
 
-void QUIWidgetCreator::handle_create_filedialog (const QStringList& filters,
-                                                 const QString& title,
-                                                 const QString& filename,
-                                                 const QString& dirname,
-                                                 const QString& multimode)
+void
+QUIWidgetCreator::handle_create_filedialog (const QStringList& filters,
+    const QString& title,
+    const QString& filename,
+    const QString& dirname,
+    const QString& multimode)
 {
   FileDialog *file_dialog
     = new FileDialog (filters, title, filename, dirname, multimode);
@@ -301,9 +312,10 @@ void QUIWidgetCreator::handle_create_filedialog (const QStringList& filters,
   file_dialog->show ();
 }
 
-void QUIWidgetCreator::filedialog_finished (const QStringList& files,
-                                            const QString& path,
-                                            int filterindex)
+void
+QUIWidgetCreator::filedialog_finished (const QStringList& files,
+                                       const QString& path,
+                                       int filterindex)
 {
   // Store the value so that builtin functions can retrieve.
 
@@ -406,7 +418,7 @@ ListDialog::ListDialog (const QStringList& list,
     view->setSelectionMode (QAbstractItemView::NoSelection);
 
   m_selector = view->selectionModel ();
-  for (int i = 0; i < initial.count(); i++)
+  for (int i = 0; i < initial.count (); i++)
     {
       QModelIndex idx = m_model->index (initial.value (i) - 1, 0,
                                         QModelIndex ());
@@ -475,7 +487,8 @@ ListDialog::ListDialog (const QStringList& list,
            this, &ListDialog::item_double_clicked);
 }
 
-void ListDialog::buttonOk_clicked ()
+void
+ListDialog::buttonOk_clicked ()
 {
   // Store information about what button was pressed so that builtin
   // functions can retrieve.
@@ -486,29 +499,32 @@ void ListDialog::buttonOk_clicked ()
   for (int i = 0; i < selected_index.size (); i++)
     selected_int << selected_index.at (i).row () + 1;
 
-  emit finish_selection (selected_int, 1);
+  Q_EMIT finish_selection (selected_int, 1);
 
   done (QDialog::Accepted);
 }
 
-void ListDialog::buttonCancel_clicked ()
+void
+ListDialog::buttonCancel_clicked ()
 {
   // Store information about what button was pressed so that builtin
   // functions can retrieve.
 
   QIntList empty;
 
-  emit finish_selection (empty, 0);
+  Q_EMIT finish_selection (empty, 0);
 
   done (QDialog::Rejected);
 }
 
-void ListDialog::reject ()
+void
+ListDialog::reject ()
 {
   buttonCancel_clicked ();
 }
 
-void ListDialog::item_double_clicked (const QModelIndex&)
+void
+ListDialog::item_double_clicked (const QModelIndex&)
 {
   buttonOk_clicked ();
 }
@@ -580,7 +596,8 @@ InputDialog::InputDialog (const QStringList& prompt,
            this, &InputDialog::buttonCancel_clicked);
 }
 
-void InputDialog::buttonOk_clicked ()
+void
+InputDialog::buttonOk_clicked ()
 {
   // Store information about what button was pressed so that builtin
   // functions can retrieve.
@@ -588,21 +605,23 @@ void InputDialog::buttonOk_clicked ()
   QStringList string_result;
   for (int i = 0; i < m_input_line.size (); i++)
     string_result << m_input_line.at (i)->text ();
-  emit finish_input (string_result, 1);
+  Q_EMIT finish_input (string_result, 1);
   done (QDialog::Accepted);
 }
 
-void InputDialog::buttonCancel_clicked ()
+void
+InputDialog::buttonCancel_clicked ()
 {
   // Store information about what button was pressed so that builtin
   // functions can retrieve.
 
   QStringList empty;
-  emit finish_input (empty, 0);
+  Q_EMIT finish_input (empty, 0);
   done (QDialog::Rejected);
 }
 
-void InputDialog::reject ()
+void
+InputDialog::reject ()
 {
   buttonCancel_clicked ();
 }
@@ -616,7 +635,7 @@ FileDialog::FileDialog (const QStringList& name_filters,
 
   // This should be set before any other dialog properties
   if (! settings.bool_value (global_use_native_dialogs))
-    setOption(QFileDialog::DontUseNativeDialog);
+    setOption (QFileDialog::DontUseNativeDialog);
 
   // Create a NonModal message.
   setWindowModality (Qt::NonModal);
@@ -659,13 +678,15 @@ FileDialog::FileDialog (const QStringList& name_filters,
   connect (this, &FileDialog::rejected, this, &FileDialog::rejectSelection);
 }
 
-void FileDialog::rejectSelection ()
+void
+FileDialog::rejectSelection ()
 {
   QStringList empty;
-  emit finish_input (empty, "", 0);
+  Q_EMIT finish_input (empty, "", 0);
 }
 
-void FileDialog::acceptSelection ()
+void
+FileDialog::acceptSelection ()
 {
   QStringList string_result;
   QString path;
@@ -695,7 +716,7 @@ void FileDialog::acceptSelection ()
   idx = name_filters.indexOf (selectedNameFilter ()) + 1;
 
   // Send the selected info.
-  emit finish_input (string_result, path, idx);
+  Q_EMIT finish_input (string_result, path, idx);
 }
 
 OCTAVE_END_NAMESPACE(octave)

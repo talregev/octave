@@ -28,7 +28,6 @@
 
 #include "octave-config.h"
 
-#include <cassert>
 #include <cstddef>
 
 #include <algorithm>
@@ -123,15 +122,16 @@
 //!   - string_vector: Array<std::string> with 1 column
 //!   - Cell: Array<octave_value>, equivalent to an Octave cell.
 
+// forward declare template with visibility attributes
+template <typename T, typename Alloc> class OCTARRAY_API Array;
+
 template <typename T, typename Alloc>
-class
-OCTARRAY_TEMPLATE_API
-Array
+class OCTARRAY_TEMPLATE_API Array
 {
 protected:
 
   //! The real representation of all arrays.
-  class ArrayRep : public Alloc
+  class OCTARRAY_TEMPLATE_API ArrayRep : public Alloc
   {
   public:
 
@@ -144,6 +144,7 @@ protected:
     octave_idx_type m_len;
     octave::refcount<octave_idx_type> m_count;
 
+    OCTARRAY_OVERRIDABLE_FUNC_API
     ArrayRep (pointer d, octave_idx_type len)
       : Alloc (), m_data (allocate (len)), m_len (len), m_count (1)
     {
@@ -157,8 +158,8 @@ protected:
       std::copy_n (d, len, m_data);
     }
 
-    // Use new instead of setting data to 0 so that fortran_vec and
-    // data always return valid addresses, even for zero-size arrays.
+    // Use new instead of setting data to 0 so that rwdata() and data()
+    // always return valid addresses, even for zero-size arrays.
 
     ArrayRep ()
       : Alloc (), m_data (allocate (0)), m_len (0), m_count (1) { }
@@ -187,13 +188,16 @@ protected:
 
     ~ArrayRep () { deallocate (m_data, m_len); }
 
-    octave_idx_type numel () const { return m_len; }
+    OCTARRAY_OVERRIDABLE_FUNC_API octave_idx_type numel () const
+    {
+      return m_len;
+    }
 
     // No assignment!
 
     ArrayRep& operator = (const ArrayRep&) = delete;
 
-    pointer allocate (size_t len)
+    OCTARRAY_OVERRIDABLE_FUNC_API pointer allocate (size_t len)
     {
       pointer data = Alloc_traits::allocate (*this, len);
       for (size_t i = 0; i < len; i++)
@@ -201,7 +205,7 @@ protected:
       return data;
     }
 
-    void deallocate (pointer data, size_t len)
+    OCTARRAY_OVERRIDABLE_FUNC_API void deallocate (pointer data, size_t len)
     {
       for (size_t i = 0; i < len; i++)
         T_Alloc_traits::destroy (*this, data+i);
@@ -513,11 +517,8 @@ public:
   OCTARRAY_API octave_idx_type
   compute_index (const Array<octave_idx_type>& ra_idx) const;
 
-  OCTARRAY_OVERRIDABLE_FUNC_API octave_idx_type
-  compute_index_unchecked (const Array<octave_idx_type>& ra_idx) const
-  {
-    return m_dimensions.compute_index (ra_idx.data (), ra_idx.numel ());
-  }
+  OCTARRAY_API octave_idx_type
+  compute_index_unchecked (const Array<octave_idx_type>& ra_idx) const;
 
   // No checking, even for multiple references, ever.
 
@@ -660,10 +661,17 @@ public:
   OCTARRAY_API Array<T, Alloc> transpose () const;
   OCTARRAY_API Array<T, Alloc> hermitian (T (*fcn) (const T&) = nullptr) const;
 
+  // Use for direct read-only access to Array data.
   OCTARRAY_OVERRIDABLE_FUNC_API const T * data () const
   { return m_slice_data; }
 
-  OCTARRAY_API T * fortran_vec ();
+  // Use for direct read-write access to Array data.
+  OCTARRAY_API T * rwdata ();
+
+  // Alias for direct read-write access to Array data.
+  // FIXME: It is recommended to use rwdata() in future code for clarity.
+  inline T * fortran_vec ()
+  { return rwdata (); }
 
   OCTARRAY_OVERRIDABLE_FUNC_API bool is_shared () const
   { return m_rep->m_count > 1; }
@@ -726,11 +734,8 @@ public:
   OCTARRAY_API Array<T, Alloc>
   index (const Array<octave::idx_vector>& ia, bool resize_ok,
          const T& rfv) const;
-  OCTARRAY_OVERRIDABLE_FUNC_API Array<T, Alloc>
-  index (const Array<octave::idx_vector>& ia, bool resize_ok) const
-  {
-    return index (ia, resize_ok, resize_fill_value ());
-  }
+  OCTARRAY_API Array<T, Alloc>
+  index (const Array<octave::idx_vector>& ia, bool resize_ok) const;
   //@}
 
   //@{
@@ -755,11 +760,8 @@ public:
 
   OCTARRAY_API void
   assign (const Array<octave::idx_vector>& ia, const Array<T, Alloc>& rhs, const T& rfv);
-  OCTARRAY_OVERRIDABLE_FUNC_API void
-  assign (const Array<octave::idx_vector>& ia, const Array<T, Alloc>& rhs)
-  {
-    assign (ia, rhs, resize_fill_value ());
-  }
+  OCTARRAY_API void
+  assign (const Array<octave::idx_vector>& ia, const Array<T, Alloc>& rhs);
   //@}
 
   //@{
@@ -863,7 +865,7 @@ public:
     const T *m = data ();
 
     Array<U, A> result (dims ());
-    U *p = result.fortran_vec ();
+    U *p = result.rwdata ();
 
     octave_idx_type i;
     for (i = 0; i < len - 3; i += 4)

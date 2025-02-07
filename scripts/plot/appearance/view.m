@@ -60,6 +60,10 @@ function [azimuth, elevation] = view (varargin)
     print_usage ();
   endif
 
+  if (nargout > 0 && nargin > 0)
+    error ("view: cannot simultaneously get and set viewpoint");
+  endif
+
   if (isempty (hax))
     hax = gca ();
   endif
@@ -74,11 +78,20 @@ function [azimuth, elevation] = view (varargin)
       az = x(1);
       el = x(2);
     elseif (numel (x) == 3)
-      [az, el] = cart2sph (x(1), x(2), x(3));
-      az *= 180/pi;
-      if (az != 0)
-        az += 90;  # Special fix for bug #57800
+      if (x(2) == 0)
+        ## special case for negative 0
+        [az, el] = cart2sph (x(2), x(1), x(3));
+
+        if (x(1) == 0)
+          ## Matlab Compatibility: Force +0 azimuth instead of +/-0 or
+          ## +/-180deg azimuth for z-aligned vector.
+          az = 0;
+        endif
+
+      else
+        [az, el] = cart2sph (-x(2), x(1), x(3));
       endif
+      az *= 180/pi;
       el *= 180/pi;
     elseif (x == 2)
       az = 0;
@@ -137,5 +150,70 @@ endfunction
 %!   close (hf);
 %! end_unwind_protect
 
+%!test <*57800>
+%! hf = figure ("visible", "off");
+%! unwind_protect
+%!   plot3 ([0,1], [0,1], [0,1]);
+%!   view ([0, 0, 1]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [0, 90], eps);
+%! unwind_protect_cleanup
+%!   close (hf);
+%! end_unwind_protect
+
+%!test <*65641>
+%! hf = figure ("visible", "off");
+%! unwind_protect
+%!   plot3 ([0,1], [0,1], [0,1]);
+%!   view ([1, 0, 0]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [90, 0], eps);
+%!   view ([-1, 0, 0]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [-90, 0], eps);
+%!   view ([0, 1, 0]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [180, 0], eps);
+%!   view ([0, -1, 0]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [0, 0], eps);
+%!   view ([0, 0, 1]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [0, 90], eps);
+%!   view ([0, 0, -1]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [0, -90], eps);
+%!   view ([1, 0.001, 0]);
+%!   [az, el] = view ();
+%!   assert ([az, el], [90 + 0.001*180/pi, 0], eps ("single"));
+%! unwind_protect_cleanup
+%!   close (hf);
+%! end_unwind_protect
+
+%!test <*65641> # Verify compatible z-vector viewpoint.
+%! hf = figure ("visible", "off");
+%! unwind_protect
+%!   ml_out = [0, 90, Inf] .* ones (8, 1);
+%!   ml_out(1:2:end-1, 2) = -90;
+%!   output = NaN (8, 3);
+%!   plot3 ([0,1], [0,1], [0,1]);
+%!   idx = 1;
+%!   for x1 = [-0, 0]
+%!     for x2 = [-0, 0]
+%!       for x3 = [-1, 1]
+%!         view ([x1, x2, x3]);
+%!         [az, el] = view ();
+%!         output(idx, :) = [az, el, 1/az];
+%!         idx++;
+%!       endfor
+%!     endfor
+%!   endfor
+%!   assert (isequaln (output, ml_out));
+%! unwind_protect_cleanup
+%!   close (hf);
+%! end_unwind_protect
+
+
 ## Test input validation
 %!error <Invalid call> view (0, 0, 1)
+%!error <cannot simultaneously get and set> [a, b] = view ([1, 1, 1])

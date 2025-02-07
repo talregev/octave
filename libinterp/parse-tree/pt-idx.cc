@@ -46,42 +46,31 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 
 // Index expressions.
 
-tree_index_expression::tree_index_expression (int l, int c)
-  : tree_expression (l, c), m_expr (nullptr), m_args (0), m_type (),
-    m_arg_nm (), m_dyn_field (), m_word_list_cmd (false) { }
-
-tree_index_expression::tree_index_expression (tree_expression *e,
-    tree_argument_list *lst,
-    int l, int c, char t)
-  : tree_expression (l, c), m_expr (e), m_args (0), m_type (),
-    m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
+tree_index_expression::tree_index_expression (tree_expression *e, const token& open_delim, tree_argument_list *lst, const token& close_delim, char t)
+  : m_expr (e), m_args (0), m_type (), m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
 {
-  append (lst, t);
+  append (open_delim, lst, close_delim, t);
 }
 
-tree_index_expression::tree_index_expression (tree_expression *e,
-    const std::string& n,
-    int l, int c)
-  : tree_expression (l, c), m_expr (e), m_args (0), m_type (),
-    m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
+tree_index_expression::tree_index_expression (tree_expression *e, const token& dot_tok, const token& struct_elt_tok)
+  : m_expr (e), m_args (0), m_type (), m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
 {
-  append (n);
+  append (dot_tok, struct_elt_tok);
 }
 
-tree_index_expression::tree_index_expression (tree_expression *e,
-    tree_expression *df,
-    int l, int c)
-  : tree_expression (l, c), m_expr (e), m_args (0), m_type (),
-    m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
+tree_index_expression::tree_index_expression (tree_expression *e, const token& dot_tok, const token& open_paren, tree_expression *df, const token& close_paren)
+  : m_expr (e), m_args (0), m_type (), m_arg_nm (), m_dyn_field (), m_word_list_cmd (false)
 {
-  append (df);
+  append (dot_tok, open_paren, df, close_paren);
 }
 
 tree_index_expression *
-tree_index_expression::append (tree_argument_list *lst, char t)
+tree_index_expression::append (const token& open_delim, tree_argument_list *lst, const token& close_delim, char t)
 {
+  lst->mark_in_delims (open_delim, close_delim);
   m_args.push_back (lst);
   m_type.append (1, t);
+  m_dot_tok.push_back (token ());
   m_arg_nm.push_back (lst ? lst->get_arg_names () : string_vector ());
   m_dyn_field.push_back (static_cast<tree_expression *> (nullptr));
 
@@ -92,22 +81,25 @@ tree_index_expression::append (tree_argument_list *lst, char t)
 }
 
 tree_index_expression *
-tree_index_expression::append (const std::string& n)
+tree_index_expression::append (const token& dot_tok, const token& struct_elt_tok)
 {
   m_args.push_back (static_cast<tree_argument_list *> (nullptr));
   m_type += '.';
-  m_arg_nm.push_back (n);
+  m_dot_tok.push_back (dot_tok);
+  m_arg_nm.push_back (struct_elt_tok.text ());
   m_dyn_field.push_back (static_cast<tree_expression *> (nullptr));
 
   return this;
 }
 
 tree_index_expression *
-tree_index_expression::append (tree_expression *df)
+tree_index_expression::append (const token& dot_tok, const token& open_paren, tree_expression *df, const token& close_paren)
 {
   m_args.push_back (static_cast<tree_argument_list *> (nullptr));
   m_type += '.';
+  m_dot_tok.push_back (dot_tok);
   m_arg_nm.push_back ("");
+  df->mark_in_delims (open_paren, close_paren);
   m_dyn_field.push_back (df);
 
   return this;
@@ -141,6 +133,58 @@ tree_index_expression::name () const
   return m_expr->name ();
 }
 
+filepos
+tree_index_expression::end_pos () const
+{
+  int n = m_args.size ();
+
+  if (n == 0)
+    return m_expr->end_pos ();
+
+  switch (m_type[n-1])
+    {
+    case '(':
+    case '{':
+      {
+        tree_argument_list *args = m_args.back ();
+        return args->end_pos ();
+      }
+      break;
+
+    case '.':
+      {
+        string_vector arg_names = m_arg_nm.back ();
+
+        if (arg_names.empty ())
+          {
+            tree_expression *dyn_field = m_dyn_field.back ();
+
+            if (dyn_field)
+              return dyn_field->end_pos ();
+            else
+              error ("unexpected: dynamic field is nullptr in call to tree_index_expression::end_pos - please report this bug");
+
+          }
+
+        token dot_tok = m_dot_tok.back ();
+        std::string arg_nm = arg_names(0);
+
+        // FIXME: this might not be correct because we have no way
+        // to account for space between the '.' operator and the
+        // field name.  Maybe we should really be storing an
+        // identifier that contains position information?
+
+        filepos pos = dot_tok.end_pos ();
+        pos.increment_column (arg_nm.size ());
+
+        return pos;
+      }
+
+    default:
+      error ("unexpected: index not '(', '{', or '.' in tree_index_expression::end_pos - please report this bug");
+    }
+}
+
 std::string
 tree_index_expression::get_struct_index
 (tree_evaluator& tw,
@@ -160,7 +204,7 @@ tree_index_expression::get_struct_index
           fn = t.xstring_value ("dynamic structure field names must be strings");
         }
       else
-        panic_impossible ();
+        error ("unexpected: DF is nullptr in call to tree_index_expression::get_struct_index - please report this bug");
     }
 
   return fn;
@@ -223,7 +267,7 @@ tree_index_expression::lvalue (tree_evaluator& tw)
           break;
 
         default:
-          panic_impossible ();
+          error ("unexpected: index not '(', '{', or '.' in tree_index_expression::lvalue - please report this bug");
         }
 
       if (idx.back ().empty ())
@@ -242,8 +286,7 @@ tree_index_expression::lvalue (tree_evaluator& tw)
 tree_index_expression *
 tree_index_expression::dup (symbol_scope& scope) const
 {
-  tree_index_expression *new_idx_expr
-    = new tree_index_expression (line (), column ());
+  tree_index_expression *new_idx_expr = new tree_index_expression ();
 
   new_idx_expr->m_expr = (m_expr ? m_expr->dup (scope) : nullptr);
 
@@ -368,7 +411,7 @@ tree_index_expression::evaluate_n (tree_evaluator& tw, int nargout)
       if (is_var && is_word_list_cmd ())
         {
           bool maybe_binary_op = false;
-          if ((*p_args) && (*p_args)->length () > 0)
+          if ((*p_args) && (*p_args)->size () > 0)
             {
               // check if first character of first argument might be (the
               // start of) a binary operator
@@ -393,7 +436,7 @@ tree_index_expression::evaluate_n (tree_evaluator& tw, int nargout)
 
           tree_argument_list *al = *p_args;
 
-          if (al && al->length () > 0)
+          if (al && al->size () > 0)
             {
               unwind_action act ([&tw] (const std::list<octave_lvalue> *lvl)
               {
@@ -588,7 +631,7 @@ tree_index_expression::evaluate_n (tree_evaluator& tw, int nargout)
             break;
 
           default:
-            panic_impossible ();
+            error ("unexpected: index not '(', '{', or '.' in tree_index_expression::evaluate_n - please report this bug");
           }
 
         p_args++;

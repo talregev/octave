@@ -36,9 +36,7 @@
 #include "mx-defs.h"
 #include "mx-op-decl.h"
 
-class
-OCTAVE_API
-FloatMatrix : public FloatNDArray
+class OCTAVE_API FloatMatrix : public FloatNDArray
 {
 public:
 
@@ -171,8 +169,8 @@ public:
   OCTAVE_API FloatMatrix inverse () const;
   OCTAVE_API FloatMatrix inverse (octave_idx_type& info) const;
   OCTAVE_API FloatMatrix
-  inverse (octave_idx_type& info, float& rcon, bool force = false,
-           bool calc_cond = true) const;
+  inverse (octave_idx_type& info, float& rcon,
+           bool force = false, bool calc_cond = true) const;
 
   OCTAVE_API FloatMatrix inverse (MatrixType& mattype) const;
   OCTAVE_API FloatMatrix

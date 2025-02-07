@@ -85,7 +85,8 @@ namespace Utils
     return v;
   }
 
-  Cell toCellString (const QStringList& l)
+  Cell
+  toCellString (const QStringList& l)
   {
     QStringList tmp = l;
 
@@ -159,7 +160,7 @@ namespace Utils
   toRgb (const QColor& c)
   {
     Matrix rgb (1, 3);
-    double *rgbData = rgb.fortran_vec ();
+    double *rgbData = rgb.rwdata ();
 
 #if HAVE_QCOLOR_FLOAT_TYPE
     float tmp[3];
@@ -284,7 +285,7 @@ namespace Utils
   QImage
   makeImageFromCData (const octave_value& v, int width, int height)
   {
-    dim_vector dv (v.dims ());
+    const dim_vector& dv = v.dims ();
 
     if (dv.ndims () == 3 && dv(2) == 3)
       {
@@ -384,7 +385,7 @@ namespace Utils
 #if defined (Q_OS_MAC)
       modList.push_back ("command");
 #else
-    modList.push_back ("control");
+      modList.push_back ("control");
 #endif
     if (mods & Qt::AltModifier)
       modList.push_back ("alt");
@@ -405,7 +406,7 @@ namespace Utils
 
     // We assume a standard mouse with 15 degree steps and Qt returns
     // 1/8 of a degree.
-    int ydelta = -(event->angleDelta().y ());
+    int ydelta = -(event->angleDelta ().y ());
 
     retval.setfield ("VerticalScrollCount", octave_value (ydelta / 120));
 

@@ -91,12 +91,26 @@ texi_macros_file=`echo "@texi_macros_file@" | $SED "s|^${prefix}/\\+||"`
 ##        Is it ok to use single quotes here?
 if [ "x@OCTAVE_RELOCATE_ALL@" = "xyes" ]; then
   ## Replace portions of compiler flags that depend on prefix on target
-  cppflags=`echo '@CPPFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
-  fftw3f_ldflags=`echo '@FFTW3F_LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
-  fftw3_ldflags=`echo '@FFTW3_LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
-  flibs=`echo '@FLIBS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
-  ldflags=`echo '@LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
-  oct_link_opts=`echo '@OCT_LINK_OPTS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+  if [ "x@OCTAVE_RELOCATE_WITH_CYGPATH@" = "xyes" ]; then
+    ## Replace all path forms of the prefix
+    cppflags=`echo '@CPPFLAGS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    fftw3f_ldflags=`echo '@FFTW3F_LDFLAGS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    fftw3_ldflags=`echo '@FFTW3_LDFLAGS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    flibs=`echo '@FLIBS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    ldflags=`echo '@LDFLAGS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    oct_link_opts=`echo '@OCT_LINK_OPTS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    mkoctfile_octave_link_deps=`echo '@MKOCTFILE_OCTAVE_LINK_DEPS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    mkoctfile_oct_link_deps=`echo '@MKOCTFILE_OCT_LINK_DEPS@' | sed "s|$(@CYGPATH@ -m @prefix@)|\$\{prefix}|g" | sed "s|$(echo $(@CYGPATH@ -w @prefix@) | sed 's|\\\\|\\\\\\\\|g')|\$\{prefix}|g" | sed "s|$(@CYGPATH@ -u @prefix@)|\$\{prefix}|g" | $SED "s|(@prefix@)|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+  else
+    cppflags=`echo '@CPPFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    fftw3f_ldflags=`echo '@FFTW3F_LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    fftw3_ldflags=`echo '@FFTW3_LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    flibs=`echo '@FLIBS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    ldflags=`echo '@LDFLAGS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    oct_link_opts=`echo '@OCT_LINK_OPTS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    mkoctfile_octave_link_deps=`echo '@MKOCTFILE_OCTAVE_LINK_DEPS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+    mkoctfile_oct_link_deps=`echo '@MKOCTFILE_OCT_LINK_DEPS@' | $SED "s|@prefix@|\$\{prefix\}|g" | $SED 's|\"|\\\\\\\"|g'`
+  fi
 else
   cppflags=`echo '@CPPFLAGS@' | $SED 's|\"|\\\\\\\"|g'`
   fftw3f_ldflags=`echo '@FFTW3F_LDFLAGS@' | $SED 's|\"|\\\\\\\"|g'`
@@ -104,6 +118,8 @@ else
   flibs=`echo '@FLIBS@' | $SED 's|\"|\\\\\\\"|g'`
   ldflags=`echo '@LDFLAGS@' | $SED 's|\"|\\\\\\\"|g'`
   oct_link_opts=`echo '@OCT_LINK_OPTS@' | $SED 's|\"|\\\\\\\"|g'`
+  mkoctfile_octave_link_deps=`echo '@MKOCTFILE_OCTAVE_LINK_DEPS@' | $SED 's|\"|\\\\\\\"|g'`
+  mkoctfile_oct_link_deps=`echo '@MKOCTFILE_OCT_LINK_DEPS@' | $SED 's|\"|\\\\\\\"|g'`
 fi
 
 
@@ -194,8 +210,6 @@ LN_S="@LN_S@"
 MAGICK_CPPFLAGS="@MAGICK_CPPFLAGS@"
 MAGICK_LDFLAGS="@MAGICK_LDFLAGS@"
 MAGICK_LIBS="@MAGICK_LIBS@"
-MKOCTFILE_OCTAVE_LINK_DEPS="@MKOCTFILE_OCTAVE_LINK_DEPS@"
-MKOCTFILE_OCT_LINK_DEPS="@MKOCTFILE_OCT_LINK_DEPS@"
 OCTAVE_LINK_DEPS="@OCTAVE_LINK_DEPS@"
 OCTAVE_LINK_OPTS="@OCTAVE_LINK_OPTS@"
 OCT_LINK_DEPS="@OCT_LINK_DEPS@"
@@ -350,8 +364,8 @@ $SED \
   -e "s|%OCTAVE_CONF_MKOCTFILE_CXX%|\"${CXX}\"|" \
   -e "s|%OCTAVE_CONF_MKOCTFILE_DL_LDFLAGS%|\"${DL_LDFLAGS}\"|" \
   -e "s|%OCTAVE_CONF_MKOCTFILE_F77%|\"${F77}\"|" \
-  -e "s|%OCTAVE_CONF_MKOCTFILE_OCTAVE_LINK_DEPS%|\"${MKOCTFILE_OCTAVE_LINK_DEPS}\"|" \
-  -e "s|%OCTAVE_CONF_MKOCTFILE_OCT_LINK_DEPS%|\"${MKOCTFILE_OCT_LINK_DEPS}\"|" \
+  -e "s|%OCTAVE_CONF_MKOCTFILE_OCTAVE_LINK_DEPS%|\"${mkoctfile_octave_link_deps}\"|" \
+  -e "s|%OCTAVE_CONF_MKOCTFILE_OCT_LINK_DEPS%|\"${mkoctfile_oct_link_deps}\"|" \
   -e "s|%OCTAVE_CONF_MKOCTFILE_RANLIB%|\"${RANLIB}\"|" \
   -e "s|%OCTAVE_CONF_OCTAVE_LINK_DEPS%|\"${OCTAVE_LINK_DEPS}\"|" \
   -e "s|%OCTAVE_CONF_OCTAVE_LINK_OPTS%|\"${OCTAVE_LINK_OPTS}\"|" \

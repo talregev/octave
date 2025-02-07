@@ -36,6 +36,8 @@
 #include <memory>
 #include <map>
 
+#include "panic.h"
+
 #include "data-conv.h"
 #include "idx-vector.h"
 #include "mach-info.h"
@@ -69,9 +71,7 @@ class octave_fcn_cache;
 #include "oct-stream.h"
 #include "ov-base.h"
 
-class
-OCTINTERP_API
-octave_value
+class OCTINTERP_API octave_value
 {
 public:
 
@@ -812,6 +812,9 @@ public:
   int int_value (bool req_int = false, bool frc_str_conv = false) const
   { return m_rep->int_value (req_int, frc_str_conv); }
 
+  int strict_int_value (bool frc_str_conv = false) const
+  { return m_rep->int_value (true, frc_str_conv); }
+
   unsigned int
   uint_value (bool req_int = false, bool frc_str_conv = false) const
   { return m_rep->uint_value (req_int, frc_str_conv); }
@@ -837,6 +840,9 @@ public:
 
   octave_idx_type
   idx_type_value (bool req_int = false, bool frc_str_conv = false) const;
+
+  octave_idx_type
+  strict_idx_type_value (bool frc_str_conv = false) const;
 
   double double_value (bool frc_str_conv = false) const
   { return m_rep->double_value (frc_str_conv); }
@@ -884,6 +890,9 @@ public:
 
   bool bool_value (bool warn = false) const
   { return m_rep->bool_value (warn); }
+
+  bool strict_bool_value () const
+  { return m_rep->bool_value (true); }
 
   boolMatrix bool_matrix_value (bool warn = false) const
   { return m_rep->bool_matrix_value (warn); }
@@ -1104,6 +1113,8 @@ public:
 
   OCTINTERP_API int xint_value (const char *fmt, ...) const;
 
+  OCTINTERP_API int strict_int_value (const char *fmt, ...) const;
+
   OCTINTERP_API unsigned int xuint_value (const char *fmt, ...) const;
 
   OCTINTERP_API int xnint_value (const char *fmt, ...) const;
@@ -1117,6 +1128,8 @@ public:
   OCTINTERP_API uint64_t xuint64_value (const char *fmt, ...) const;
 
   OCTINTERP_API octave_idx_type xidx_type_value (const char *fmt, ...) const;
+
+  OCTINTERP_API octave_idx_type strict_idx_type_value (const char *fmt, ...) const;
 
   OCTINTERP_API double xdouble_value (const char *fmt, ...) const;
 
@@ -1151,6 +1164,8 @@ public:
   xfloat_complex_array_value (const char *fmt, ...) const;
 
   OCTINTERP_API bool xbool_value (const char *fmt, ...) const;
+
+  OCTINTERP_API bool strict_bool_value (const char *fmt, ...) const;
 
   OCTINTERP_API boolMatrix xbool_matrix_value (const char *fmt, ...) const;
 
@@ -1699,11 +1714,15 @@ OV_COMP_BINOP_FN (op_mul_herm)
 extern OCTINTERP_API void install_types (octave::type_info&);
 
 // Templated value extractors.
-// FIXME: would be more consistent to use panic_impossible(), rather than
-//        assert(), but including "error.h" leads to compilation errors.
+
 template <typename Value>
 inline Value octave_value_extract (const octave_value&)
-{ assert (false); }
+{
+  // We can't include error.h in ov.h.  Is there anything better than
+  // panic_impossible that we can do here?
+
+  panic_impossible ();
+}
 
 #define DEF_VALUE_EXTRACTOR(VALUE,MPREFIX)                              \
   template <>                                                           \
@@ -1770,11 +1789,14 @@ DEF_VALUE_EXTRACTOR (SparseComplexMatrix, sparse_complex_matrix)
 DEF_VALUE_EXTRACTOR (SparseBoolMatrix, sparse_bool_matrix)
 #undef DEF_VALUE_EXTRACTOR
 
+// We can't include error.h in ov.h.  Is there anything better than
+// panic_impossible that we can do here?
+
 #define DEF_DUMMY_VALUE_EXTRACTOR(VALUE,DEFVAL)                         \
   template <>                                                           \
   inline VALUE octave_value_extract<VALUE> (const octave_value&)        \
   {                                                                     \
-    assert (false);                                                     \
+    panic_impossible ();                                                \
     return DEFVAL;                                                      \
   }
 

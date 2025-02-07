@@ -35,8 +35,10 @@
 
 // Real diagonal matrix values.
 
-class
-octave_complex_diag_matrix
+extern template class OCTINTERP_EXTERN_TEMPLATE_API
+octave_base_diag<ComplexDiagMatrix, ComplexMatrix>;
+
+class octave_complex_diag_matrix
   : public octave_base_diag<ComplexDiagMatrix, ComplexMatrix>
 {
 public:
@@ -98,7 +100,7 @@ private:
 
   OCTINTERP_API bool chk_valid_scalar (const octave_value&, Complex&) const;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

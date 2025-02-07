@@ -76,6 +76,7 @@ include bug-36025/module.mk
 include bug-38236/module.mk
 include bug-38691/module.mk
 include bug-41723/module.mk
+include bug-44643/module.mk
 include bug-44940/module.mk
 include bug-45351/module.mk
 include bug-46660/module.mk
@@ -84,6 +85,7 @@ include bug-48693/module.mk
 include bug-49379/module.mk
 include bug-50014/module.mk
 include bug-50035/module.mk
+include bug-50395/module.mk
 include bug-50716/module.mk
 include bug-50831/module.mk
 include bug-51192/module.mk
@@ -107,12 +109,12 @@ include bug-59661/module.mk
 include bug-59704/module.mk
 include bug-59937/module.mk
 include bug-60237/module.mk
+include bug-60726/module.mk
 include bug-60882/module.mk
 include bug-61105/module.mk
 include bug-61191/module.mk
 include bug-63841/module.mk
 include bug-65037/module.mk
-include bug-65220/module.mk
 include class-concat/module.mk
 include classdef/module.mk
 include classdef-debug/module.mk
@@ -122,6 +124,7 @@ include colon-op/module.mk
 include ctor-vs-method/module.mk
 include fcn-handle/module.mk
 include file-encoding/module.mk
+include help/module.mk
 include json/module.mk
 include jupyter-notebook/module.mk
 include load-path/module.mk
@@ -135,7 +138,7 @@ include pkg/module.mk
 # run-octave (optional-prepare-commands)
 
 define run-octave-tests
-  ( $(SHELL) ../run-octave $(RUN_OCTAVE_OPTIONS) --no-init-file --silent \
+  ( $(SHELL) ../run-octave $(RUN_OCTAVE_OPTIONS) --no-init-file --quiet  \
       --no-history -p $(abs_top_builddir)/test/mex \
       $(abs_top_srcdir)/test/fntests.m $(abs_top_srcdir)/test "$(1)" ) && \
   if $(AM_V_P); then \

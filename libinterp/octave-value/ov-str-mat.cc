@@ -285,9 +285,15 @@ octave_char_matrix_str::short_disp (std::ostream& os) const
       std::string tmp = chm.row_as_string (0);
 
       // FIXME: should this be configurable?
-      std::size_t max_len = 100;
+      std::size_t max_len = 50;
 
-      os << (tmp.length () > max_len ? tmp.substr (0, 100) : tmp);
+      char quote_char = is_sq_string () ? '\'' : '"';
+
+      os << quote_char;
+      if (tmp.length () > max_len)
+        os << tmp.substr (0, 50) << quote_char << " (truncated)";
+      else
+        os << tmp << quote_char;
     }
 }
 
@@ -312,7 +318,7 @@ octave_char_matrix_str::edit_display (const float_display_format&,
     }
 
   std::string tname = type_name ();
-  dim_vector dv = m_matrix.dims ();
+  const dim_vector& dv = m_matrix.dims ();
   std::string dimstr = dv.str ();
   return "[" + dimstr + " " + tname + "]";
 }
@@ -320,7 +326,7 @@ octave_char_matrix_str::edit_display (const float_display_format&,
 bool
 octave_char_matrix_str::save_ascii (std::ostream& os)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () > 2)
     {
       charNDArray tmp = char_array_value ();
@@ -344,8 +350,7 @@ octave_char_matrix_str::save_ascii (std::ostream& os)
           os << "# length: " << len << "\n";
           std::string tstr = chm.row_as_string (i);
           const char *tmp = tstr.data ();
-          if (tstr.length () > len)
-            panic_impossible ();
+          panic_if (tstr.length () > len);
           os.write (tmp, len);
           os << "\n";
         }
@@ -391,7 +396,7 @@ octave_char_matrix_str::load_ascii (std::istream& is)
         m_matrix = tmp;
       else
         {
-          char *ftmp = tmp.fortran_vec ();
+          char *ftmp = tmp.rwdata ();
 
           octave::skip_preceeding_newline (is);
 
@@ -423,7 +428,7 @@ octave_char_matrix_str::load_ascii (std::istream& is)
           // buffer so that we can properly handle
           // embedded NUL characters.
           charMatrix tmp (1, len);
-          char *ptmp = tmp.fortran_vec ();
+          char *ptmp = tmp.rwdata ();
 
           if (len > 0 && ! is.read (ptmp, len))
             error ("load: failed to load string constant");
@@ -451,7 +456,7 @@ octave_char_matrix_str::load_ascii (std::istream& is)
           // Use this instead of a C-style character buffer so
           // that we can properly handle embedded NUL characters.
           charMatrix tmp (1, len);
-          char *ptmp = tmp.fortran_vec ();
+          char *ptmp = tmp.rwdata ();
 
           if (len > 0 && ! is.read (ptmp, len))
             error ("load: failed to load string constant");
@@ -463,7 +468,7 @@ octave_char_matrix_str::load_ascii (std::istream& is)
         }
     }
   else
-    panic_impossible ();
+    error ("unexpected dimensions keyword (= '%s') octave_char_matrix::load_ascii - please report this bug", kw.c_str ());
 
   return true;
 }
@@ -472,7 +477,7 @@ bool
 octave_char_matrix_str::save_binary (std::ostream& os,
                                      bool /* save_as_floats */)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -529,7 +534,7 @@ octave_char_matrix_str::load_binary (std::istream& is, bool swap,
         }
 
       charNDArray m(dv);
-      char *tmp = m.fortran_vec ();
+      char *tmp = m.rwdata ();
       is.read (tmp, dv.numel ());
 
       if (! is)
@@ -549,7 +554,7 @@ octave_char_matrix_str::load_binary (std::istream& is, bool swap,
           if (swap)
             swap_bytes<4> (&len);
           charMatrix btmp (1, len);
-          char *pbtmp = btmp.fortran_vec ();
+          char *pbtmp = btmp.rwdata ();
           if (! is.read (pbtmp, len))
             return false;
           if (len > max_len)
@@ -572,7 +577,7 @@ octave_char_matrix_str::save_hdf5 (octave_hdf5_id loc_id, const char *name,
 
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);
@@ -680,7 +685,7 @@ octave_char_matrix_str::load_hdf5 (octave_hdf5_id loc_id, const char *name)
         }
 
       charNDArray m (dv);
-      char *str = m.fortran_vec ();
+      char *str = m.rwdata ();
       if (H5Dread (data_hid, H5T_NATIVE_CHAR, octave_H5S_ALL, octave_H5S_ALL,
                    octave_H5P_DEFAULT, str) >= 0)
         {

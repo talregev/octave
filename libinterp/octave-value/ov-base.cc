@@ -100,9 +100,6 @@ std::string btyp_class_name[btyp_num_types+1] =
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_base_value,
                                      "<unknown type>", "unknown");
 
-// DEPRECATED in Octave 8.
-bool Vsparse_auto_mutate = false;
-
 #if defined (HAVE_PRAGMA_GCC_DIAGNOSTIC)
    // Disable this warning for the use of the "count" member variable in
    // the default constructor.  Push the current state so we can restore
@@ -343,7 +340,7 @@ octave_base_value::subsasgn (const std::string& type,
           break;
 
         default:
-          panic_impossible ();
+          error ("unexpected: index not '(', '{', or '.' in octave_base_value::subsasgn - please report this bug");
         }
     }
   else
@@ -532,8 +529,8 @@ octave_base_value::print_info (std::ostream& os,
         err_wrong_type_arg (ee, "octave_base_value::" #F "_value ()", type_name ()); \
       }                                                                 \
                                                                         \
-    static const double out_of_range_top                                \
-      = static_cast<double> (std::numeric_limits<T>::max ()) + 1.;      \
+    static constexpr double out_of_range_top                            \
+      = static_cast<double> (std::numeric_limits<T>::max ()) + 1.0;     \
     if (require_int && octave::math::x_nint (d) != d)                   \
       error_with_cfn ("conversion of %g to " #T " value failed", d);    \
     else if (d < std::numeric_limits<T>::min ())                        \
@@ -859,9 +856,7 @@ octave_base_value::string_value (bool force) const
 std::string
 octave_base_value::xstring_value () const
 {
-  wrong_type_arg_error ();
-
-  return std::string ();
+  err_wrong_type_arg ("octave_base_value::xstring_value()", type_name ());
 }
 
 Array<std::string>
@@ -1169,12 +1164,6 @@ octave_base_value::warn_save (const char *type) const
   ("Octave:load-save-unavailable",
    "%s: saving %s files not available in this version of Octave",
    s_t_name.c_str (), type);
-}
-
-void
-octave_base_value::wrong_type_arg_error () const
-{
-  err_wrong_type_arg (type_name ());
 }
 
 octave_value
@@ -1507,7 +1496,7 @@ make_idx_args (const std::string& type,
           break;
 
         default:
-          panic_impossible ();
+          error ("unexpected: index not '(', '{', or '.' in make_idx_args - please report this bug");
           break;
         }
     }

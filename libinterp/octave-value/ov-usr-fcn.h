@@ -31,10 +31,12 @@
 #include <string>
 
 #include "comment-list.h"
+#include "filepos.h"
 #include "ovl.h"
 #include "ov-fcn.h"
 #include "ov-typeinfo.h"
 #include "symscope.h"
+#include "token.h"
 #include "unwind-prot.h"
 
 class string_vector;
@@ -43,8 +45,10 @@ class octave_value;
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
+class filepos;
 class file_info;
 class stack_frame;
+class tree_identifier;
 class tree_parameter_list;
 class tree_statement_list;
 class tree_evaluator;
@@ -53,8 +57,7 @@ class tree_walker;
 
 OCTAVE_END_NAMESPACE(octave)
 
-class
-octave_user_code : public octave_function
+class octave_user_code : public octave_function
 {
 protected:
 
@@ -78,6 +81,9 @@ public:
   ~octave_user_code ();
 
   bool is_user_code () const { return true; }
+
+  octave::filepos beg_pos () const;
+  octave::filepos end_pos () const;
 
   std::string get_code_line (std::size_t line);
 
@@ -146,8 +152,7 @@ protected:
 
 // Scripts.
 
-class
-octave_user_script : public octave_user_code
+class octave_user_script : public octave_user_code
 {
 public:
 
@@ -194,24 +199,24 @@ public:
 
 private:
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 // User-defined functions.
 
-class
-octave_user_function : public octave_user_code
+class octave_user_function : public octave_user_code
 {
 public:
 
-  octave_user_function (const octave::symbol_scope& scope = octave::symbol_scope::anonymous (),
-                        octave::tree_parameter_list *pl = nullptr,
-                        octave::tree_parameter_list *rl = nullptr,
-                        octave::tree_statement_list *cl = nullptr);
+  octave_user_function (const octave::symbol_scope& scope = octave::symbol_scope::anonymous (), octave::tree_identifier *id = nullptr,
+                        octave::tree_parameter_list *pl = nullptr, octave::tree_parameter_list *rl = nullptr, octave::tree_statement_list *cl = nullptr);
 
   OCTAVE_DISABLE_COPY_MOVE (octave_user_function)
 
   ~octave_user_function ();
+
+  // Declared calling form, generated from the parse tree.
+  std::string signature () const;
 
   octave_function * function_value (bool = false) { return this; }
 
@@ -223,31 +228,17 @@ public:
 
   octave_user_function * define_ret_list (octave::tree_parameter_list *t);
 
-  void stash_fcn_location (int line, int col)
-  {
-    m_location_line = line;
-    m_location_column = col;
-  }
+  void set_fcn_tok (const octave::token& fcn_tok) { m_fcn_tok = fcn_tok; }
+  void set_eq_tok (const octave::token& eq_tok) { m_eq_tok = eq_tok; }
 
-  int beginning_line () const { return m_location_line; }
-  int beginning_column () const { return m_location_column; }
+  void attach_trailing_comments (const octave::comment_list& lst);
 
-  void stash_fcn_end_location (int line, int col)
-  {
-    m_end_location_line = line;
-    m_end_location_column = col;
-  }
-
-  int ending_line () const { return m_end_location_line; }
-  int ending_column () const { return m_end_location_column; }
+  octave::filepos beg_pos () const { return m_fcn_tok.beg_pos(); }
+  // The end_pos function is defined in the octave_user_code class.
 
   void maybe_relocate_end ();
 
   void stash_parent_fcn_scope (const octave::symbol_scope& ps);
-
-  void stash_leading_comment (octave::comment_list *lc) { m_lead_comm = lc; }
-
-  void stash_trailing_comment (octave::comment_list *tc) { m_trail_comm = tc; }
 
   std::string profiler_name () const;
 
@@ -385,9 +376,8 @@ public:
 
   octave::tree_parameter_list * return_list () { return m_ret_list; }
 
-  octave::comment_list * leading_comment () { return m_lead_comm; }
-
-  octave::comment_list * trailing_comment () { return m_trail_comm; }
+  octave::comment_list leading_comments () const { return m_fcn_tok.leading_comments (); }
+  octave::comment_list trailing_comments () const;
 
   // If is_special_expr is true, retrieve the sigular expression that forms the
   // body.  May be null (even if is_special_expr is true).
@@ -411,6 +401,9 @@ private:
   std::string ctor_type_str () const;
   std::string method_type_str () const;
 
+  // Name of this function.
+  octave::tree_identifier *m_id;
+
   // List of arguments for this function.  These are local variables.
   octave::tree_parameter_list *m_param_list;
 
@@ -418,43 +411,38 @@ private:
   // this function.
   octave::tree_parameter_list *m_ret_list;
 
-  // The comments preceding the FUNCTION token.
-  octave::comment_list *m_lead_comm;
+  // We don't keep track of an end token separately because functions
+  // may still be defined without an explicit END.  If there is an
+  // explicit END, the final statement will contain it.
 
-  // The comments preceding the ENDFUNCTION token.
-  octave::comment_list *m_trail_comm;
-
-  // Location where this function was defined.
-  int m_location_line;
-  int m_location_column;
-  int m_end_location_line;
-  int m_end_location_column;
+  octave::token m_fcn_tok;
+  octave::token m_eq_tok;
 
   // True if this function came from a file that is considered to be a
   // system function.  This affects whether we check the time stamp
   // on the file to see if it has changed.
-  bool m_system_fcn_file;
+  bool m_system_fcn_file {false};
 
   // The number of arguments that have names.
   int m_num_named_args;
 
   // TRUE means this is a m_subfunction of a primary function.
-  bool m_subfunction;
+  bool m_subfunction {false};
 
   // TRUE means this is an inline function.
-  bool m_inline_function;
+  bool m_inline_function {false};
 
   // TRUE means this is an anonymous function.
-  bool m_anonymous_function;
+  bool m_anonymous_function {false};
 
   // TRUE means this is a nested function.
-  bool m_nested_function;
+  bool m_nested_function {false};
 
   // Enum describing whether this function is the constructor for class object.
-  class_method_type m_class_constructor;
+  class_method_type m_class_constructor {none};
 
   // Enum describing whether this function is a method for a class.
-  class_method_type m_class_method;
+  class_method_type m_class_method {none};
 
   void maybe_relocate_end_internal ();
 
@@ -467,7 +455,7 @@ public:
 
   void restore_warning_states ();
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

@@ -305,7 +305,7 @@ bp_table::condition_valid (const std::string& cond)
                    "condition is not empty, but has nothing to evaluate");
           else
             {
-              if (stmt_list->length () == 1
+              if (stmt_list->size () == 1
                   && (stmt = stmt_list->front ())
                   && stmt->is_expression ())
                 {
@@ -370,6 +370,9 @@ bp_table::parse_dbfunction_params (const char *who,
       // allow "in" and "at" to be implicit
       if (args(pos).is_string ())
         {
+          // Default value.
+          tok = dbstop_in;
+
           std::string arg = args(pos).string_value ();
           if (arg == "in")
             {
@@ -386,10 +389,16 @@ bp_table::parse_dbfunction_params (const char *who,
               tok = dbstop_if;
               pos++;
             }
-          else if (atoi (args(pos).string_value ().c_str ()) > 0)
-            tok = dbstop_at;
           else
-            tok = dbstop_in;
+            {
+              try
+                {
+                  if (std::stoi (args(pos).string_value ()) > 0)
+                    tok = dbstop_at;
+                }
+              catch (const std::invalid_argument&) { }
+              catch (const std::out_of_range&) { }
+            }
         }
       else
         tok = dbstop_at;
@@ -431,8 +440,27 @@ bp_table::parse_dbfunction_params (const char *who,
               // FIXME: we really want to distinguish number
               // vs. method name here.
 
-              if (atoi (arg.c_str ()) == 0)
+              // FIXME: I'm not sure what the
+
+              bool int_conv_ok = true;
+
+              try
                 {
+                  if (std::stoi (arg) == 0)
+                    int_conv_ok = false;
+                }
+              catch (const std::invalid_argument&)
+                {
+                  int_conv_ok = false;
+                }
+              catch (const std::out_of_range&)
+                {
+                  int_conv_ok = false;
+                }
+
+              if (! int_conv_ok)
+                {
+                  // Assume we are looking at a function name.
                   // We have class and function names but already
                   // stored the class name in fcn_name.
                   class_name = fcn_name;
@@ -458,12 +486,25 @@ bp_table::parse_dbfunction_params (const char *who,
             {
               if (args(pos).is_string ())
                 {
-                  int line = atoi (args(pos).string_value ().c_str ());
+                  std::string str = args(pos).string_value ();
 
-                  if (line > 0)
-                    lines.insert (line);
-                  else
-                    break;        // may be "if" or a method name
+                  try
+                    {
+                      int line = std::stoi (str);
+
+                      if (line > 0)
+                        lines.insert (line);
+                      else
+                        break; // may be "if" or a method name
+                    }
+                  catch (const std::invalid_argument&)
+                    {
+                      break; // may be "if" or a method name
+                    }
+                  catch (const std::out_of_range&)
+                    {
+                      error ("dbstop: location value out of range '%s'", str.c_str ());
+                    }
                 }
               else if (args(pos).isnumeric ())
                 {
@@ -624,12 +665,10 @@ bp_table::process_id_list (const char *who,
 
 // Return the sub/nested/main function of MAIN_FCN that contains
 // line number LINENO of the source file.
-// If END_LINE != 0, *END_LINE is set to last line of the returned function.
+// If FOUND_ENDING_LINE != 0, *FOUND_ENDING_LINE is set to last line of the returned function.
 
 static octave_user_code *
-find_fcn_by_line (octave_user_code *main_fcn,
-                  int lineno,
-                  int *end_line = nullptr)
+find_fcn_by_line (octave_user_code *main_fcn, int lineno, int *found_end_line = nullptr)
 {
   octave_user_code *retval = nullptr;
   octave_user_code *next_fcn = nullptr;  // 1st function starting after lineno
@@ -645,21 +684,26 @@ find_fcn_by_line (octave_user_code *main_fcn,
           auto *dbg_subfcn = str_val_p.second.user_function_value ();
 
           // Check if lineno is within dbg_subfcn.
-          // FIXME: we could break when beginning_line() > lineno,
+          // FIXME: we could break when the beginning line > lineno,
           // but that makes the code "fragile"
           // if the order of walking subfcns changes,
           // for a minor speed improvement in non-critical code.
-          if (dbg_subfcn->ending_line () < earliest_end
-              && dbg_subfcn->ending_line () >= lineno
-              && dbg_subfcn->beginning_line () <= lineno)
+
+          filepos beg_pos = dbg_subfcn->beg_pos ();
+          filepos end_pos = dbg_subfcn->end_pos ();
+
+          int beginning_line = beg_pos.line ();
+          int ending_line = end_pos.line ();
+
+          if (ending_line < earliest_end && ending_line >= lineno && beginning_line <= lineno)
             {
-              earliest_end = dbg_subfcn->ending_line ();
+              earliest_end = ending_line;
               retval = find_fcn_by_line (dbg_subfcn, lineno, &earliest_end);
             }
 
           // Find the first fcn starting after lineno.
           // This is used if line is not inside any function.
-          if (dbg_subfcn->beginning_line () >= lineno && ! next_fcn)
+          if (beginning_line >= lineno && ! next_fcn)
             next_fcn = dbg_subfcn;
         }
     }
@@ -668,8 +712,11 @@ find_fcn_by_line (octave_user_code *main_fcn,
   // or in the main function, which we check now.
   if (main_fcn->is_user_function ())
     {
-      int e = dynamic_cast<octave_user_function *> (main_fcn)->ending_line ();
-      if (e >= lineno && e < earliest_end)
+      filepos end_pos = dynamic_cast<octave_user_function *> (main_fcn)->end_pos ();
+
+      int ending_line = end_pos.line ();
+
+      if (ending_line >= lineno && ending_line < earliest_end)
         retval = main_fcn;
 
       if (! retval)
@@ -681,8 +728,8 @@ find_fcn_by_line (octave_user_code *main_fcn,
         retval = main_fcn;
     }
 
-  if (end_line && earliest_end < *end_line)
-    *end_line = earliest_end;
+  if (found_end_line && earliest_end < *found_end_line)
+    *found_end_line = earliest_end;
 
   return retval;
 }
@@ -750,7 +797,14 @@ public:
     if (is_function ())
       return find_fcn_by_line (m_fcn, line);
 
-    return m_cls.get_method (line).user_code_value (true);
+    if (line < 0)
+      return nullptr;
+
+    octave_value method = m_cls.get_method (line);
+    if (method.is_function_handle ())
+      return method.user_function_value ()->user_code_value (true);
+    else
+      return method.user_code_value (true);
   }
 
   bool is_function () const { return m_fcn; }
@@ -787,15 +841,39 @@ private:
   {
       if (m_methods_cache.empty ())
         {
-          // Not the most effecient, but reuses code:
+          // Not the most efficient, but reuses code:
           const std::map<std::string, cdef_method>& map
             = m_cls.get_method_map (false, true);
-          for (auto iter = map.cbegin (); iter != map.cend (); ++iter)
+          for (const auto& meth : map)
             {
               octave_user_code *fcn
-                = m_cls.get_method (iter->first).user_code_value (true);
+                = m_cls.get_method (meth.first).user_code_value (true);
               if (fcn != nullptr)
                 m_methods_cache.push_back (fcn);
+            }
+
+          // Check get and set methods of properties
+          const std::map<property_key, cdef_property>& prop_map
+            = m_cls.get_property_map (cdef_class::property_all);
+          for (const auto& prop : prop_map)
+            {
+              octave_value get_meth = prop.second.get ("GetMethod");
+              if (get_meth.is_function_handle ())
+                {
+                  octave_user_code *fcn
+                    = get_meth.user_function_value ()->user_code_value (true);
+                  if (fcn != nullptr)
+                    m_methods_cache.push_back (fcn);
+                }
+
+              octave_value set_meth = prop.second.get ("SetMethod");
+              if (set_meth.is_function_handle ())
+                {
+                  octave_user_code *fcn
+                    = set_meth.user_function_value ()->user_code_value (true);
+                  if (fcn != nullptr)
+                    m_methods_cache.push_back (fcn);
+                }
             }
         }
   }
@@ -825,6 +903,10 @@ bp_table::add_breakpoints_in_function (const std::string& fcn_ident,
     {
       octave_user_code *dbg_fcn = user_code (lineno);
 
+      if (! dbg_fcn)
+        error ("add_breakpoints_in_function: unable to find function '%s'\n",
+               fcn_ident.c_str ());
+
       // We've found the right (sub)function.  Now insert the breakpoint.
       bp_lines line_info;
       line_info.insert (lineno);
@@ -832,14 +914,13 @@ bp_table::add_breakpoints_in_function (const std::string& fcn_ident,
       bp_lines ret_one;
 
       std::string ident = fcn_ident;
-      if (! user_code.is_function () && fcn_ident[0] != '@' && dbg_fcn)
+      if (! user_code.is_function () && fcn_ident[0] != '@')
         {
           // identifier of the form @class_name/method_name
           ident = "@" + fcn_ident + "/" + dbg_fcn->name ();
         }
 
-      if (dbg_fcn && add_breakpoint_1 (dbg_fcn, ident, line_info,
-                                       condition, ret_one))
+      if (add_breakpoint_1 (dbg_fcn, ident, line_info, condition, ret_one))
         {
           if (! ret_one.empty ())
             {
@@ -870,7 +951,7 @@ bp_table::add_breakpoint_in_file (const std::string& file,
     return 0;
 
   std::string fcn_ident;
-  if (info.class_name ().empty ())
+  if (info.class_name ().empty () || info.fcn ()[0] == '@')
     fcn_ident = info.fcn ();
   else
     fcn_ident = "@" + info.class_name () + "/" + info.fcn ();
@@ -892,7 +973,7 @@ bp_table::add_breakpoints_in_file (const std::string& file,
     return bp_lines ();
 
   std::string fcn_ident;
-  if (info.class_name ().empty ())
+  if (info.class_name ().empty () || info.fcn ()[0] == '@')
     fcn_ident = info.fcn ();
   else
     fcn_ident = "@" + info.class_name () + "/" + info.fcn ();

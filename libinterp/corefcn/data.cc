@@ -96,7 +96,7 @@ If the optional argument @var{dim} is supplied, work along dimension @var{dim}.
     print_usage ();
 
   int dim = (nargin == 1 ? -1
-             : args(1).xint_value ("all: DIM must be an integer")-1);
+             : args(1).strict_int_value ("all: DIM must be an integer")-1);
 
   if (dim < -1)
     error ("all: invalid dimension argument = %d", dim + 1);
@@ -161,7 +161,7 @@ any (eye (2, 4), 2)
     print_usage ();
 
   int dim = (nargin == 1 ? -1
-             : args(1).xint_value ("any: DIM must be an integer")-1);
+             : args(1).strict_int_value ("any: DIM must be an integer")-1);
 
   if (dim < -1)
     error ("any: invalid dimension argument = %d", dim + 1);
@@ -656,8 +656,23 @@ periodic, @code{mod} is a better choice.
 
 #undef MAKE_INT_BRANCH
 
-        default:
-          panic_impossible ();
+          case btyp_double:
+          case btyp_float:
+          case btyp_complex:
+          case btyp_float_complex:
+          case btyp_bool:
+          case btyp_char:
+          case btyp_struct:
+          case btyp_cell:
+          case btyp_func_handle:
+          case btyp_unknown:
+            error ("rem: unexpected: found %s instead of integer - please report this bug", btyp_class_name[btyp0].c_str ());
+            break;
+
+          // We should have handled all possible enum values above.
+          // Rely on compiler diagnostics to warn if we haven't.  For
+          // example, GCC's -Wswitch option, enabled by -Wall, will
+          // provide a warning.
         }
     }
   else if (args(0).is_single_type () || args(1).is_single_type ())
@@ -840,8 +855,23 @@ negative numbers or when the values are periodic.
 
 #undef MAKE_INT_BRANCH
 
-        default:
-          panic_impossible ();
+          case btyp_double:
+          case btyp_float:
+          case btyp_complex:
+          case btyp_float_complex:
+          case btyp_bool:
+          case btyp_char:
+          case btyp_struct:
+          case btyp_cell:
+          case btyp_func_handle:
+          case btyp_unknown:
+            error ("mod: unexpected: found %s instead of integer - please report this bug", btyp_class_name[btyp0].c_str ());
+            break;
+
+          // We should have handled all possible enum values above.
+          // Rely on compiler diagnostics to warn if we haven't.  For
+          // example, GCC's -Wswitch option, enabled by -Wall, will
+          // provide a warning.
         }
     }
   else if (args(0).is_single_type () || args(1).is_single_type ())
@@ -1237,7 +1267,7 @@ Given a matrix argument, instead of a vector, @code{diag} extracts the
     retval = args(0).diag ();
   else if (nargin == 2)
     {
-      octave_idx_type k = args(1).xidx_type_value ("diag: invalid argument K");
+      octave_idx_type k = args(1).strict_idx_type_value ("diag: invalid argument K");
 
       retval = args(0).diag (k);
     }
@@ -1248,8 +1278,8 @@ Given a matrix argument, instead of a vector, @code{diag} extracts the
       if (arg0.ndims () != 2 || (arg0.rows () != 1 && arg0.columns () != 1))
         error ("diag: V must be a vector");
 
-      octave_idx_type m = args(1).xidx_type_value ("diag: invalid dimension M");
-      octave_idx_type n = args(2).xidx_type_value ("diag: invalid dimension N");
+      octave_idx_type m = args(1).strict_idx_type_value ("diag: invalid dimension M");
+      octave_idx_type n = args(2).strict_idx_type_value ("diag: invalid dimension N");
 
       retval = arg0.diag (m, n);
     }
@@ -2006,7 +2036,7 @@ do_cat (const octave_value_list& xargs, int dim, std::string fname)
               // the right type.
               tmp = cat_op (tmp, args(j), ra_idx);
 
-              dim_vector dv_tmp = args(j).dims ();
+              const dim_vector& dv_tmp = args(j).dims ();
 
               if (dim >= dv_len)
                 {
@@ -2345,7 +2375,7 @@ cat (4, ones (2, 2), zeros (2, 2))
   if (args.length () == 0)
     print_usage ();
 
-  int dim = args(0).xint_value ("cat: DIM must be an integer") - 1;
+  int dim = args(0).strict_int_value ("cat: DIM must be an integer") - 1;
 
   if (dim < 0)
     error ("cat: DIM must be a valid dimension");
@@ -2938,11 +2968,11 @@ or no argument, @code{size_equal} returns true.
 
   if (nargin >= 1)
     {
-      dim_vector a_dims = args(0).dims ();
+      const dim_vector& a_dims = args(0).dims ();
 
       for (int i = 1; i < nargin; ++i)
         {
-          dim_vector b_dims = args(i).dims ();
+          const dim_vector& b_dims = args(i).dims ();
 
           if (a_dims != b_dims)
             return ovl (false);
@@ -3004,9 +3034,14 @@ for empty matrices @code{nnz} will report 0, but @code{nzmax} will report 1.
 DEFUN (rows, args, ,
        doc: /* -*- texinfo -*-
 @deftypefn {} {@var{nr} =} rows (@var{A})
+@deftypefnx () {@var{nr} =} height (@var{A})
 Return the number of rows of @var{A}.
 
 This is equivalent to @code{size (@var{A}, 1)}.
+
+Programming Note: @code{height} is an alias for @code{rows} and can be
+used interchangeably.
+
 @seealso{columns, size, length, numel, isscalar, isvector, ismatrix}
 @end deftypefn */)
 {
@@ -3018,6 +3053,8 @@ This is equivalent to @code{size (@var{A}, 1)}.
 
   return ovl ((octave_value (args(0)).size ())(0));
 }
+
+DEFALIAS (height, rows);
 
 /*
 %!assert (rows (ones (2,5)), 2)
@@ -3049,9 +3086,14 @@ This is equivalent to @code{size (@var{A}, 1)}.
 DEFUN (columns, args, ,
        doc: /* -*- texinfo -*-
 @deftypefn {} {@var{nc} =} columns (@var{A})
+@deftypefnx {} {@var{nc} =} width (@var{A})
 Return the number of columns of @var{A}.
 
 This is equivalent to @code{size (@var{A}, 2)}.
+
+Programming Note: @code{width} is an alias for @code{columns} and can be
+used interchangeably.
+
 @seealso{rows, size, length, numel, isscalar, isvector, ismatrix}
 @end deftypefn */)
 {
@@ -3063,6 +3105,8 @@ This is equivalent to @code{size (@var{A}, 2)}.
 
   return ovl ((octave_value (args(0)).size ())(1));
 }
+
+DEFALIAS (width, columns);
 
 DEFUN (sum, args, ,
        doc: /* -*- texinfo -*-
@@ -5670,9 +5714,9 @@ is returned.
   octave_value arg_1 = args(0);
   octave_value arg_2 = args(1);
 
-  dim_vector sz1 = arg_1.dims ();
+  const dim_vector& sz1 = arg_1.dims ();
   bool isvector1 = sz1.ndims () == 2 && (sz1(0) == 1 || sz1(1) == 1);
-  dim_vector sz2 = arg_2.dims ();
+  const dim_vector& sz2 = arg_2.dims ();
   bool isvector2 = sz2.ndims () == 2 && (sz2(0) == 1 || sz2(1) == 1);
 
   if (! isvector1 || ! isvector2)
@@ -7075,13 +7119,21 @@ ordered lists.
             error (R"(sort: MODE must be either "ascend" or "descend")");
         }
       else
-        dim = args(1).nint_value () - 1;
+        {
+          // Require dim to be positive real scalar.
+          if (! args(1).is_scalar_type () || args(1).iscomplex ()
+              || args(1).double_value () <= 0)
+            error ("sort: DIM must be a positive scalar integer");
+
+          // Forbid fractional value input, also nan input.
+          dim = args(1).strict_int_value ("sort: DIM must be a positive scalar integer") - 1;
+        }
     }
 
   if (nargin > 2)
     {
       if (have_sortmode)
-        error ("sort: DIM must be a valid dimension");
+        error ("sort: DIM argument must precede MODE argument");
 
       std::string mode = args(2).xstring_value ("sort: MODE must be a string");
 
@@ -7098,11 +7150,6 @@ ordered lists.
     {
       dim = dv.first_non_singleton ();
     }
-  else
-    {
-      if (dim < 0)
-        error ("sort: DIM must be a valid dimension");
-    }
 
   octave_value_list retval (return_idx ? 2 : 1);
 
@@ -7113,7 +7160,8 @@ ordered lists.
       // NOTE: Can not change this to ovl() call because arg.sort changes sidx
       //       and objects are declared const in ovl prototype.
       retval(0) = arg.sort (sidx, dim, smode);
-      retval(1) = idx_vector (sidx, dv(dim));  // No checking, extent is known.
+      // Check for index dimension extent. Set to 1 for dimension >= ndims ()
+      retval(1) = idx_vector (sidx, (dim < arg.ndims ()) ? dv(dim) : 1);
     }
   else
     retval = ovl (arg.sort (dim, smode));
@@ -7340,8 +7388,32 @@ ordered lists.
 %! [v, i] = sort (a);
 %! assert (i, [1, 4, 2, 5, 3]);
 
-%!error sort ()
-%!error sort (1, 2, 3, 4)
+## Test sort dimension being very large
+%!test <*65712>
+%! A = [1 2; 3 4];
+%! assert (sort (A, 100), A)
+%! assert (sort (A, inf), A)
+%! [B, idx] = sort (A, 100);
+%! assert (B, A);
+%! assert (idx, ones (2))
+%! [B, idx] = sort (A, inf);
+%! assert (B, A);
+%! assert (idx, ones (2))
+
+%!error <Invalid call> sort ()
+%!error <Invalid call> sort (1, 2, 3, 4)
+%!error <MODE must be either "ascend" or "descend"> sort (1, "foobar")
+%!error <DIM must be a positive scalar integer> sort (1, [1 2 3])
+%!error <DIM must be a positive scalar integer> sort ([1 2; 3 4], -inf)
+%!error <DIM must be a positive scalar integer> sort ([1 2; 3 4], 0)
+%!error <DIM must be a positive scalar integer> sort ([1 2; 3 4], 1+i)
+%!error <DIM must be a positive scalar integer> sort ([1 2; 3 4], 1.234)
+%!error <DIM must be a positive scalar integer> sort ([1 2; 3 4], nan)
+%!error <DIM argument must precede MODE argument> sort (1, "ascend", 1)
+%!error <MODE must be a string> sort (1, 1, 1)
+%!error <MODE must be either "ascend" or "descend"> sort (1, 1, "foobar")
+%!error <DIM must be a positive scalar integer> sort (1, 0)
+
 */
 
 // Sort the rows of the matrix @var{a} according to the order
@@ -7404,10 +7476,10 @@ get_sort_mode_option (const octave_value& arg)
     smode = ASCENDING;
   else if (mode == "descend")
     smode = DESCENDING;
-  else if (mode == "either")
+  else if (mode == "either" || mode == "monotonic")
     smode = UNSORTED;
   else
-    error (R"(issorted: MODE must be "ascend", "descend", or "either")");
+    error (R"(issorted: MODE must be "ascend", "descend", "monotonic", or "either")");
 
   return smode;
 }
@@ -7418,7 +7490,9 @@ DEFUN (issorted, args, ,
 @deftypefnx {} {@var{tf} =} issorted (@var{A}, @var{mode})
 @deftypefnx {} {@var{tf} =} issorted (@var{A}, "rows", @var{mode})
 Return true if the vector @var{A} is sorted according to @var{mode}, which
-may be either @qcode{"ascend"}, @qcode{"descend"}, or @qcode{"either"}.
+may be either @qcode{"ascend"}, @qcode{"descend"}, @qcode{"either"}, or
+@qcode{"monotonic"} (@qcode{"either"} and @qcode{"monotonic"} are
+equivalent).
 
 By default, @var{mode} is @qcode{"ascend"}.  NaNs are treated in the same
 manner as @code{sort}.
@@ -7511,6 +7585,12 @@ This function does not support sparse matrices.
 %!assert (issorted (fliplr (sv), "either"))
 %!assert (issorted (sv', "either"))
 %!assert (issorted (fliplr (sv)', "either"))
+%!assert (issorted (sm, "rows", "monotonic"))
+%!assert (issorted (flipud (sm), "rows", "monotonic"))
+%!assert (issorted (sv, "either"))
+%!assert (issorted (fliplr (sv), "monotonic"))
+%!assert (issorted (sv', "either"))
+%!assert (issorted (fliplr (sv)', "monotonic"))
 
 %!assert (issorted ([]))
 %!assert (issorted ([], "rows"))
@@ -7874,7 +7954,7 @@ do_accumdim_sum (const idx_vector& idx, const NDT& vals,
   else if (idx.extent (n) > n)
     error ("accumdim: index out of range");
 
-  dim_vector vals_dim = vals.dims ();
+  const dim_vector& vals_dim = vals.dims ();
   dim_vector rdv = vals_dim;
 
   if (dim < 0)
@@ -7958,7 +8038,7 @@ do_merge (const Array<bool>& mask,
           const NDT& tval, const NDT& fval)
 {
   typedef typename NDT::element_type T;
-  dim_vector dv = mask.dims ();
+  const dim_vector& dv = mask.dims ();
   NDT retval (dv);
 
   bool tscl = tval.numel () == 1;
@@ -7967,7 +8047,7 @@ do_merge (const Array<bool>& mask,
   if ((! tscl && tval.dims () != dv) || (! fscl && fval.dims () != dv))
     error ("merge: MASK, TVAL, and FVAL dimensions must match");
 
-  T *rv = retval.fortran_vec ();
+  T *rv = retval.rwdata ();
   octave_idx_type n = retval.numel ();
 
   const T *tv = tval.data ();
@@ -8140,7 +8220,7 @@ do_sparse_diff (const SparseT& array, octave_idx_type order,
           idx_vector col1 (':'), col2 (':'), sl1 (1, k), sl2 (0, k-1);
           retval = SparseT (retval.index (col1, sl1))
                    - SparseT (retval.index (col2, sl2));
-          error_unless (retval.columns () == k-1);
+          panic_unless (retval.columns () == k-1);
           order--;
           k--;
         }
@@ -8153,7 +8233,7 @@ do_sparse_diff (const SparseT& array, octave_idx_type order,
           idx_vector col1 (':'), col2 (':'), sl1 (1, k), sl2 (0, k-1);
           retval = SparseT (retval.index (sl1, col1))
                    - SparseT (retval.index (sl2, col2));
-          error_unless (retval.rows () == k-1);
+          panic_unless (retval.rows () == k-1);
           order--;
           k--;
         }
@@ -8222,7 +8302,7 @@ do_diff (const octave_value& array, octave_idx_type order,
       else if (array.is_uint64_type ())
         retval = array.uint64_array_value ().diff (order, dim);
       else
-        panic_impossible ();
+        error ("diff: unexpected integer type - please report this bug");
     }
   else if (array.issparse ())
     {
@@ -8348,7 +8428,7 @@ do_repelems (const Array<T>& src, const Array<octave_idx_type>& rep)
     }
 
   retval.clear (1, l);
-  T *dest = retval.fortran_vec ();
+  T *dest = retval.rwdata ();
   l = 0;
   for (octave_idx_type i = 0; i < n; i++)
     {
@@ -8492,7 +8572,7 @@ Encode a double matrix or array @var{x} into the base64 format string
 #undef MAKE_INT_BRANCH
 
                     else
-                      panic_impossible ();
+                      error ("base_64_decode: unexpected integer type - please report this bug");
     }
   else if (args(0).is_single_type ())
     {
@@ -8566,7 +8646,7 @@ dimensions of the decoded array.
   if (nargin < 1 || nargin > 2)
     print_usage ();
 
-  std::string str = args(0).string_value ();
+  std::string str = args(0).xstring_value ("base64_decode: first argument must be a character array");
 
   Array<double> retval = base64_decode (str);
 
@@ -8600,7 +8680,7 @@ dimensions of the decoded array.
 %!error base64_decode ()
 %!error base64_decode (1,2,3)
 %!error base64_decode (1, "this is not a valid set of dimensions")
-%!error <input was not valid base64> base64_decode (1)
+%!error <first argument must be a character array> base64_decode (1)
 %!error <input was not valid base64> base64_decode ("AQ=")
 %!error <incorrect input size> base64_decode ("AQ==")
 */
@@ -8622,7 +8702,7 @@ dimensions of the decoded array.
   if (nargin < 1 || nargin > 2)
     print_usage ();
 
-  std::string str = args(0).string_value ();
+  std::string str = args(0).xstring_value ("__base64_decode_bytes__: first argument must be a character array");
 
   intNDArray<octave_uint8> retval = base64_decode_bytes (str);
 
@@ -8656,7 +8736,7 @@ dimensions of the decoded array.
 %!error __base64_decode_bytes__ ()
 %!error __base64_decode_bytes__ (1,2,3)
 %!error __base64_decode_bytes__ (1, "this is not a valid set of dimensions")
-%!error <input was not valid base64> __base64_decode_bytes__ (1)
+%!error <first argument must be a character array> __base64_decode_bytes__ (1)
 */
 
 OCTAVE_END_NAMESPACE(octave)

@@ -41,9 +41,7 @@ class octave_value_list;
 
 // Dynamically-linked functions.
 
-class
-OCTINTERP_API
-octave_dld_function : public octave_builtin
+class OCTINTERP_API octave_dld_function : public octave_builtin
 {
 public:
 
@@ -106,7 +104,7 @@ private:
   // on the file to see if it has changed.
   bool m_system_fcn_file;
 
-  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA
+  DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA_API (OCTINTERP_API)
 };
 
 #endif

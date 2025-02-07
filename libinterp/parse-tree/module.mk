@@ -23,6 +23,7 @@ PARSE_TREE_INC = \
   %reldir%/pt-colon.h \
   %reldir%/pt-const.h \
   %reldir%/pt-decl.h \
+  %reldir%/pt-delimiter-list.h \
   %reldir%/pt-eval.h \
   %reldir%/pt-except.h \
   %reldir%/pt-exp.h \
@@ -41,6 +42,7 @@ PARSE_TREE_INC = \
   %reldir%/pt-unop.h \
   %reldir%/pt-walk.h \
   %reldir%/pt.h \
+  %reldir%/separator-list.h \
   %reldir%/token.h
 
 
@@ -87,8 +89,7 @@ PARSE_TREE_SRC = \
   %reldir%/pt-tm-const.cc \
   %reldir%/pt-unop.cc \
   %reldir%/pt-walk.cc \
-  %reldir%/pt.cc \
-  %reldir%/token.cc
+  %reldir%/pt.cc
 
 ## Special rules for sources which must be built before rest of compilation.
 

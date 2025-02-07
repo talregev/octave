@@ -52,9 +52,6 @@
 #include "ovl.h"
 #include "oct-hdf5.h"
 #include "ops.h"
-#include "ov-base.h"
-#include "ov-base-mat.h"
-#include "ov-base-mat.cc"
 #include "ov-bool.h"
 #include "ov-bool-mat.h"
 #include "ov-re-mat.h"
@@ -64,8 +61,6 @@
 #include "ls-oct-text.h"
 #include "ls-hdf5.h"
 #include "ls-utils.h"
-
-template class octave_base_matrix<boolNDArray>;
 
 DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA (octave_bool_matrix,
                                      "bool matrix", "logical");
@@ -237,7 +232,7 @@ octave_bool_matrix::print_raw (std::ostream& os,
 bool
 octave_bool_matrix::save_ascii (std::ostream& os)
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () > 2)
     {
       NDArray tmp = array_value ();
@@ -336,10 +331,10 @@ octave_bool_matrix::load_ascii (std::istream& is)
       else if (nr == 0 || nc == 0)
         m_matrix = boolMatrix (nr, nc);
       else
-        panic_impossible ();
+        error ("unexpected dimensions in octave_bool_matrix::load_ascii - please report this bug");
     }
   else
-    panic_impossible ();
+    error ("unexpected dimensions keyword (= '%s') octave_bool_matrix::load_ascii - please report this bug", kw.c_str ());
 
   return true;
 }
@@ -348,7 +343,7 @@ bool
 octave_bool_matrix::save_binary (std::ostream& os, bool /* save_as_floats */)
 {
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   if (dv.ndims () < 1)
     return false;
 
@@ -414,7 +409,7 @@ octave_bool_matrix::load_binary (std::istream& is, bool swap,
   if (! is.read (htmp, nel))
     return false;
   boolNDArray m(dv);
-  bool *mtmp = m.fortran_vec ();
+  bool *mtmp = m.rwdata ();
   for (octave_idx_type i = 0; i < nel; i++)
     mtmp[i] = (htmp[i] ? 1 : 0);
   m_matrix = m;
@@ -430,7 +425,7 @@ octave_bool_matrix::save_hdf5 (octave_hdf5_id loc_id, const char *name,
 
 #if defined (HAVE_HDF5)
 
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
   int empty = save_hdf5_empty (loc_id, name, dv);
   if (empty)
     return (empty > 0);

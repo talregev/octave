@@ -68,13 +68,13 @@ filter (MArray<T>& b, MArray<T>& a, MArray<T>& x, MArray<T>& si,
   if (norm == static_cast<T> (0.0))
     error ("filter: the first element of A must be nonzero");
 
-  dim_vector x_dims = x.dims ();
+  const dim_vector& x_dims = x.dims ();
   if (dim < 0 || dim > x_dims.ndims ())
     error ("filter: DIM must be a valid dimension");
 
   octave_idx_type x_len = x_dims(dim);
 
-  dim_vector si_dims = si.dims ();
+  const dim_vector& si_dims = si.dims ();
   octave_idx_type si_len = si_dims(0);
 
   if (si_len != ab_len - 1)
@@ -164,8 +164,8 @@ filter (MArray<T>& b, MArray<T>& a, MArray<T>& x, MArray<T>& si,
       // is common to both branches can be pulled out here without affecting
       // correctness or speed.
 
-      T *py = y.fortran_vec ();
-      T *psi = si.fortran_vec ();
+      T *py = y.rwdata ();
+      T *psi = si.rwdata ();
       const T *pb = b.data ();
       const T *px = x.data ();
       psi += si_offset;
@@ -239,7 +239,7 @@ template <typename T>
 MArray<T>
 filter (MArray<T>& b, MArray<T>& a, MArray<T>& x, int dim = -1)
 {
-  dim_vector x_dims = x.dims ();
+  const dim_vector& x_dims = x.dims ();
 
   if (dim < 0)
     dim = x_dims.first_non_singleton ();
@@ -369,11 +369,11 @@ H(z) = ---------------------
     print_usage ();
 
   int dim;
-  dim_vector x_dims = args(2).dims ();
+  const dim_vector& x_dims = args(2).dims ();
 
   if (nargin == 5)
     {
-      dim = args(4).nint_value () - 1;
+      dim = args(4).strict_int_value () - 1;
       if (dim < 0 || dim >= x_dims.ndims ())
         error ("filter: DIM must be a valid dimension");
     }

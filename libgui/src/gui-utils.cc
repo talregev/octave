@@ -35,6 +35,52 @@
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 
+OCTGUI_API void
+combobox_insert_current_item (QComboBox *cb, const QString &text)
+{
+  QString item_text = text;
+
+  if (item_text.isEmpty ())
+    item_text = cb->currentText ();
+
+  int idx;
+  while ((idx = cb->findText (item_text)) >= 0)
+    cb->removeItem (idx);
+
+  cb->insertItem (0, item_text);
+  cb->setCurrentIndex (0);
+}
+
+OCTGUI_API void
+combobox_update (QComboBox *cb, const int cb_length)
+{
+  if (! cb || cb_length == 0)
+    return;
+
+  // Remove possible empty entries from the cb list
+  int index;
+  while ((index = cb->findText (QString ())) >= 0)
+    cb->removeItem (index);
+
+  // Get current text and return if it is empty
+  QString text = cb->currentText ();
+
+  if (text.isEmpty ())
+    return;
+
+  // Remove occurrences of the current text in the cb list
+  while ((index = cb->findText (text)) >= 0)
+    cb->removeItem (index);
+
+  // Remove the last entry from the end if the list is full
+  if (cb->count () == cb_length)
+    cb->removeItem (cb_length -1);
+
+  // Insert new item at the beginning and set it as current item
+  cb->insertItem (0, text);
+  cb->setCurrentIndex (0);
+}
+
 OCTGUI_API QColor
 interpolate_color (const QColor& col1, const QColor& col2,
                    double fs, double fv)
@@ -74,7 +120,7 @@ adjust_to_screen (QRect& actual_geometry, const QRect& default_geometry)
     = actual_geometry.width () * actual_geometry.height ();
   QRect intersection;
 
-  foreach (const QScreen *screen, QGuiApplication::screens())
+  for (const QScreen *screen : QGuiApplication::screens ())
     {
       QRect screen_geom = screen->availableGeometry ();
       intersection = screen_geom.intersected (actual_geometry);

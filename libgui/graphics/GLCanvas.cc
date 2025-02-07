@@ -70,7 +70,7 @@ GLWidget::draw (graphics_object go)
     {
       begin_rendering ();
 
-      unwind_action reset_current ([=] () { end_rendering (); });
+      unwind_action reset_current ([this] () { end_rendering (); });
 
       graphics_object fig = go.get_ancestor ("figure");
       double dpr = fig.get ("__device_pixel_ratio__").double_value ();
@@ -95,7 +95,7 @@ GLWidget::do_getPixels (graphics_object go)
 
       begin_rendering ();
 
-      unwind_action reset_current ([=] () { end_rendering (); });
+      unwind_action reset_current ([this] () { end_rendering (); });
 
       // When the figure is not visible or its size is frozen for printing,
       // we use a framebuffer object to make sure we are rendering on a
@@ -109,7 +109,7 @@ GLWidget::do_getPixels (graphics_object go)
 
           fbo.bind ();
 
-          unwind_action release_fbo ([&] () { fbo.release (); });
+          unwind_action release_fbo ([&fbo] () { fbo.release (); });
 
           m_renderer.set_viewport (pos(2), pos(3));
           m_renderer.set_device_pixel_ratio (dpr);
@@ -138,7 +138,7 @@ GLWidget::do_print (const QString& file_cmd, const QString& term,
     {
       begin_rendering ();
 
-      unwind_action reset_current ([=] () { end_rendering (); });
+      unwind_action reset_current ([this] () { end_rendering (); });
 
       graphics_object fig (go.get_ancestor ("figure"));
 
@@ -160,7 +160,7 @@ GLWidget::do_print (const QString& file_cmd, const QString& term,
 
           fbo.bind ();
 
-          unwind_action release_fbo ([&] () { fbo.release (); });
+          unwind_action release_fbo ([&fbo] () { fbo.release (); });
 
           octave::gl2ps_print (m_glfcns, fig, file_cmd.toStdString (),
                                term.toStdString ());
@@ -175,7 +175,7 @@ GLWidget::selectFromAxes (const graphics_object& ax, const QPoint& pt)
     {
       begin_rendering ();
 
-      unwind_action reset_current ([=] () { end_rendering (); });
+      unwind_action reset_current ([this] () { end_rendering (); });
 
       octave::opengl_selector s (m_glfcns);
 
@@ -202,7 +202,7 @@ GLWidget::drawZoomBox (const QPoint& p1, const QPoint& p2)
 
   begin_rendering ();
 
-  unwind_action reset_current ([=] () { end_rendering (); });
+  unwind_action reset_current ([this] () { end_rendering (); });
 
   m_renderer.draw_zoom_box (width (), height (),
                             p1.x (), p1.y (), p2.x (), p2.y (),
@@ -348,8 +348,8 @@ GLCanvas::do_print (const QString& file_cmd, const QString& term,
     }
   catch (octave::execution_exception& ee)
     {
-      emit interpreter_event
-        ([=] ()
+      Q_EMIT interpreter_event
+        ([ee] ()
         {
           // INTERPRETER THREAD
           throw ee;

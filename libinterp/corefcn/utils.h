@@ -51,9 +51,7 @@ extern OCTINTERP_API bool valid_identifier (const std::string& s);
 //! Extracting options separately for multiple (e.g. 1000+) function calls
 //! avoids expensive repetitive parsing of the very same options.
 
-class
-OCTINTERP_API
-make_valid_name_options
+class OCTINTERP_API make_valid_name_options
 {
 public:
 
@@ -136,6 +134,9 @@ find_data_file_in_load_path  (const std::string& fcn,
 extern OCTINTERP_API std::string contents_file_in_path (const std::string&);
 
 extern OCTINTERP_API std::string fcn_file_in_path (const std::string&);
+
+extern OCTINTERP_API void
+display_file_lines (std::ostream& os, const std::string& file_name, int start, int end, int target_line, const std::string& marker, const std::string& who);
 
 extern OCTINTERP_API std::string do_string_escapes (const std::string& s);
 

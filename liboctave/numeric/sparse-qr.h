@@ -44,8 +44,7 @@ OCTAVE_BEGIN_NAMESPACE(math)
 // of the matrix type.
 
 template <typename SPARSE_T>
-class
-sparse_qr
+class sparse_qr
 {
 public:
 
@@ -54,6 +53,9 @@ public:
 #if (defined (HAVE_SPQR) && defined (HAVE_CHOLMOD))
   // order = 7 selects SPQR default ordering
   OCTAVE_API sparse_qr (const SPARSE_T& a, int order = 7);
+#elif defined (HAVE_CXSPARSE)
+  // order = 3 selects CXSparse default ordering
+  OCTAVE_API sparse_qr (const SPARSE_T& a, int order = 3);
 #else
   OCTAVE_API sparse_qr (const SPARSE_T& a, int order = 0);
 #endif

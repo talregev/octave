@@ -38,6 +38,7 @@
 #include "pr-output.h"
 
 #include "byte-swap.h"
+#include "errwarn.h"
 #include "ls-oct-text.h"
 #include "ls-utils.h"
 #include "ls-hdf5.h"
@@ -128,7 +129,7 @@ octave_base_sparse<T>::subsref (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_base_sparse<T>::subsref - please report this bug");
     }
 
   return retval.next_subsref (type, idx);
@@ -173,7 +174,7 @@ octave_base_sparse<T>::subsasgn (const std::string& type,
       break;
 
     default:
-      panic_impossible ();
+      error ("unexpected: index not '(', '{', or '.' in octave_base_sparse<T>::subsasgn - please report this bug");
     }
 
   return retval;
@@ -245,7 +246,7 @@ bool
 octave_base_sparse<T>::is_true () const
 {
   bool retval = false;
-  dim_vector dv = matrix.dims ();
+  const dim_vector& dv = matrix.dims ();
   octave_idx_type nel = dv.numel ();
   octave_idx_type nz = nnz ();
 
@@ -274,7 +275,7 @@ template <typename T>
 bool
 octave_base_sparse<T>::print_as_scalar () const
 {
-  dim_vector dv = dims ();
+  const dim_vector& dv = dims ();
 
   return (dv.all_ones () || dv.any_zero ());
 }
@@ -400,7 +401,7 @@ template <typename T>
 bool
 octave_base_sparse<T>::save_ascii (std::ostream& os)
 {
-  dim_vector dv = this->dims ();
+  const dim_vector& dv = this->dims ();
 
   // Ensure that additional memory is deallocated
   matrix.maybe_compress ();

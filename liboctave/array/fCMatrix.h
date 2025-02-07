@@ -37,9 +37,7 @@
 #include "mx-op-decl.h"
 #include "oct-cmplx.h"
 
-class
-OCTAVE_API
-FloatComplexMatrix : public FloatComplexNDArray
+class OCTAVE_API FloatComplexMatrix : public FloatComplexNDArray
 {
 public:
 
@@ -215,8 +213,8 @@ public:
   OCTAVE_API FloatComplexMatrix inverse () const;
   OCTAVE_API FloatComplexMatrix inverse (octave_idx_type& info) const;
   OCTAVE_API FloatComplexMatrix
-  inverse (octave_idx_type& info, float& rcon, bool force = false,
-           bool calc_cond = true) const;
+  inverse (octave_idx_type& info, float& rcon,
+           bool force = false, bool calc_cond = true) const;
 
   OCTAVE_API FloatComplexMatrix inverse (MatrixType& mattype) const;
   OCTAVE_API FloatComplexMatrix

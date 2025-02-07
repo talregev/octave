@@ -31,6 +31,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 
 #include "oct-refcount.h"
 
@@ -48,14 +49,17 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 class interpreter;
 class tree_classdef;
 
-class
-OCTINTERP_API
-cdef_class : public cdef_meta_object
+// When we want to preserve the order in which properties were first defined,
+// we index them with a std::pair key made of:
+// - first, their rank in the property list;
+// - and second, their name.
+typedef std::pair<unsigned int, std::string> property_key;
+
+class OCTINTERP_API cdef_class : public cdef_meta_object
 {
 private:
 
-  class
-  cdef_class_rep : public cdef_meta_object_rep
+  class cdef_class_rep : public cdef_meta_object_rep
   {
   public:
     cdef_class_rep ()
@@ -100,7 +104,7 @@ private:
 
     OCTINTERP_API Cell get_properties (int mode);
 
-    OCTINTERP_API std::map<std::string, cdef_property>
+    OCTINTERP_API std::map<property_key, cdef_property>
     get_property_map (int mode);
 
     OCTINTERP_API string_vector get_names ();
@@ -152,6 +156,7 @@ private:
           m_member_count = 0;
           m_method_map.clear ();
           m_property_map.clear ();
+          m_property_rank_map.clear ();
         }
       else
         delete this;
@@ -172,8 +177,13 @@ private:
     OCTINTERP_API void find_names (std::set<std::string>& names, bool all);
 
     OCTINTERP_API void
-    find_properties (std::map<std::string, cdef_property>& props,
+    find_properties (std::map<property_key, cdef_property>& props,
                      int mode = 0);
+
+    OCTINTERP_API void
+    find_properties_aux (std::map<property_key, cdef_property>& props,
+                         std::set<std::string>& prop_names,
+                         int mode = 0);
 
     OCTINTERP_API void
     find_methods (std::map<std::string, cdef_method>& meths,
@@ -199,6 +209,7 @@ private:
     // The properties defined by this class.
 
     std::map<std::string, cdef_property> m_property_map;
+    std::map<std::string, unsigned int> m_property_rank_map;
 
     // The number of members in this class (methods, properties...)
 
@@ -223,8 +234,8 @@ private:
 
     typedef std::map<std::string, cdef_method>::iterator method_iterator;
     typedef std::map<std::string, cdef_method>::const_iterator method_const_iterator;
-    typedef std::map<std::string, cdef_property>::iterator property_iterator;
-    typedef std::map<std::string, cdef_property>::const_iterator property_const_iterator;
+    typedef std::map<property_key, cdef_property>::iterator property_iterator;
+    typedef std::map<property_key, cdef_property>::const_iterator property_const_iterator;
 
     cdef_class_rep (const cdef_class_rep& c) = default;
   };
@@ -293,7 +304,7 @@ public:
     return get_rep ()->get_properties (mode);
   }
 
-  std::map<std::string, cdef_property>
+  std::map<property_key, cdef_property>
   get_property_map (int mode = property_normal)
   {
     return get_rep ()->get_property_map (mode);

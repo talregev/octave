@@ -180,7 +180,7 @@ opengl_texture::create (opengl_functions& glfcns, const octave_value& data)
 {
   opengl_texture retval (glfcns);
 
-  dim_vector dv (data.dims ());
+  const dim_vector& dv = data.dims ();
 
   // Expect RGB data
   if (dv.ndims () == 3 && (dv(2) == 3 || dv(2) == 4))
@@ -339,8 +339,7 @@ opengl_texture::create (opengl_functions& glfcns, const octave_value& data)
   return retval;
 }
 
-class
-opengl_tessellator
+class opengl_tessellator
 {
 public:
 #if defined (HAVE_FRAMEWORK_OPENGL) && defined (HAVE_GLUTESSCALLBACK_THREEDOTS)
@@ -508,8 +507,7 @@ private:
   std::shared_ptr<vertex_data_rep> m_rep;
 };
 
-class
-opengl_renderer::patch_tessellator : public opengl_tessellator
+class opengl_renderer::patch_tessellator : public opengl_tessellator
 {
 public:
 
@@ -675,11 +673,16 @@ private:
 
 #else
 
-class
-opengl_renderer::patch_tessellator
+class opengl_renderer::patch_tessellator
 {
   // Dummy class.
 };
+
+OCTAVE_NORETURN static void
+error_unexpected (const char *name)
+{
+  error ("unexpected call to %s when HAVE_OPENGL is not defined - please report this bug", name);
+}
 
 #endif
 
@@ -898,7 +901,7 @@ opengl_renderer::init_gl_context (bool enhanced, const Matrix& c)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::init_gl_context");
 
 #endif
 }
@@ -974,7 +977,7 @@ opengl_renderer::render_grid (const double linewidth,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::render_grid");
 
 #endif
 }
@@ -985,7 +988,7 @@ opengl_renderer::render_tickmarks (const Matrix& ticks,
                                    double p1, double p1N,
                                    double p2, double p2N,
                                    double dx, double dy, double dz,
-                                   int xyz, bool mirror)
+                                   int xyz, bool mirror, bool tickdir_both)
 {
 #if defined (HAVE_OPENGL)
 
@@ -999,31 +1002,37 @@ opengl_renderer::render_tickmarks (const Matrix& ticks,
         {
           if (xyz == X_AXIS)
             {
-              m_glfcns.glVertex3d (val, p1, p2);
+              m_glfcns.glVertex3d (val, p1 + (tickdir_both ? -dy : 0),
+                                   p2 + (tickdir_both ? -dz : 0));
               m_glfcns.glVertex3d (val, p1+dy, p2+dz);
               if (mirror)
                 {
-                  m_glfcns.glVertex3d (val, p1N, p2N);
+                  m_glfcns.glVertex3d (val, p1N + (tickdir_both ? dy : 0),
+                                       p2N + (tickdir_both ? dz : 0));
                   m_glfcns.glVertex3d (val, p1N-dy, p2N-dz);
                 }
             }
           else if (xyz == Y_AXIS)
             {
-              m_glfcns.glVertex3d (p1, val, p2);
+              m_glfcns.glVertex3d (p1 + (tickdir_both ? -dx : 0), val,
+                                   p2 + (tickdir_both ? -dz : 0));
               m_glfcns.glVertex3d (p1+dx, val, p2+dz);
               if (mirror)
                 {
-                  m_glfcns.glVertex3d (p1N, val, p2N);
+                  m_glfcns.glVertex3d (p1N + (tickdir_both ? dx : 0), val,
+                                       p2N + (tickdir_both ? dz : 0));
                   m_glfcns.glVertex3d (p1N-dx, val, p2N-dz);
                 }
             }
           else if (xyz == Z_AXIS)
             {
-              m_glfcns.glVertex3d (p1, p2, val);
+              m_glfcns.glVertex3d (p1 + (tickdir_both ? -dx : 0),
+                                   p2 + (tickdir_both ? -dy : 0), val);
               m_glfcns.glVertex3d (p1+dx, p2+dy, val);
               if (mirror)
                 {
-                  m_glfcns.glVertex3d (p1N, p2N, val);
+                  m_glfcns.glVertex3d (p1N + (tickdir_both ? dx : 0),
+                                       p2N + (tickdir_both ? dy : 0), val);
                   m_glfcns.glVertex3d (p1N-dx, p2N-dy, val);
                 }
             }
@@ -1050,7 +1059,7 @@ opengl_renderer::render_tickmarks (const Matrix& ticks,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::render_tickmarks");
 
 #endif
 }
@@ -1120,7 +1129,7 @@ opengl_renderer::render_ticktexts (const Matrix& ticks,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::render_ticktexts");
 
 #endif
 }
@@ -1146,7 +1155,7 @@ opengl_renderer::draw_zoom_rect (int x1, int y1, int x2, int y2)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_zoom_rect");
 
 #endif
 }
@@ -1211,7 +1220,7 @@ opengl_renderer::draw_zoom_box (int width, int height,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_zoom_box");
 
 #endif
 }
@@ -1225,7 +1234,7 @@ opengl_renderer::get_pixels (int width, int height)
   uint8NDArray pix(dim_vector (3, width, height), 0);
 
   m_glfcns.glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE,
-                        pix.fortran_vec ());
+                        pix.rwdata ());
 
   // Permute and flip data
   Array<octave_idx_type> perm (dim_vector (3, 1));
@@ -1248,7 +1257,7 @@ opengl_renderer::get_pixels (int width, int height)
   octave_unused_parameter (width);
   octave_unused_parameter (height);
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::get_pixels");
 
 #endif
 }
@@ -1265,7 +1274,7 @@ opengl_renderer::finish ()
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::finish");
 
 #endif
 }
@@ -1323,7 +1332,7 @@ opengl_renderer::setup_opengl_transformation (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::setup_opengl_transformation");
 
 #endif
 }
@@ -1383,7 +1392,7 @@ opengl_renderer::draw_axes_planes (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_planes");
 
 #endif
 }
@@ -1543,7 +1552,7 @@ opengl_renderer::draw_axes_boxes (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_boxes");
 
 #endif
 }
@@ -1607,6 +1616,7 @@ opengl_renderer::draw_axes_x_grid (const axes::properties& props)
                        && ! props.yscale_is ("log");
       bool is_origin_low = is_origin && (y_min + y_max) < 0;
       bool mirror = props.is_box () && xstate != AXE_ANY_DIR;
+      bool is_tickdir_both = props.tickdir_is ("both");
 
       // X grid
 
@@ -1674,17 +1684,17 @@ opengl_renderer::draw_axes_x_grid (const axes::properties& props)
           if (tick_along_z)
             render_tickmarks (xmticks, x_min, x_max,
                               is_origin ? y_axis_pos : ypTick, ypTick,
-                              zpTick, zpTickN, 0., 0.,
-                              (is_origin_low ? -1. : 1.) *
+                              zpTick, zpTickN,
+                              0., 0., (is_origin_low ? -1. : 1.) *
                               math::signum (zpTick-zpTickN)*fz*xticklen/2,
-                              0, ! is_origin && mirror);
+                              0, ! is_origin && mirror, is_tickdir_both);
           else
             render_tickmarks (xmticks, x_min, x_max,
                               is_origin ? y_axis_pos : ypTick, ypTickN,
-                              zpTick, zpTick, 0.,
-                              (is_origin_low ? -1. : 1.) *
-                              math::signum (ypTick-ypTickN)*fy*xticklen/2,
-                              0., 0, ! is_origin && mirror);
+                              zpTick, zpTick,
+                              0., (is_origin_low ? -1. : 1.) *
+                              math::signum (ypTick-ypTickN)*fy*xticklen/2, 0.,
+                              0, ! is_origin && mirror, is_tickdir_both);
         }
 
       // tick marks
@@ -1693,17 +1703,17 @@ opengl_renderer::draw_axes_x_grid (const axes::properties& props)
           if (tick_along_z)
             render_tickmarks (xticks, x_min, x_max,
                               is_origin ? y_axis_pos : ypTick, ypTick,
-                              zpTick, zpTickN, 0., 0.,
-                              (is_origin_low ? -1. : 1.) *
+                              zpTick, zpTickN,
+                              0., 0., (is_origin_low ? -1. : 1.) *
                               math::signum (zpTick-zpTickN)*fz*xticklen,
-                              0, ! is_origin && mirror);
+                              0, ! is_origin && mirror, is_tickdir_both);
           else
             render_tickmarks (xticks, x_min, x_max,
                               is_origin ? y_axis_pos : ypTick, ypTickN,
-                              zpTick, zpTick, 0.,
-                              (is_origin_low ? -1. : 1.) *
-                              math::signum (ypTick-ypTickN)*fy*xticklen,
-                              0., 0, ! is_origin && mirror);
+                              zpTick, zpTick,
+                              0., (is_origin_low ? -1. : 1.) *
+                              math::signum (ypTick-ypTickN)*fy*xticklen, 0.,
+                              0, ! is_origin && mirror, is_tickdir_both);
         }
 
       // tick texts
@@ -1743,7 +1753,7 @@ opengl_renderer::draw_axes_x_grid (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_x_grid");
 
 #endif
 }
@@ -1808,6 +1818,7 @@ opengl_renderer::draw_axes_y_grid (const axes::properties& props)
       bool is_origin_low = is_origin && (x_min + x_max) < 0;
       bool mirror = props.is_box () && ystate != AXE_ANY_DIR
                     && (! props.has_property ("__plotyy_axes__"));
+      bool is_tickdir_both = props.tickdir_is ("both");
 
       // Y grid
 
@@ -1875,17 +1886,17 @@ opengl_renderer::draw_axes_y_grid (const axes::properties& props)
           if (tick_along_z)
             render_tickmarks (ymticks, y_min, y_max,
                               is_origin ? x_axis_pos : xpTick, xpTick,
-                              zpTick, zpTickN, 0., 0.,
-                              (is_origin_low ? -1. : 1.) *
+                              zpTick, zpTickN,
+                              0., 0., (is_origin_low ? -1. : 1.) *
                               math::signum (zpTick-zpTickN)*fz*yticklen/2,
-                              1, ! is_origin && mirror);
+                              1, ! is_origin && mirror, is_tickdir_both);
           else
             render_tickmarks (ymticks, y_min, y_max,
                               is_origin ? x_axis_pos : xpTick, xpTickN,
                               zpTick, zpTick,
                               (is_origin_low ? -1. : 1.) *
-                              math::signum (xpTick-xpTickN)*fx*yticklen/2,
-                              0., 0., 1, ! is_origin && mirror);
+                              math::signum (xpTick-xpTickN)*fx*yticklen/2, 0., 0.,
+                              1, ! is_origin && mirror, is_tickdir_both);
         }
 
       // tick marks
@@ -1894,17 +1905,17 @@ opengl_renderer::draw_axes_y_grid (const axes::properties& props)
           if (tick_along_z)
             render_tickmarks (yticks, y_min, y_max,
                               is_origin ? x_axis_pos : xpTick, xpTick,
-                              zpTick, zpTickN, 0., 0.,
-                              (is_origin_low ? -1. : 1.) *
+                              zpTick, zpTickN,
+                              0., 0., (is_origin_low ? -1. : 1.) *
                               math::signum (zpTick-zpTickN)*fz*yticklen,
-                              1, ! is_origin && mirror);
+                              1, ! is_origin && mirror, is_tickdir_both);
           else
             render_tickmarks (yticks, y_min, y_max,
                               is_origin ? x_axis_pos : xpTick, xpTickN,
                               zpTick, zpTick,
                               (is_origin_low ? -1. : 1.) *
-                              math::signum (xPlaneN-xPlane)*fx*yticklen,
-                              0., 0., 1, ! is_origin && mirror);
+                              math::signum (xPlaneN-xPlane)*fx*yticklen, 0., 0.,
+                              1, ! is_origin && mirror, is_tickdir_both);
         }
 
       // tick texts
@@ -1944,7 +1955,7 @@ opengl_renderer::draw_axes_y_grid (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_y_grid");
 
 #endif
 }
@@ -1993,6 +2004,7 @@ opengl_renderer::draw_axes_z_grid (const axes::properties& props)
                             && (minorgridstyle != "none")
                             && ! zticks.isempty ());
       bool mirror = props.is_box () && zstate != AXE_ANY_DIR;
+      bool is_tickdir_both = props.tickdir_is ("both");
 
       // Z grid
 
@@ -2048,26 +2060,26 @@ opengl_renderer::draw_axes_z_grid (const axes::properties& props)
               if (math::isinf (fy))
                 render_tickmarks (zmticks, z_min, z_max, xPlaneN, xPlane,
                                   yPlane, yPlane,
-                                  math::signum (xPlaneN-xPlane)*fx*zticklen/2,
-                                  0., 0., 2, mirror);
+                                  math::signum (xPlaneN-xPlane)*fx*zticklen/2, 0., 0.,
+                                  2, mirror, is_tickdir_both);
               else
                 render_tickmarks (zmticks, z_min, z_max, xPlaneN, xPlaneN,
-                                  yPlane, yPlane, 0.,
-                                  math::signum (yPlane-yPlaneN)*fy*zticklen/2,
-                                  0., 2, false);
+                                  yPlane, yPlane,
+                                  0., math::signum (yPlane-yPlaneN)*fy*zticklen/2, 0.,
+                                  2, false, is_tickdir_both);
             }
           else
             {
               if (math::isinf (fx))
                 render_tickmarks (zmticks, z_min, z_max, xPlane, xPlane,
-                                  yPlaneN, yPlane, 0.,
-                                  math::signum (yPlaneN-yPlane)*fy*zticklen/2,
-                                  0., 2, mirror);
+                                  yPlaneN, yPlane,
+                                  0., math::signum (yPlaneN-yPlane)*fy*zticklen/2, 0.,
+                                  2, mirror, is_tickdir_both);
               else
                 render_tickmarks (zmticks, z_min, z_max, xPlane, xPlane,
                                   yPlaneN, yPlaneN,
-                                  math::signum (xPlane-xPlaneN)*fx*zticklen/2,
-                                  0., 0., 2, false);
+                                  math::signum (xPlane-xPlaneN)*fx*zticklen/2, 0., 0.,
+                                  2, false, is_tickdir_both);
             }
         }
 
@@ -2079,26 +2091,26 @@ opengl_renderer::draw_axes_z_grid (const axes::properties& props)
               if (math::isinf (fy))
                 render_tickmarks (zticks, z_min, z_max, xPlaneN, xPlane,
                                   yPlane, yPlane,
-                                  math::signum (xPlaneN-xPlane)*fx*zticklen,
-                                  0., 0., 2, mirror);
+                                  math::signum (xPlaneN-xPlane)*fx*zticklen, 0., 0.,
+                                  2, mirror, is_tickdir_both);
               else
                 render_tickmarks (zticks, z_min, z_max, xPlaneN, xPlaneN,
-                                  yPlane, yPlane, 0.,
-                                  math::signum (yPlane-yPlaneN)*fy*zticklen,
-                                  0., 2, false);
+                                  yPlane, yPlane,
+                                  0., math::signum (yPlane-yPlaneN)*fy*zticklen, 0.,
+                                  2, false, is_tickdir_both);
             }
           else
             {
               if (math::isinf (fx))
                 render_tickmarks (zticks, z_min, z_max, xPlaneN, xPlane,
-                                  yPlaneN, yPlane, 0.,
-                                  math::signum (yPlaneN-yPlane)*fy*zticklen,
-                                  0., 2, mirror);
+                                  yPlaneN, yPlane,
+                                  0., math::signum (yPlaneN-yPlane)*fy*zticklen, 0.,
+                                  2, mirror, is_tickdir_both);
               else
                 render_tickmarks (zticks, z_min, z_max, xPlane, xPlane,
                                   yPlaneN, yPlane,
-                                  math::signum (xPlane-xPlaneN)*fx*zticklen,
-                                  0., 0., 2, false);
+                                  math::signum (xPlane-xPlaneN)*fx*zticklen, 0., 0.,
+                                  2, false, is_tickdir_both);
             }
         }
 
@@ -2168,7 +2180,7 @@ opengl_renderer::draw_axes_grids (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_grids");
 
 #endif
 }
@@ -2215,7 +2227,7 @@ opengl_renderer::draw_all_lights (const base_properties& props,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_all_lights");
 
 #endif
 }
@@ -2304,7 +2316,7 @@ opengl_renderer::draw_axes_children (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes_children");
 
 #endif
 }
@@ -2376,7 +2388,7 @@ opengl_renderer::draw_axes (const axes::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_axes");
 
 #endif
 }
@@ -2522,7 +2534,7 @@ opengl_renderer::draw_line (const line::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_line");
 
 #endif
 }
@@ -2543,11 +2555,11 @@ opengl_renderer::draw_surface (const surface::properties& props)
 
   NDArray c;
   const NDArray vn = props.get_vertexnormals ().array_value ();
-  dim_vector vn_dims = vn.dims ();
+  const dim_vector& vn_dims = vn.dims ();
   bool has_vertex_normals = (vn_dims(0) == zr && vn_dims(1) == zc
                              && vn_dims(2) == 3);
   const NDArray fn = props.get_facenormals ().array_value ();
-  dim_vector fn_dims = fn.dims ();
+  const dim_vector& fn_dims = fn.dims ();
   bool has_face_normals = (fn_dims(0) == zr - 1 && fn_dims(1) == zc - 1
                            && fn_dims(2) == 3);
 
@@ -3187,7 +3199,7 @@ opengl_renderer::draw_surface (const surface::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_surface");
 
 #endif
 }
@@ -3464,7 +3476,7 @@ opengl_renderer::draw_patch (const patch::properties& props)
                       vertex_data::vertex_data_rep *vv
                         = vdata[i+j*fr].get_rep ();
 
-                      tess.add_vertex (vv->m_coords.fortran_vec (), vv);
+                      tess.add_vertex (vv->m_coords.rwdata (), vv);
                     }
 
                   if (count_f(i) > 0)
@@ -3504,7 +3516,7 @@ opengl_renderer::draw_patch (const patch::properties& props)
                             }
                         }
 
-                      tess.add_vertex (vv->m_coords.fortran_vec (), vv);
+                      tess.add_vertex (vv->m_coords.rwdata (), vv);
                     }
 
                   tess.end_contour ();
@@ -3634,7 +3646,7 @@ opengl_renderer::draw_patch (const patch::properties& props)
                     {
                       vertex_data::vertex_data_rep *vv
                         = vdata[i+j*fr].get_rep ();
-                      tess.add_vertex (vv->m_coords.fortran_vec (), vv);
+                      tess.add_vertex (vv->m_coords.rwdata (), vv);
                     }
 
                   tess.end_contour ();
@@ -3734,7 +3746,7 @@ opengl_renderer::draw_patch (const patch::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_patch");
 
 #endif
 }
@@ -3843,7 +3855,7 @@ opengl_renderer::draw_scatter (const scatter::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_scatter");
 
 #endif
 }
@@ -3880,7 +3892,7 @@ opengl_renderer::draw_light (const light::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_light");
 
 #endif
 }
@@ -3911,7 +3923,7 @@ opengl_renderer::set_ortho_coordinates ()
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_ortho_coordinates");
 
 #endif
 }
@@ -3932,7 +3944,7 @@ opengl_renderer::restore_previous_coordinates ()
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::restore_previous_coordinates");
 
 #endif
 }
@@ -3970,7 +3982,7 @@ opengl_renderer::draw_text (const text::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_text");
 
 #endif
 }
@@ -4056,7 +4068,7 @@ opengl_renderer::draw_text_background (const text::properties& props,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_text_background");
 
 #endif
 }
@@ -4079,7 +4091,7 @@ opengl_renderer::draw_image (const image::properties& props)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_image");
 
 #endif
 }
@@ -4090,7 +4102,7 @@ opengl_renderer::draw_texture_image (const octave_value cdata, Matrix x,
 {
 #if defined (HAVE_OPENGL)
 
-  dim_vector dv (cdata.dims ());
+  const dim_vector& dv = cdata.dims ();
   int h = dv(0);
   int w = dv(1);
   double x0, x1, y0, y1;
@@ -4162,7 +4174,7 @@ opengl_renderer::draw_texture_image (const octave_value cdata, Matrix x,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_texture_image");
 
 #endif
 }
@@ -4198,7 +4210,7 @@ opengl_renderer::set_viewport (int w, int h)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_viewport");
 
 #endif
 }
@@ -4225,7 +4237,7 @@ opengl_renderer::get_viewport_scaled () const
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::get_viewport_scaled");
 
 #endif
 
@@ -4249,7 +4261,7 @@ opengl_renderer::set_color (const Matrix& c)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_color");
 
 #endif
 }
@@ -4291,7 +4303,7 @@ opengl_renderer::set_polygon_offset (bool on, float offset)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_polygon_offset");
 
 #endif
 }
@@ -4310,7 +4322,7 @@ opengl_renderer::set_linewidth (float w)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_linewidth");
 
 #endif
 }
@@ -4371,7 +4383,7 @@ opengl_renderer::set_linestyle (const std::string& s, bool use_stipple,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_linestyle");
 
 #endif
 }
@@ -4421,7 +4433,7 @@ opengl_renderer::set_clipbox (double x1, double x2, double y1, double y2,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_clipbox");
 
 #endif
 }
@@ -4450,7 +4462,7 @@ opengl_renderer::set_clipping (bool enable)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_clipping");
 
 #endif
 }
@@ -4483,7 +4495,7 @@ opengl_renderer::init_marker (const std::string& m, double size, float width)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::init_marker");
 
 #endif
 }
@@ -4504,7 +4516,7 @@ opengl_renderer::change_marker (const std::string& m, double size)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::change_marker");
 
 #endif
 }
@@ -4528,7 +4540,7 @@ opengl_renderer::end_marker ()
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::end_marker");
 
 #endif
 }
@@ -4580,7 +4592,7 @@ opengl_renderer::draw_marker (double x, double y, double z,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::draw_marker");
 
 #endif
 }
@@ -4603,7 +4615,7 @@ opengl_renderer::init_maxlights ()
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::init_maxlights");
 
 #endif
 }
@@ -4630,7 +4642,7 @@ opengl_renderer::get_string (unsigned int id) const
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::get_string");
   return std::string ();
 
 #endif
@@ -4665,7 +4677,7 @@ opengl_renderer::set_normal (int bfl_mode, const NDArray& n, int j, int i)
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::set_normal");
 
 #endif
 }
@@ -4879,7 +4891,7 @@ opengl_renderer::make_marker_list (const std::string& marker, double size,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::make_marker_list");
 
 #endif
 }
@@ -4939,7 +4951,7 @@ opengl_renderer::render_text (const std::string& txt,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::render_text");
 
 #endif
 }
@@ -4995,7 +5007,7 @@ opengl_renderer::render_text (uint8NDArray pixels, Matrix bbox,
   // This shouldn't happen because construction of opengl_renderer
   // objects is supposed to be impossible if OpenGL is not available.
 
-  panic_impossible ();
+  error_unexpected ("opengl_renderer::render_text");
 
 #endif
 }
