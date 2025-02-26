@@ -83,11 +83,11 @@ public:
 class file_system_model : public QFileSystemModel
 {
 public:
-  file_system_model (files_dock_widget *p) : QFileSystemModel (p) {}
+  file_system_model (files_dock_widget *p) : QFileSystemModel (p) { }
 
   ~file_system_model () = default;
 
-  bool setData (const QModelIndex &idx, const QVariant &value,
+  bool setData (const QModelIndex& idx, const QVariant& value,
                 int role) override
   {
     if (!idx.isValid () || idx.column () != 0 || role != Qt::EditRole
@@ -129,14 +129,14 @@ public:
   }
 
 private:
-  void display_rename_failed_message (const QString &old_name,
-                                      const QString &new_name)
+  void display_rename_failed_message (const QString& old_name,
+                                      const QString& new_name)
   {
     const QString message =
 
-        files_dock_widget::tr ("Could not rename file \"%1\" to \"%2\".")
-            .arg (old_name)
-            .arg (new_name);
+      files_dock_widget::tr ("Could not rename file \"%1\" to \"%2\".")
+      .arg (old_name)
+      .arg (new_name);
     QMessageBox::information (static_cast<QWidget *> (parent ()),
                               QFileSystemModel::tr ("Invalid filename"),
                               message, QMessageBox::Ok);
@@ -154,7 +154,7 @@ public:
   }
 
   void setEditorData (QWidget *editor,
-                      const QModelIndex &index) const override
+                      const QModelIndex& index) const override
   {
     QLineEdit *line_edit = qobject_cast<QLineEdit *> (editor);
 
@@ -200,7 +200,7 @@ public:
       return m_null_icon;
   }
 
-  QIcon icon (const QFileInfo &fi) const
+  QIcon icon (const QFileInfo& fi) const
   {
     static bool no_platform_theme = QIcon::themeName ().isEmpty ();
 
@@ -405,9 +405,9 @@ files_dock_widget::files_dock_widget (QWidget *p)
 
   m_file_tree_view->sortByColumn
     (settings.int_value (fb_sort_column),
-     static_cast<Qt::SortOrder> (settings.uint_value (fb_sort_order)));
      // FIXME: use value<Qt::SortOrder> instead of static cast after
      //        dropping support of Qt 5.4
+     static_cast<Qt::SortOrder> (settings.uint_value (fb_sort_order)));
 
   // Set header properties for sorting
   m_file_tree_view->header ()->setSectionsClickable (true);
@@ -624,7 +624,7 @@ files_dock_widget::toggle_header (int col)
     {
       // Toggle column visibility
       m_file_tree_view->setColumnHidden (col + 1,
-                                ! m_file_tree_view->isColumnHidden (col +1));
+                                         ! m_file_tree_view->isColumnHidden (col +1));
     }
   else
     {
@@ -668,7 +668,7 @@ files_dock_widget::headercontextmenu_requested (const QPoint& mpos)
         {
           // Other actions depending on settings
           action->setChecked (settings.value (m_columns_shown_keys.at (i),
-                              m_columns_shown_defs.at (i)).toBool ());
+                                              m_columns_shown_defs.at (i)).toBool ());
         }
     }
 
