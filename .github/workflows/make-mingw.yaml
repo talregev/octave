@@ -205,6 +205,7 @@ jobs:
           key: ${{ steps.ccache-prepare.outputs.key }}
 
       - name: check
+        id: run-test-suite
         # Continuing on error in this step means that jobs will be "green" even
         # if the test suite crashes.  But if we don't continue, we'll loose the
         # ccache and other jobs will be cancelled, too.
@@ -219,9 +220,10 @@ jobs:
 
         run: |
           export PATH=$(echo "$PATH" | sed -e "s|$MINGW_PREFIX/lib/ccache/bin:||g")
-          make -C ./.build check RUN_OCTAVE_OPTIONS="--no-gui-libs" V=1 | tee ./test-suite.log
+          make -C ./.build check RUN_OCTAVE_OPTIONS="--no-gui-libs" | tee ./test-suite.log
 
       - name: display test suite log
+        if: always() && (steps.run-test-suite.outcome != 'skipped')
         continue-on-error: true
         # Displaying the log shouldn't take long. Cancel the step if it does.
         timeout-minutes: 5
