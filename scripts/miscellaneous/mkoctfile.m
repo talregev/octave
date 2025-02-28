@@ -145,24 +145,24 @@
 ##
 ## @example
 ## @group
-##    API_VERSION                 LOCALFCNFILEDIR
-##    ARCHLIBDIR                  LOCALOCTFILEDIR
-##    BINDIR                      LOCALSTARTUPFILEDIR
-##    CANONICAL_HOST_TYPE         LOCALVERARCHLIBDIR
-##    DATADIR                     LOCALVERFCNFILEDIR
-##    DATAROOTDIR                 LOCALVEROCTFILEDIR
-##    DEFAULT_PAGER               MAN1DIR
-##    EXEC_PREFIX                 MAN1EXT
-##    EXEEXT                      MANDIR
-##    FCNFILEDIR                  OCTAVE_EXEC_HOME
-##    IMAGEDIR                    OCTAVE_HOME
-##    INFODIR                     OCTAVE_VERSION
-##    INFOFILE                    OCTDATADIR
-##    LIBEXECDIR                  OCTDOCDIR
-##    LOCALAPIARCHLIBDIR          OCTFILEDIR
-##    LOCALAPIFCNFILEDIR          OCTFONTSDIR
-##    LOCALAPIOCTFILEDIR          STARTUPFILEDIR
-##    LOCALARCHLIBDIR
+##    API_VERSION                 LOCALARCHLIBDIR
+##    ARCHLIBDIR                  LOCALFCNFILEDIR    
+##    BINDIR                      LOCALOCTFILEDIR    
+##    CANONICAL_HOST_TYPE         LOCALSTARTUPFILEDIR
+##    DATADIR                     LOCALVERARCHLIBDIR 
+##    DATAROOTDIR                 LOCALVERFCNFILEDIR 
+##    DEFAULT_PAGER               LOCALVEROCTFILEDIR 
+##    EXEC_PREFIX                 MAN1DIR            
+##    EXEEXT                      MAN1EXT            
+##    FCNFILEDIR                  MANDIR             
+##    IMAGEDIR                    OCTAVE_EXEC_HOME   
+##    INFODIR                     OCTAVE_HOME        
+##    INFOFILE                    OCTAVE_VERSION     
+##    LIBEXECDIR                  OCTDATADIR         
+##    LOCALAPIARCHLIBDIR          OCTDOCDIR          
+##    LOCALAPIFCNFILEDIR          OCTFILEDIR         
+##    LOCALAPIOCTFILEDIR          OCTFONTSDIR        
+##    LOCALAPIPKGDIR              STARTUPFILEDIR     
 ## @end group
 ## @end example
 ##
