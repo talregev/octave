@@ -422,6 +422,7 @@ endif
 DIRS_TO_MAKE = \
   $(localfcnfiledir) \
   $(localapifcnfiledir) \
+  $(localapipkgdir) \
   $(localverfcnfiledir) \
   $(localoctfiledir) \
   $(localapioctfiledir) \
