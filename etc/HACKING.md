@@ -367,9 +367,9 @@ The rules for updating these version numbers are:
     update, then increment current and set revision to 0 (`c:r:a` becomes
     `c+1:0:a`).
 
-  * If no interfaces have changed, but the library source code has changed in
-    any way since the last update, then increment revision (`c:r:a` becomes
-    `c:r+1:a`).
+  * If current was _not_ incremented in the previous step, but the library
+    source code has changed in any way since the last update, then increment
+    revision (`c:r:a` becomes `c:r+1:a`).
 
   * If any interfaces have been added since the last public release, then
     increment age (`c:r:a` becomes `c:r:a+1`).
@@ -399,7 +399,8 @@ library to changes in a shared library:
   * Programs may need to be changed, recompiled, and relinked in order to use
     the new version.  Bump current, set revision and age to 0.
 
-These guidelines also appear in the GNU libtool manual, see
+These guidelines also appear in the GNU libtool manual where they are stated in
+a slightly different but equivalent way.  See
 <https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html>.
 
 Merging the default branch to stable before a release
@@ -506,10 +507,11 @@ the oct-file version `OCTAVE_API_VERSION`.
 
         hg diff --from release-9-4-0 -I 'liboctave/**.h'
 
-    2. **Only** if API has not been changed, verify whether any source code
-       changes have been made (this would require incrementing revision).
+    2. **Only** if current was _not_ incremented in the previous step, verify
+       whether any source code changes have been made (this would require
+       incrementing revision).
 
-        hg diff --from release-9-4-0 -I liboctave -X 'liboctave/**.h'
+        hg diff --from release-9-4-0 -I liboctave
 
 3. Bump Octave API version for oct-files in `configure.ac`
 
