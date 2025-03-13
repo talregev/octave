@@ -87,7 +87,7 @@ nodist_%canon_reldir%_%canon_reldir%_la_SOURCES = \
 
 %canon_reldir%_%canon_reldir%_current = 12
 %canon_reldir%_%canon_reldir%_revision = 0
-%canon_reldir%_%canon_reldir%_age = 2
+%canon_reldir%_%canon_reldir%_age = 0
 
 %canon_reldir%_%canon_reldir%_version_info = $(%canon_reldir%_%canon_reldir%_current):$(%canon_reldir%_%canon_reldir%_revision):$(%canon_reldir%_%canon_reldir%_age)
 
