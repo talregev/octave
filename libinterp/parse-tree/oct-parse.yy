@@ -5826,8 +5826,8 @@ context of the function that called the present function
 
 DEFMETHOD (feval, interp, args, nargout,
            doc: /* -*- texinfo -*-
-@deftypefn {} {@var{y1}, @var{y2}, @dots{} =} feval ('@var{fcn}', @var{x1}, @var{x2}, @dots{})
-@deftypefn {} {@var{y1}, @var{y2}, @dots{} =} feval (@@@var{fcn}, @var{x1}, @var{x2}, @dots{})
+@deftypefn  {} {@var{y1}, @var{y2}, @dots{} =} feval ('@var{fcn}', @var{x1}, @var{x2}, @dots{})
+@deftypefnx {} {@var{y1}, @var{y2}, @dots{} =} feval (@@@var{fcn}, @var{x1}, @var{x2}, @dots{})
 Evaluate the function @var{fcn} with inputs @var{x1}, @var{x2}, @dots{}
 
 The function @var{fcn} may be specified by name in a string or given as a
