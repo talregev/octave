@@ -1018,13 +1018,16 @@ main (int argc, char **sys_argv)
       if (vars["ALL_CFLAGS"].find ("-g") != std::string::npos)
         defs += " -DMEX_DEBUG";
 
-      // Create tmp C source file that defines an extern symbol that can
-      // be checked when loading the mex file to make sure the SOVERSION
-      // of liboctmex matches between the .mex file and the Octave version
-      // attempting to load it.
-      std::string tmp_file = create_mex_soversion_file ();
+      if (! compile_only)
+        {
+          // Create tmp C source file that defines an extern symbol that can
+          // be checked when loading the .mex file to make sure the SOVERSION
+          // of liboctmex matches between the .mex file and the Octave version
+          // attempting to load it.
+          std::string tmp_file = create_mex_soversion_file ();
 
-      cfiles.push_back (tmp_file);
+          cfiles.push_back (tmp_file);
+        }
 
       if (mx_has_interleaved_complex)
         {
@@ -1037,7 +1040,7 @@ main (int argc, char **sys_argv)
               // determine that the file was compiled expecting
               // interleaved complex values.
 
-              tmp_file = create_interleaved_complex_file ();
+              std::string tmp_file = create_interleaved_complex_file ();
 
               cfiles.push_back (tmp_file);
             }
