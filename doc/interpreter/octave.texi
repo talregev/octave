@@ -101,7 +101,7 @@ modified versions.
 @subtitle Edition @value{EDITION} for Octave version @value{VERSION}
 @subtitle @value{UPDATED-MONTH}
 @sp 2
-@multitable @columnfractions 0.4 0.025 0.65
+@multitable @columnfractions 0.4 0.026 0.65
 @item
 @flushright
 @image{octave-logo,2.1in}
