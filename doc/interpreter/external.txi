@@ -1213,7 +1213,7 @@ alternative code in this case is
 @example
 @group
 BEGIN_INTERRUPT_IMMEDIATELY_IN_FOREIGN_CODE;
-@dots{}  some code that calls a "foreign" function @dots{}
+@dots{} some code that calls a "foreign" function @dots{}
 END_INTERRUPT_IMMEDIATELY_IN_FOREIGN_CODE;
 @end group
 @end example
