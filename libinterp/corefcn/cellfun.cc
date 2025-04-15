@@ -2030,8 +2030,8 @@ prepare_idx (container *idx, int idim, int nd,
     }
 }
 
-// 2D specialization, works for Array, Sparse and octave_map.
-// Uses 1D or 2D indexing.
+// 2-D specialization, works for Array, Sparse and octave_map.
+// Uses 1-D or 2-D indexing.
 
 template <typename Array2D>
 static Cell
@@ -2057,7 +2057,7 @@ do_mat2cell_2d (const Array2D& a, const Array<octave_idx_type> *d, int nd)
 
   if (ivec >= 0)
     {
-      // Vector split.  Use 1D indexing.
+      // Vector split.  Use 1-D indexing.
       octave_idx_type l = 0;
       octave_idx_type nidx = (ivec == 0 ? nridx : ncidx);
       for (octave_idx_type i = 0; i < nidx; i++)
@@ -2069,7 +2069,7 @@ do_mat2cell_2d (const Array2D& a, const Array<octave_idx_type> *d, int nd)
     }
   else
     {
-      // General 2D case.  Use 2D indexing.
+      // General 2-D case.  Use 2-D indexing.
       OCTAVE_LOCAL_BUFFER (idx_vector, ridx, nridx);
       prepare_idx (ridx, 0, nd, d);
 
