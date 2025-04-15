@@ -20,10 +20,10 @@ jobs:
 
       matrix:
         # For available GitHub-hosted runners, see: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
-        os: [windows-latest]
-        msystem: [MINGW64, CLANG64]
+        msystem: [MINGW64, CLANG64, CLANGARM64]
         include:
           - msystem: MINGW64
+            os: windows-latest
             mingw-prefix: mingw64
             cc: gcc
             cxx: g++
@@ -32,7 +32,20 @@ jobs:
             ccache-max: 0.9G
             allow-error: false
           - msystem: CLANG64
+            os: windows-latest
             mingw-prefix: clang64
+            cc: clang
+            cxx: clang++
+            f77: flang
+            # Clang seems to require a different set of dllexport attributes than GCC.
+            extra-config-flags:
+              --disable-lib-visibility-flags
+            ccache-max: 400M
+            # This configuration is not fully supported yet
+            allow-error: true
+          - msystem: CLANGARM64
+            os: windows-11-arm
+            mingw-prefix: clangarm64
             cc: clang
             cxx: clang++
             f77: flang
@@ -63,9 +76,11 @@ jobs:
         with:
           update: true
 
-          # Use pre-installed version to save disc space on partition with source.
-          # We need that space for building.
-          release: false
+          # Use pre-installed version if possible to save disc space on
+          # partition with source.  We need that space for building.
+          release: ${{ matrix.msystem == 'CLANGARM64' }}
+
+          msystem: ${{ matrix.msystem }}
 
           # The packages are listed in (alphabetically sorted) blocks:
           # The first block is for mandatory dependencies.
@@ -115,8 +130,6 @@ jobs:
 
             unzip
             zip
-
-          msystem: ${{ matrix.msystem }}
 
       - name: checkout repository
         uses: actions/checkout@v4
