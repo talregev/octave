@@ -45,7 +45,7 @@ class coment_list;
 class interpreter;
 class tree_arg_validation;
 
-class tree_superclass_ref : public tree_expression
+class OCTINTERP_API tree_superclass_ref : public tree_expression
 {
 public:
 
@@ -99,7 +99,7 @@ private:
   token m_token;
 };
 
-class tree_metaclass_query : public tree_expression
+class OCTINTERP_API tree_metaclass_query : public tree_expression
 {
 public:
 
@@ -140,7 +140,7 @@ private:
   token m_token;
 };
 
-class tree_classdef_attribute
+class OCTINTERP_API tree_classdef_attribute
 {
 public:
 
@@ -190,7 +190,7 @@ private:
   bool m_neg {false};
 };
 
-class tree_classdef_attribute_list : public std::list<tree_classdef_attribute *>
+class OCTINTERP_API tree_classdef_attribute_list : public std::list<tree_classdef_attribute *>
 {
 public:
 
@@ -222,7 +222,7 @@ private:
   tree_delimiter_list m_delims;
 };
 
-class tree_classdef_superclass
+class OCTINTERP_API tree_classdef_superclass
 {
 public:
 
@@ -254,7 +254,7 @@ private:
   token m_fqident;
 };
 
-class tree_classdef_superclass_list
+class OCTINTERP_API tree_classdef_superclass_list
   : public std::list<tree_classdef_superclass *>
 {
 public:
@@ -280,7 +280,7 @@ public:
   }
 };
 
-class tree_base_classdef_block : public tree
+class OCTINTERP_API tree_base_classdef_block : public tree
 {
 public:
 
@@ -342,7 +342,7 @@ private:
 
 // FIXME: should this class be derived from tree?
 
-class tree_classdef_property
+class OCTINTERP_API tree_classdef_property
 {
 public:
 
@@ -376,7 +376,7 @@ private:
   std::string m_doc_string;
 };
 
-class tree_classdef_property_list : public std::list<tree_classdef_property *>
+class OCTINTERP_API tree_classdef_property_list : public std::list<tree_classdef_property *>
 {
 public:
 
@@ -397,7 +397,7 @@ public:
   }
 };
 
-class tree_classdef_properties_block : public tree_classdef_block<tree_classdef_property_list>
+class OCTINTERP_API tree_classdef_properties_block : public tree_classdef_block<tree_classdef_property_list>
 {
 public:
 
@@ -417,7 +417,7 @@ public:
   }
 };
 
-class tree_classdef_method_list : public std::list<octave_value>
+class OCTINTERP_API tree_classdef_method_list : public std::list<octave_value>
 {
 public:
 
@@ -438,7 +438,7 @@ public:
   }
 };
 
-class tree_classdef_methods_block : public tree_classdef_block<tree_classdef_method_list>
+class OCTINTERP_API tree_classdef_methods_block : public tree_classdef_block<tree_classdef_method_list>
 {
 public:
 
@@ -458,7 +458,7 @@ public:
   }
 };
 
-class tree_classdef_event
+class OCTINTERP_API tree_classdef_event
 {
 public:
 
@@ -483,7 +483,7 @@ private:
   tree_identifier *m_id;
 };
 
-class tree_classdef_event_list : public std::list<tree_classdef_event *>
+class OCTINTERP_API tree_classdef_event_list : public std::list<tree_classdef_event *>
 {
 public:
 
@@ -505,7 +505,7 @@ public:
   }
 };
 
-class tree_classdef_events_block : public tree_classdef_block<tree_classdef_event_list>
+class OCTINTERP_API tree_classdef_events_block : public tree_classdef_block<tree_classdef_event_list>
 {
 public:
 
@@ -525,7 +525,7 @@ public:
   }
 };
 
-class tree_classdef_enum
+class OCTINTERP_API tree_classdef_enum
 {
 public:
 
@@ -560,7 +560,7 @@ private:
   token m_close_paren;
 };
 
-class tree_classdef_enum_list : public std::list<tree_classdef_enum *>
+class OCTINTERP_API tree_classdef_enum_list : public std::list<tree_classdef_enum *>
 {
 public:
 
@@ -582,7 +582,7 @@ public:
   }
 };
 
-class tree_classdef_enum_block : public tree_classdef_block<tree_classdef_enum_list>
+class OCTINTERP_API tree_classdef_enum_block : public tree_classdef_block<tree_classdef_enum_list>
 {
 public:
 
@@ -604,7 +604,7 @@ public:
 
 // FIXME: should this class be derived from tree?
 
-class tree_classdef_body
+class OCTINTERP_API tree_classdef_body
 {
 public:
 
@@ -704,7 +704,7 @@ private:
 
 // Classdef definition.
 
-class tree_classdef : public tree_command
+class OCTINTERP_API tree_classdef : public tree_command
 {
 public:
 

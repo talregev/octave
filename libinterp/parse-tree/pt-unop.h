@@ -44,7 +44,7 @@ class symbol_scope;
 
 // Unary expressions.
 
-class tree_unary_expression : public tree_expression
+class OCTINTERP_API tree_unary_expression : public tree_expression
 {
 protected:
 
@@ -83,7 +83,7 @@ protected:
 
 // Prefix expressions.
 
-class tree_prefix_expression : public tree_unary_expression
+class OCTINTERP_API tree_prefix_expression : public tree_unary_expression
 {
 public:
 
@@ -122,7 +122,7 @@ public:
 
 // Postfix expressions.
 
-class tree_postfix_expression : public tree_unary_expression
+class OCTINTERP_API tree_postfix_expression : public tree_unary_expression
 {
 public:
 

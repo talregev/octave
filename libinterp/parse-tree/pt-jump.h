@@ -35,7 +35,7 @@ OCTAVE_BEGIN_NAMESPACE(octave)
 
 // Base class for jump commands
 
-class tree_jump_command : public tree_command
+class OCTINTERP_API tree_jump_command : public tree_command
 {
 public:
 
@@ -58,7 +58,7 @@ protected:
 
 // Break.
 
-class tree_break_command : public tree_jump_command
+class OCTINTERP_API tree_break_command : public tree_jump_command
 {
 public:
 
@@ -76,7 +76,7 @@ public:
 
 // Continue.
 
-class tree_continue_command : public tree_jump_command
+class OCTINTERP_API tree_continue_command : public tree_jump_command
 {
 public:
 
@@ -94,7 +94,7 @@ public:
 
 // Return.
 
-class tree_return_command : public tree_jump_command
+class OCTINTERP_API tree_return_command : public tree_jump_command
 {
 public:
 
