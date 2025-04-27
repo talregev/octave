@@ -64,7 +64,7 @@ class tree_evaluator;
 
 // Summary info about the current row or matrix.
 
-class tm_info
+class OCTINTERP_API tm_info
 {
 public:
 
@@ -142,7 +142,7 @@ protected:
   std::string m_class_name;
 };
 
-class tm_row_const : public tm_info
+class OCTINTERP_API tm_row_const : public tm_info
 {
 public:
 
@@ -186,7 +186,7 @@ private:
   void init (const tree_argument_list&, tree_evaluator& tw);
 };
 
-class tm_const : public tm_info
+class OCTINTERP_API tm_const : public tm_info
 {
 public:
 
