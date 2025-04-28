@@ -197,11 +197,6 @@ public:
   OCTINTERP_API octave_value (octave::sys::time t);
   OCTINTERP_API octave_value (double d);
   OCTINTERP_API octave_value (float d);
-
-  OCTAVE_DEPRECATED (10, "octave_value (const Array<octave_value>&) constructor is obsolete, convert input to Cell object explicitly")
-  OCTINTERP_API octave_value (const Array<octave_value>& a,
-                              bool is_cs_list = false);
-
   OCTINTERP_API octave_value (const Cell& c, bool is_cs_list = false);
   OCTINTERP_API octave_value (const Matrix& m,
                               const MatrixType& t = MatrixType ());
