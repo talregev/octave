@@ -1,5 +1,7 @@
 name: make-cygwin
-on: [push]
+on:
+  workflow_dispatch:
+  push:
 concurrency: ci-cygwin-${{ github.ref }}
 
 jobs:
