@@ -203,7 +203,8 @@ maybe_extract_message_id (const std::string& caller,
 
   if (nargin > 0)
     {
-      std::string arg1 = args(0).string_value ();
+      std::string arg1 = args(0).xstring_value ("%s: MESSAGE must be a string or error structure",
+                                                caller.c_str ());
 
       // For compatibility with Matlab, an identifier must contain ':',
       // but not at the beginning or the end, and it must not contain '%'
@@ -1312,25 +1313,25 @@ disable escape sequence expansion use a second backslash before the sequence
         {
           octave_value c = m.getfield ("message");
 
-          if (c.is_string ())
-            message = c.string_value ();
+          if (! c.isempty ())
+            message = c.xstring_value ("error: MESSAGE must be a string");
         }
 
       if (m.contains ("identifier"))
         {
           octave_value c = m.getfield ("identifier");
 
-          if (c.is_string ())
-            id = c.string_value ();
+          if (! c.isempty ())
+            id = c.xstring_value ("error: IDENTIFIER must be a string");
         }
 
       if (m.contains ("stack"))
         {
           octave_value c = m.getfield ("stack");
 
-          if (c.isstruct ())
+          if (! c.isempty ())
             {
-              octave_map stack = c.map_value ();
+              octave_map stack = c.xmap_value ("error: STACK must be a structure");
               stack_info = error_system::make_stack_frame_list (stack,
                                                                 "error");
             }
@@ -1394,6 +1395,23 @@ disable escape sequence expansion use a second backslash before the sequence
 %!error id=my:err
 %! err.identifier = 'my:err';
 %! err.message = 'some message';
+%! error (err);
+
+%!error <MESSAGE must be a string> error ({1});
+
+%!error <MESSAGE must be a string>
+%! err.message = struct ();
+%! error (err);
+
+%!error <IDENTIFIER must be a string>
+%! err.identifier = struct ();
+%! err.message = 'some message';
+%! error (err);
+
+%!error <STACK must be a structure>
+%! err.identifier = 'my:err';
+%! err.message = 'some message';
+%! err.stack = 5;
 %! error (err);
 
 ## bug #67143
