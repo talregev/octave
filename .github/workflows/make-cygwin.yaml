@@ -159,6 +159,7 @@ jobs:
         run: GNULIB_URL=https://github.com/coreutils/gnulib.git ./bootstrap
 
       - name: configure
+        id: configure
         # FIXME: Fix building with Java support.  Override JAVA_HOME for now.
         # FIXME: How do we get a working TeX environment in Cygwin?  Disable building the documentation for now.
         # FIXME: Exporting symbols for instantiated template classes doesn't work currently. Maybe, test again when Cygwin updated to a newer compiler than GCC 11.4.0?
