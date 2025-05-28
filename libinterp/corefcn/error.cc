@@ -1178,26 +1178,27 @@ error.  Typically @var{err} is returned from @code{lasterror}.
 
 DEFMETHOD (error, interp, args, ,
            doc: /* -*- texinfo -*-
-@deftypefn  {} {} error (@var{template}, @dots{})
+@deftypefn  {} {} error (@var{msg})
+@deftypefnx {} {} error (@var{template}, @dots{})
 @deftypefnx {} {} error (@var{id}, @var{template}, @dots{})
+@deftypefnx {} {} error (@var{errstruct})
 Display an error message and stop m-file execution.
 
-Format the optional arguments under the control of the template string
-@var{template} using the same rules as the @code{printf} family of
-functions (@pxref{Formatted Output}) and print the resulting message
-on the @code{stderr} stream.  This formatting is only done for
-single-quoted character vectors if there are additional arguments
-following the template string.  If there are no additional arguments, the
-template string is used literally (i.e., without interpreting any escape
-sequences in single-quoted character vectors).  The message is prefixed
-by @samp{error: }.
+The input @var{msg} is a simple string to which the text @samp{error: } is
+prepended.  The resulting message is printed on the @code{stderr} stream.
+Alternatively, the first input may be a template string @var{template} which
+uses the same rules as the @code{printf} family of functions (@pxref{Formatted
+Output}).  Formatting is only done for single-quoted character vectors if there
+are additional arguments following the template string.  If there are no
+additional arguments, the template string is used literally (i.e., without
+interpreting any escape sequences in single-quoted character vectors).
 
 The optional @var{id} argument allows programmers to tag an error
 with a specific identifier so that users can later retrieve it (using
 @code{lasterr} or @code{lasterror}) and know the origin of the error.
 The identifier must contain at least one colon character (@qcode{':'})
 and must not contain any whitespace characters.  It should be a string of
-the form @qcode{"NAMESPACE:ERROR-NAME"}.  Octave's own errors use the
+the form @qcode{"NAMESPACE:ERROR-NAME"}@.  Octave's own errors use the
 @qcode{"Octave"} namespace (@pxref{XREFerror_ids,,@code{error_ids}}).
 For example:
 
@@ -1273,6 +1274,13 @@ error (err_msg);
 
 @noindent
 which will only stop execution if an error has been found.
+
+The function may also be called with an error structure such as that returned
+from @code{lasterror}.  The @var{errstruct} argument must contain fields
+@code{message}, @code{identifier}, and @code{stack}.  The first two fields are
+strings with the meanings discussed above.  The @code{stack} field must be a
+structure or structure array with fields @code{file}, @code{name}, and
+@code{line}.
 
 Implementation Note: For compatibility with @sc{matlab}, escape
 sequences in @var{template} (e.g., @qcode{"@backslashchar{}n"} =>
