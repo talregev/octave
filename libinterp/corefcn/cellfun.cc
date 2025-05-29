@@ -577,15 +577,16 @@ v = cellfun (@@det, C);         # 40% faster
           if (count == 0)
             {
               // First time through loop.  Initialize expected number of
-              // outputs based on nargout and output from first function evaluation.
-              if (nargout==0)
-                expected_nargout = (y_nel>0 && y(0).is_defined())? 1 : 0;
+              // outputs based on nargout and output from first function
+              // evaluation.
+              if (nargout == 0)
+                expected_nargout = (y_nel > 0 && y(0).is_defined ()) ? 1 : 0;
               else
                 expected_nargout = nargout;
             }
           if (y_nel < expected_nargout)
-            error ("cellfun: function fewer than nargout values");
-          else if (expected_nargout==0 && y_nel > 0 && y(0).is_defined())
+            error ("cellfun: function returned fewer than nargout values");
+          else if (expected_nargout == 0 && y_nel > 0 && y(0).is_defined ())
             error ("cellfun: function returned unexpected number of values");
 
           // Copy loop results to output if necessary 
@@ -1062,21 +1063,24 @@ v = cellfun (@@det, C);         # 40% faster
 ## An error should occur if called function does not return requested outputs
 %!function [a, b] = __counterror (x)
 %!  a = x;
-%!  if x>0
+%!  if (x > 0)
 %!    b = x;
 %!  endif
 %!endfunction
-%!test <*66642> # First call returns fewer outputs
-%! fail ("[a, b] = cellfun (@__counterror, {-1, 4})");
-%!test <*66642> # Subsequent call returns fewer outputs
-%! fail ("[a, b] = cellfun (@__counterror, {1, -4})");
-%!test <*66642> # Non-uniform output with one call returning fewer outputs
-%! fail ("[a, b] = cellfun (@__counterror, {1, -4}, 'UniformOutput', false)");
+%!test <*66642>  # First call returns fewer outputs
+%! fail ("[a, b] = cellfun (@__counterror, {-1, 4})",
+%!       "function returned fewer than nargout values");
+%!test <*66642>  # Subsequent call returns fewer outputs
+%! fail ("[a, b] = cellfun (@__counterror, {1, -4})",
+%!       "function returned fewer than nargout values");
+%!test <*66642>  # Non-uniform output with one call returning fewer outputs
+%! fail ("[a, b] = cellfun (@__counterror, {1, -4}, 'UniformOutput', false)",
+%!       "function returned fewer than nargout values");
 %!test  # It's OK to return more outputs than requested
 %! a = cellfun (@__counterror, {1, -4});
-%! assert (a, [1, -4])
+%! assert (a, [1, -4]);
 %! a = cellfun (@__counterror, {-1, 4});
-%! assert (a, [-1, 4])
+%! assert (a, [-1, 4]);
 %! cellfun (@__counterror, {-1, 4});
 %! assert (ans, [-1, 4]);
 %! cellfun (@__counterror, {1, -4});
@@ -1084,18 +1088,20 @@ v = cellfun (@@det, C);         # 40% faster
 %!
 ## Testing nargout=0
 %!function r = __counterror1 (x)
-%!  if x > 0
+%!  if (x > 0)
 %!    r = x;
 %!  endif
 %!endfunction
-##  With nargout=0 and UniformOutput=true, either every call returns something,
-##  or none does
+## When nargout=0 and UniformOutput=true, either every call returns something,
+## or none does.
 %!test <*66642>
-%!  fail ("cellfun (@__counterror1, {1, -2})", "cellfun: function returned fewer than nargout values");
+%! fail ("cellfun (@__counterror1, {1, -2})",
+%!       "cellfun: function returned fewer than nargout values");
 %!test <*66642>
-%!  fail ("cellfun (@__counterror1, {-1, 2})");
-##  With nargout=0 and UniformOutput=false, each function call can either return
-##  something or not
+%! fail ("cellfun (@__counterror1, {-1, 2})",
+%!       "function returned unexpected number of values");
+## When nargout=0 and UniformOutput=false, each function call can either
+## return something or not.
 %!test
 %! cellfun (@__counterror1, {1, -2}, "UniformOutput", false);
 %! assert (ans, {1, []});
@@ -1108,8 +1114,8 @@ v = cellfun (@@det, C);         # 40% faster
 %!endfunction
 %!
 %!test <*66642>  # varargout, with number of outputs >= nargout
-%!  a = cellfun (@__fvarg, {2, 1, 3});
-%!  assert (a, [2,1,3])
+%! a = cellfun (@__fvarg, {2, 1, 3});
+%! assert (a, [2,1,3]);
 
 ## Test input validation
 %!error <Invalid call> cellfun (1)
@@ -1137,6 +1143,10 @@ v = cellfun (@@det, C);         # 40% faster
 // Hajek.  It was converted to C++ by jwe so that it could properly
 // handle the nargout = 0 case.
 
+// FIXME: Function should be re-written to determine function calling form
+//        just once (since for an array the data type cannot change) and then
+//        execute that function repeatedly without the overhead of looking up
+//        the correct function in symbol table every time.
 DEFMETHOD (arrayfun, interp, args, nargout,
            doc: /* -*- texinfo -*-
 @deftypefn  {} {@var{B} =} arrayfun (@var{fcn}, @var{A})
@@ -1370,7 +1380,10 @@ arrayfun (@@str2num, [1234],
 
           OCTAVE_LOCAL_BUFFER (octave_value, retv, nargout1);
 
-          int expected_nargout;
+          // FIXME: Initialized to prevent compiler warning.
+          // However, it would be better if the code guaranteed that variable
+          // was always assigned a valid value.
+          int expected_nargout = 0;
           for (octave_idx_type count = 0; count < k; count++)
             {
               idx_list.front ()(0) = count + 1.0;
@@ -1391,17 +1404,17 @@ arrayfun (@@str2num, [1234],
                 {
                   // First time through loop.  Initialize expected number of
                   // outputs based on output from first function evaluation.
-                  if (nargout==0)
-                    expected_nargout = (y_nel>0 && y(0).is_defined())? 1 : 0;
+                  if (nargout == 0)
+                    expected_nargout = (y_nel > 0 && y(0).is_defined ())
+                                       ? 1 : 0;
                   else
                     expected_nargout = nargout;
                 }
               if (y_nel < expected_nargout)
                 error_with_id ("Octave:invalid-fun-call",
                                "arrayfun: function returned fewer than nargout values");
-              else if (expected_nargout==0 && y_nel > 0 && y(0).is_defined())
+              else if (expected_nargout == 0 && y_nel > 0 && y(0).is_defined ())
                 error ("cellfun: function returned unexpected number of values");
-
 
               if (expected_nargout > 0)
                 {
@@ -1773,17 +1786,20 @@ arrayfun (@@str2num, [1234],
 %! assert ([A(1).index, A(2).index], [1, 2]);
 
 ## An error should occur if called function does not return requested outputs
-%!test <*66642> # First call returns fewer outputs
-%! fail ("[a, b] = arrayfun (@__counterror, [-1, 4])");
-%!test <*66642> # Subsequent call returns fewer outputs
-%! fail ("[a, b] = arrayfun (@__counterror, [1, -4])");
-%!test <*66642> # Non-uniform output
-%! fail ("[a, b] = arrayfun (@__counterror, [1, -4], 'UniformOutput', false)");
+%!test <*66642>  # First call returns fewer outputs
+%! fail ("[a, b] = arrayfun (@__counterror, [-1, 4])",
+%!       "function returned fewer than nargout values");
+%!test <*66642>  # Subsequent call returns fewer outputs
+%! fail ("[a, b] = arrayfun (@__counterror, [1, -4])",
+%!       "function returned fewer than nargout values");
+%!test <*66642>  # Non-uniform output
+%! fail ("[a, b] = arrayfun (@__counterror, [1, -4], 'UniformOutput', false)",
+%!       "function returned fewer than nargout values");
 %!test  # It's OK to return more outputs than requested
 %! a = arrayfun (@__counterror, [1, -4]);
-%! assert (a, [1, -4])
+%! assert (a, [1, -4]);
 %! a = arrayfun (@__counterror, [-1, 4]);
-%! assert (a, [-1, 4])
+%! assert (a, [-1, 4]);
 %! arrayfun (@__counterror, [-1, 4]);
 %! assert (ans, [-1, 4]);
 %! arrayfun (@__counterror, [1, -4]);
@@ -1791,13 +1807,15 @@ arrayfun (@@str2num, [1234],
 %!
 ## Testing nargout=0
 ##  With nargout=0 and UniformOutput=true, either every call returns something,
-##  or none does
+##  or none does.
 %!test <*66642>
-%!  fail ("arrayfun (@__counterror1, [1, -2])", "arrayfun: function returned fewer than nargout values")
+%! fail ("arrayfun (@__counterror1, [1, -2])",
+%!       "arrayfun: function returned fewer than nargout values");
 %!test <*66642>
-%!  fail ("arrayfun (@__counterror1, [-1, 2])")
-##  With nargout=0 and UniformOutput=false, each function call can either return
-##  something or not
+%! fail ("arrayfun (@__counterror1, [-1, 2])",
+%!       "function returned unexpected number of values");
+## When nargout=0 and UniformOutput=false, each function call can either
+## return something or not.
 %!test
 %! arrayfun (@__counterror1, [1,-2], "UniformOutput", false);
 %! assert (ans, {1, []});
@@ -1809,9 +1827,9 @@ arrayfun (@@str2num, [1234],
 %!  varargout = num2cell (n:-1:1);
 %!endfunction
 %!
-%!test # varargout, with number of outputs >= nargout
-%!  a = arrayfun (@__fvarg, [2, 1, 3]);
-%!  assert (a, [2, 1, 3])
+%!test  # varargout, with number of outputs >= nargout
+%! a = arrayfun (@__fvarg, [2, 1, 3]);
+%! assert (a, [2, 1, 3]);
 */
 
 static void
