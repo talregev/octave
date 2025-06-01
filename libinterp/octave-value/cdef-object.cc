@@ -532,7 +532,11 @@ cdef_object_scalar::subsref (const std::string& type,
 
         if (meth.ok ())
           {
-            int _nargout = (type.length () > 2 ? 1 : nargout);
+            // If the method call is followed by another index operation,
+            // the number of outputs of the call will be 1
+            int _nargout = (type.length () > 2 || 
+                             (type.length () == 2 && type[1] != '(') ? 
+                             1 : nargout);
 
             octave_value_list args;
 
