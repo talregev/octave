@@ -446,7 +446,7 @@ tree_index_expression::evaluate_n (tree_evaluator& tw, int nargout)
   int n = m_args.size ();
   int beg = 0;
 
-  // Set nargout to 1 for all subsref operations except the last one
+  // Set nargout to 1 for all subsref operations except the last one.
   int nargout_saved = nargout;
   if (n > 1)
     nargout = 1;
