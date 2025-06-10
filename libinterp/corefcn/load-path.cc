@@ -2578,15 +2578,22 @@ The re-initialized path is returned as an output.
 // exists prior to running the system's octaverc file or the user's
 // ~/.octaverc file
 
-DEFMETHOD (__pathorig__, interp, , ,
+DEFMETHOD (__pathorig__, interp, args, ,
            doc: /* -*- texinfo -*-
-@deftypefn {} {@var{str} =} __pathorig__ ()
+@deftypefn  {} {@var{sys_path} =} __pathorig__ ()
+@deftypefnx {} {@var{prev_sys_path} =} __pathorig__ (sys_path)
 Undocumented internal function.
 @end deftypefn */)
 {
   load_path& lp = interp.get_load_path ();
 
-  return ovl (lp.system_path ());
+  if (args.empty ())
+    return ovl (lp.system_path ());
+
+  std::string sys_path = args(0).xstring_value ("__pathorig__: SYS_PATH must be a string");
+  std::string prev_sys_path = lp.system_path ();
+  lp.system_path (sys_path);
+  return ovl (prev_sys_path);
 }
 
 DEFMETHOD (path, interp, args, nargout,

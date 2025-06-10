@@ -45,12 +45,15 @@
 %!   path (path_orig);
 %! end_unwind_protect
 
-## The following test only works after Octave has been installed and
-## __pathorig__ is non-empty.
-## %!warning <shadows a core library function>
-## %! path_orig = path ();
-## %! unwind_protect
-## %!   addpath (fullfile (pwd_orig, "shadowed-corelib"));
-## %! unwind_protect_cleanup
-## %!   path (path_orig);
-## %! end_unwind_protect
+%!warning <shadows a core library function>
+%! path_orig = path ();
+%! orig_sys_path = __pathorig__ ();
+%! unwind_protect
+%!   ## Temporarily override sys_path so this test works even before Octave
+%!   ## has been installed and __pathorig__ is empty by default.
+%!    __pathorig__ (path_orig);
+%!   addpath (fullfile (pwd (), "shadowed-corelib"));
+%! unwind_protect_cleanup
+%!   path (path_orig);
+%!   __pathorig__ (orig_sys_path);
+%! end_unwind_protect
