@@ -1993,7 +1993,14 @@ load_path::package_info::add_to_fcn_map (const dir_info& di,
                 {
                   symbol_table& symtab = __get_symbol_table__ ();
 
-                  if (symtab.is_built_in_function_name (base))
+                  // FIXME: It is currently not possible to check for built-in
+                  //        functions including their +package namespace.
+                  //        Assume that no built-in functions with a +package
+                  //        namespace are installed and skip the warning for
+                  //        new functions that *are* in a +package namespace.
+
+                  if (m_package_name.empty ()
+                      && symtab.is_built_in_function_name (base))
                     {
                       std::string fcn_path = sys::file_ops::concat (dir_name,
                                              fname);

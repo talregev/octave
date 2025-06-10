@@ -57,3 +57,27 @@
 %!   path (path_orig);
 %!   __pathorig__ (orig_sys_path);
 %! end_unwind_protect
+
+## Test that no shadowing warning is emitted if a function with the same name
+## as a builtin function is added inside a (different) +namespace.
+%!test <*46849>
+%! path_orig = path ();
+%! lastwarn ("");
+%! unwind_protect
+%!   addpath (fullfile (pwd (), "namespace-builtin"));
+%!   assert (lastwarn (), "");
+%! unwind_protect_cleanup
+%!   path (path_orig);
+%! end_unwind_protect
+
+## Test that no shadowing warning is emitted if a function with the same name
+## as a function from the core library is added inside a (different) +namespace.
+%!test <*46849>
+%! path_orig = path ();
+%! lastwarn ("");
+%! unwind_protect
+%!   addpath (fullfile (pwd (), "namespace-corelib"));
+%!   assert (lastwarn (), "");
+%! unwind_protect_cleanup
+%!   path (path_orig);
+%! end_unwind_protect
