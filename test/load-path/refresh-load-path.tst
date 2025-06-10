@@ -36,3 +36,21 @@
 %!   path (path_orig);
 %!   cd (pwd_orig);
 %! end_unwind_protect
+
+%!warning <shadows a built-in function>
+%! path_orig = path ();
+%! unwind_protect
+%!   addpath (fullfile (pwd (), "shadowed-builtin"));
+%! unwind_protect_cleanup
+%!   path (path_orig);
+%! end_unwind_protect
+
+## The following test only works after Octave has been installed and
+## __pathorig__ is non-empty.
+## %!warning <shadows a core library function>
+## %! path_orig = path ();
+## %! unwind_protect
+## %!   addpath (fullfile (pwd_orig, "shadowed-corelib"));
+## %! unwind_protect_cleanup
+## %!   path (path_orig);
+## %! end_unwind_protect
