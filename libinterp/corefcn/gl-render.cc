@@ -845,7 +845,7 @@ opengl_renderer::init_gl_context (bool enhanced, const Matrix& c)
 
   m_glfcns.glEnable (GL_DEPTH_TEST);
   m_glfcns.glDepthFunc (GL_LEQUAL);
-#ifdef GL_GLEXT_PROTOTYPES
+#if defined (HAVE_GLBLENDFUNCSEPARATE)
   std::string gl_version = get_string (GL_VERSION);
   if (gl_version.size() >= 3 && gl_version.substr(0, 3) >= "1.4")
     m_glfcns.glBlendFuncSeparate (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,

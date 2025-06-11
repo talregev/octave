@@ -97,13 +97,13 @@ public:
     ::glBlendFunc (sfactor, dfactor);
   }
 
-#ifdef GL_GLEXT_PROTOTYPES
+#if defined (HAVE_GLBLENDFUNCSEPARATE)
   virtual void glBlendFuncSeparate (GLenum sfactor, GLenum dfactor,
                                     GLenum salpha, GLenum dalpha)
   {
     ::glBlendFuncSeparate (sfactor, dfactor, salpha, dalpha);
   }
-#endif //GL_GLEXT_PROTOTYPES
+#endif
 
   virtual void glCallList (GLuint list)
   {
