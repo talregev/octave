@@ -3,6 +3,6 @@ load_path_TEST_FILES = \
     %reldir%/in-load-path/load_path_fcn.m \
     %reldir%/not-in-load-path/load_path_fcn.m \
     %reldir%/shadowed-builtin/var.m \
-    %reldir%/shadowed-corelib/plot.m
+    %reldir%/shadowed-corelib/quad.m
 
 TEST_FILES += $(load_path_TEST_FILES)
