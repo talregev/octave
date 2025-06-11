@@ -1583,6 +1583,7 @@ AC_DEFUN([OCTAVE_CHECK_LIB_OPENGL], [
   AC_SUBST(OPENGL_LIBS)
   if test -n "$OPENGL_LIBS"; then
     AC_DEFINE(HAVE_OPENGL, 1, [Define to 1 if OpenGL is available.])
+    AC_DEFINE(GL_GLEXT_PROTOTYPES, 1, [Define to 1 to enable OpenGL extensions.])
   fi
 ])
 dnl
