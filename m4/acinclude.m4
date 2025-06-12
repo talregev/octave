@@ -1587,8 +1587,9 @@ AC_DEFUN([OCTAVE_CHECK_LIB_OPENGL], [
     save_LIBS="$LIBS"
     LIBS="$LIBS $OPENGL_LIBS"
     AC_CACHE_CHECK([for glBlendFuncSeparate],
-      [octave_cv_func_glblendfuncseparate],
-      [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+      [octave_cv_func_glblendfuncseparate],[
+      AC_LANG_PUSH(C++)
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #if defined (HAVE_WINDOWS_H)
 # include <windows.h>
 #endif
@@ -1610,7 +1611,16 @@ AC_DEFUN([OCTAVE_CHECK_LIB_OPENGL], [
         glBlendFuncSeparate (sfactor, dfactor, salpha, dalpha);
         ]])],
         octave_cv_func_glblendfuncseparate=yes,
-        [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+        octave_cv_func_glblendfuncseparate=no)
+      AC_LANG_POP(C++)
+      ])
+    if test $octave_cv_func_glblendfuncseparate = yes; then
+      AC_DEFINE(HAVE_GLBLENDFUNCSEPARATE, 1, [Define to 1 if glBlendFuncSeparate can be used directly.])
+    else
+      AC_CACHE_CHECK([for glBlendFuncSeparate with GL_GLEXT_PROTOTYPES],
+        [octave_cv_func_glblendfuncseparate_as_ext],[
+        AC_LANG_PUSH(C++)
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #define GL_GLEXT_PROTOTYPES 1
 #if defined (HAVE_WINDOWS_H)
 # include <windows.h>
@@ -1632,15 +1642,15 @@ AC_DEFUN([OCTAVE_CHECK_LIB_OPENGL], [
           GLenum dalpha=0;
           glBlendFuncSeparate (sfactor, dfactor, salpha, dalpha);
           ]])],
-          [AC_DEFINE(GL_GLEXT_PROTOTYPES, 1, [Define to 1 to enable OpenGL extensions in headers.])
-          octave_cv_func_glblendfuncseparate=yes],
-          octave_cv_func_glblendfuncseparate=no)
+          octave_cv_func_glblendfuncseparate_as_ext=yes,
+          octave_cv_func_glblendfuncseparate_as_ext=no)
         ])
-      ])
-    LIBS="$save_LIBS"
-    if test $octave_cv_func_glblendfuncseparate = yes; then
-      AC_DEFINE(HAVE_GLBLENDFUNCSEPARATE, 1, [Define to 1 if glBlendFuncSeparate can be used directly.])
+      if test $octave_cv_func_glblendfuncseparate_as_ext = yes; then
+        AC_DEFINE(HAVE_GLBLENDFUNCSEPARATE, 1, [Define to 1 if glBlendFuncSeparate can be used directly.])
+        AC_DEFINE(GL_GLEXT_PROTOTYPES, 1, [Define to 1 to enable OpenGL extensions in headers.])
+      fi
     fi
+    LIBS="$save_LIBS"
   fi
 ])
 dnl
