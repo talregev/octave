@@ -32,9 +32,9 @@
 #include "fCMatrix.h"
 #include "fMatrix.h"
 #include "gepbalance.h"
+#include "lapack-proto.h"
 #include "lo-array-errwarn.h"
 #include "lo-error.h"
-#include "lo-lapack-proto.h"
 #include "oct-locbuf.h"
 #include "quit.h"
 

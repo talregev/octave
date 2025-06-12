@@ -33,8 +33,8 @@
 #include "fCMatrix.h"
 #include "fMatrix.h"
 #include "hess.h"
+#include "lapack-proto.h"
 #include "lo-error.h"
-#include "lo-lapack-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

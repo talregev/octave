@@ -37,6 +37,7 @@
 #include "CMatrix.h"
 #include "CNDArray.h"
 #include "Faddeeva.hh"
+#include "amos-proto.h"
 #include "dMatrix.h"
 #include "dNDArray.h"
 #include "dRowVector.h"
@@ -47,13 +48,12 @@
 #include "fMatrix.h"
 #include "fNDArray.h"
 #include "fRowVector.h"
-#include "lo-amos-proto.h"
 #include "lo-error.h"
 #include "lo-ieee.h"
 #include "lo-mappers.h"
-#include "lo-slatec-proto.h"
 #include "lo-specfun.h"
 #include "mx-inlines.cc"
+#include "slatec-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

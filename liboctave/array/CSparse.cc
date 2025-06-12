@@ -39,7 +39,7 @@
 #include "lo-mappers.h"
 #include "f77-fcn.h"
 #include "dRowVector.h"
-#include "lo-lapack-proto.h"
+#include "lapack-proto.h"
 #include "mx-m-cs.h"
 #include "mx-cs-m.h"
 #include "mx-cm-s.h"

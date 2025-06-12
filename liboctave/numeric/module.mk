@@ -18,7 +18,6 @@ NUMERIC_INC = \
   %reldir%/DASSL.h \
   %reldir%/DET.h \
   %reldir%/EIG.h \
-  %reldir%/gsvd.h \
   %reldir%/LSODE.h \
   %reldir%/ODE.h \
   %reldir%/ODEFunc.h \
@@ -26,15 +25,20 @@ NUMERIC_INC = \
   %reldir%/ODESFunc.h \
   %reldir%/Quad.h \
   %reldir%/aepbalance.h \
+  %reldir%/amos-proto.h \
+  %reldir%/arpack-proto.h \
   %reldir%/base-dae.h \
   %reldir%/base-de.h \
+  %reldir%/blas-proto.h \
   %reldir%/bsxfun-decl.h \
   %reldir%/bsxfun.h \
   %reldir%/chol.h \
   %reldir%/eigs-base.h \
   %reldir%/fEIG.h \
   %reldir%/gepbalance.h \
+  %reldir%/gsvd.h \
   %reldir%/hess.h \
+  %reldir%/lapack-proto.h \
   %reldir%/lo-amos-proto.h \
   %reldir%/lo-arpack-proto.h \
   %reldir%/lo-blas-proto.h \
@@ -52,10 +56,13 @@ NUMERIC_INC = \
   %reldir%/oct-spparms.h \
   %reldir%/qr.h \
   %reldir%/qrp.h \
+  %reldir%/qrupdate-proto.h \
   %reldir%/randgamma.h \
   %reldir%/randmtzig.h \
   %reldir%/randpoisson.h \
+  %reldir%/ranlib-proto.h \
   %reldir%/schur.h \
+  %reldir%/slatec-proto.h \
   %reldir%/sparse-chol.h \
   %reldir%/sparse-dmsolve.h \
   %reldir%/sparse-lu.h \

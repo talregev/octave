@@ -42,13 +42,13 @@
 #include "fColVector.h"
 #include "fMatrix.h"
 #include "fRowVector.h"
+#include "lapack-proto.h"
 #include "lo-error.h"
-#include "lo-lapack-proto.h"
-#include "lo-qrupdate-proto.h"
 #include "oct-cmplx.h"
 #include "oct-locbuf.h"
 #include "oct-sort.h"
 #include "qr.h"
+#include "qrupdate-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

@@ -36,8 +36,8 @@
 #include "fCMatrix.h"
 #include "fDiagMatrix.h"
 #include "fMatrix.h"
+#include "lapack-proto.h"
 #include "lo-error.h"
-#include "lo-lapack-proto.h"
 #include "svd.h"
 
 // class to compute optimal work space size (lwork) for DGEJSV and SGEJSV

@@ -32,7 +32,7 @@
 #include <type_traits>
 
 #include "Array-util.h"
-#include "lo-blas-proto.h"
+#include "blas-proto.h"
 #include "lo-error.h"
 #include "mx-base.h"
 #include "mx-inlines.cc"
