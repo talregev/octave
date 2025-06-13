@@ -2334,12 +2334,38 @@ save_mat5_binary_element (std::ostream& os,
 
   static octave_idx_type max_dim_val = std::numeric_limits<int32_t>::max ();
 
-  for (int i = 0; i < nd; i++)
+  // Strings need to be converted here (or dim-vector will be off).
+  charNDArray chm;
+  uint16_t *u16_str;
+  std::size_t n16_str;
+  bool conv_u16 = false;
+  if (tc.is_string ())
     {
-      if (dv(i) > max_dim_val)
+      chm = tc.char_array_value ();
+      u16_str = maybe_convert_to_u16 (chm, n16_str);
+
+      if (u16_str)
+        conv_u16 = true;
+    }
+
+
+  if (conv_u16)
+    {
+      if (n16_str > static_cast<std::size_t> (max_dim_val))
         {
           warn_dim_too_large (name);
           return true;  // skip to next
+        }
+    }
+  else
+    {
+      for (int i = 0; i < nd; i++)
+        {
+          if (dv(i) > max_dim_val)
+            {
+              warn_dim_too_large (name);
+              return true;  // skip to next
+            }
         }
     }
 
@@ -2482,20 +2508,6 @@ save_mat5_binary_element (std::ostream& os,
   os.write (reinterpret_cast<char *> (&nnz_32), 4);
 
   write_mat5_tag (os, miINT32, dim_len);
-
-  // Strings need to be converted here (or dim-vector will be off).
-  charNDArray chm;
-  uint16_t *u16_str;
-  std::size_t n16_str;
-  bool conv_u16 = false;
-  if (tc.is_string ())
-    {
-      chm = tc.char_array_value ();
-      u16_str = maybe_convert_to_u16 (chm, n16_str);
-
-      if (u16_str)
-        conv_u16 = true;
-    }
 
   if (conv_u16)
     {
