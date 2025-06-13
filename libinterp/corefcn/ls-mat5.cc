@@ -2511,9 +2511,8 @@ save_mat5_binary_element (std::ostream& os,
 
   if (conv_u16)
     {
-      int32_t n = 1;
-      os.write (reinterpret_cast<char *> (&n), 4);
-      os.write (reinterpret_cast<char *> (&n16_str), 4);
+      int32_t n[2] = {1, static_cast<int32_t> (n16_str)};
+      os.write (reinterpret_cast<char *> (&n), 8);
     }
   else
     for (int i = 0; i < nd; i++)
