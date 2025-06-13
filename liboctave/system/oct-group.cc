@@ -33,7 +33,7 @@
 #  include <grp.h>
 #endif
 
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-group.h"
 #include "str-vec.h"
 

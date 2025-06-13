@@ -29,7 +29,7 @@
 
 #include <sys/types.h>
 
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-password.h"
 #include "pwd-wrappers.h"
 

@@ -41,7 +41,7 @@
 
 #include "async-system-wrapper.h"
 #include "child-list.h"
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-fftw.h"
 #include "oct-locbuf.h"
 #include "oct-syscalls.h"

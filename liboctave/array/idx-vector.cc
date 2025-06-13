@@ -38,9 +38,9 @@
 #include "Sparse.h"
 #include "Range.h"
 
-#include "oct-locbuf.h"
-#include "lo-error.h"
 #include "lo-mappers.h"
+#include "oct-error.h"
+#include "oct-locbuf.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

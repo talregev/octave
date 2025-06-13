@@ -50,10 +50,10 @@ Free Software Foundation, Inc.
 #include <string>
 
 #include "file-ops.h"
-#include "lo-error.h"
 #include "lo-sysdep.h"
 #include "lo-utils.h"
 #include "oct-env.h"
+#include "oct-error.h"
 #include "oct-password.h"
 #include "oct-syscalls.h"
 #include "set-program-name-wrapper.h"

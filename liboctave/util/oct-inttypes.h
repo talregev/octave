@@ -35,8 +35,8 @@
 #include <limits>
 
 #include "lo-mappers.h"
-#include "lo-traits.h"
 #include "oct-inttypes-fwd.h"
+#include "oct-traits.h"
 
 #if defined (OCTAVE_INT_USE_LONG_DOUBLE)
 

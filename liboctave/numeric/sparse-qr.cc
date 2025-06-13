@@ -33,7 +33,7 @@
 #include "dColVector.h"
 #include "dMatrix.h"
 #include "dSparse.h"
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-sparse.h"
 #include "quit.h"

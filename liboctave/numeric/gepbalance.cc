@@ -34,7 +34,7 @@
 #include "gepbalance.h"
 #include "lapack-proto.h"
 #include "lo-array-errwarn.h"
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-locbuf.h"
 #include "quit.h"
 

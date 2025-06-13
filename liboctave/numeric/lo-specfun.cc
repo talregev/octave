@@ -48,11 +48,11 @@
 #include "fMatrix.h"
 #include "fNDArray.h"
 #include "fRowVector.h"
-#include "lo-error.h"
 #include "lo-ieee.h"
 #include "lo-mappers.h"
 #include "lo-specfun.h"
 #include "mx-inlines.cc"
+#include "oct-error.h"
 #include "slatec-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)

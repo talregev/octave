@@ -38,7 +38,7 @@
 #include "fColVector.h"
 #include "fMatrix.h"
 #include "lapack-proto.h"
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-norm.h"
 #include "qrupdate-proto.h"

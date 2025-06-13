@@ -50,7 +50,7 @@ extern "C"
 
 #include "file-ops.h"
 #include "file-stat.h"
-#include "lo-error.h"
+#include "oct-error.h"
 #include "oct-shlib.h"
 #include "str-vec.h"
 

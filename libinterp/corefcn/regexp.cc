@@ -32,7 +32,7 @@
 
 #include "oct-locbuf.h"
 #include "quit.h"
-#include "lo-regexp.h"
+#include "oct-regexp.h"
 #include "str-vec.h"
 
 #include "defun.h"

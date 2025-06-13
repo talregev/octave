@@ -28,8 +28,8 @@
 #endif
 
 #include "f77-fcn.h"
-#include "lo-error.h"
 #include "mach-info.h"
+#include "oct-error.h"
 
 extern "C"
 {

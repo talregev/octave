@@ -32,7 +32,7 @@
 #include "fEIG.h"
 #include "fMatrix.h"
 #include "lapack-proto.h"
-#include "lo-error.h"
+#include "oct-error.h"
 
 octave_idx_type
 FloatEIG::init (const FloatMatrix& a, bool calc_rev, bool calc_lev,

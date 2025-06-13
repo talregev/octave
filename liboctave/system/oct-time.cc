@@ -40,9 +40,9 @@
 #  include "file-stat.h"
 #endif
 
-#include "lo-error.h"
-#include "lo-utils.h"
 #include "lo-sysdep.h"
+#include "lo-utils.h"
+#include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-time.h"
 #include "octave-preserve-stream-state.h"

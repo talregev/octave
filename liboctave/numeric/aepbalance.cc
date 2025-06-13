@@ -35,7 +35,7 @@
 #include "fColVector.h"
 #include "fMatrix.h"
 #include "lapack-proto.h"
-#include "lo-error.h"
+#include "oct-error.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
 

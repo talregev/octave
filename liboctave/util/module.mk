@@ -22,17 +22,21 @@ UTIL_INC = \
   %reldir%/oct-base64.h \
   %reldir%/oct-binmap.h \
   %reldir%/oct-cmplx.h \
+  %reldir%/oct-error.h \
   %reldir%/oct-glob.h \
+  %reldir%/oct-hash.h \
   %reldir%/oct-inttypes-fwd.h \
   %reldir%/oct-inttypes.h \
   %reldir%/oct-locbuf.h \
   %reldir%/oct-mutex.h \
+  %reldir%/oct-regexp.h \
   %reldir%/oct-refcount.h \
   %reldir%/oct-rl-edit.h \
   %reldir%/oct-rl-hist.h \
   %reldir%/oct-shlib.h \
   %reldir%/oct-sort.h \
   %reldir%/oct-string.h \
+  %reldir%/oct-traits.h \
   %reldir%/pathsearch.h \
   %reldir%/singleton-cleanup.h \
   %reldir%/sparse-util.h \

@@ -31,10 +31,10 @@
 
 #include <limits>
 
-#include "lo-error.h"
 #include "lo-ieee.h"
 #include "lo-mappers.h"
 #include "mach-info.h"
+#include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-rand.h"
 #include "oct-time.h"

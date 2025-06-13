@@ -33,10 +33,10 @@
 
 #include "Array-util.h"
 #include "blas-proto.h"
-#include "lo-error.h"
 #include "mx-base.h"
 #include "mx-inlines.cc"
 #include "oct-cmplx.h"
+#include "oct-error.h"
 
 // Row Vector class.
 
