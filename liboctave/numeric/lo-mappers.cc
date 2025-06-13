@@ -28,8 +28,8 @@
 #endif
 
 #include "lo-mappers.h"
-#include "lo-specfun.h"
 #include "math-wrappers.h"
+#include "oct-specfun.h"
 
 // FIXME: We used to have this situation:
 //

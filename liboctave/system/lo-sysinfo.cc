@@ -31,8 +31,8 @@
 #include <string>
 
 #include "f77-fcn.h"
-#include "lo-sysinfo.h"
 #include "oct-shlib.h"
+#include "oct-sysinfo.h"
 
 // Hack to stringize macro results.
 #define xSTRINGIZE(x) #x

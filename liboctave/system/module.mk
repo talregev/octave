@@ -10,6 +10,8 @@ SYSTEM_INC = \
   %reldir%/oct-group.h \
   %reldir%/oct-password.h \
   %reldir%/oct-syscalls.h \
+  %reldir%/oct-sysdep.h \
+  %reldir%/oct-sysinfo.h \
   %reldir%/oct-time.h \
   %reldir%/oct-uname.h
 

@@ -50,9 +50,9 @@
 #include "fRowVector.h"
 #include "lo-ieee.h"
 #include "lo-mappers.h"
-#include "lo-specfun.h"
 #include "mx-inlines.cc"
 #include "oct-error.h"
+#include "oct-specfun.h"
 #include "slatec-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)

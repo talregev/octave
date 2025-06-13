@@ -40,10 +40,10 @@
 #  include "file-stat.h"
 #endif
 
-#include "lo-sysdep.h"
 #include "lo-utils.h"
 #include "oct-error.h"
 #include "oct-locbuf.h"
+#include "oct-sysdep.h"
 #include "oct-time.h"
 #include "octave-preserve-stream-state.h"
 #include "strftime-wrapper.h"

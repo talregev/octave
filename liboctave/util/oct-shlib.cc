@@ -55,7 +55,7 @@ extern "C"
 #include "str-vec.h"
 
 #if defined (HAVE_LOADLIBRARY_API)
-#  include "lo-sysdep.h"
+#  include "oct-sysdep.h"
 #endif
 
 OCTAVE_BEGIN_NAMESPACE(octave)

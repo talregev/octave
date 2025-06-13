@@ -46,13 +46,13 @@
 
 #include "data-conv.h"
 #include "lo-ieee.h"
-#include "lo-utils.h"
-#include "lo-specfun.h"
 #include "lo-mappers.h"
+#include "lo-utils.h"
 #include "mach-info.h"
 #include "mx-base.h"
-#include "quit.h"
 #include "oct-locbuf.h"
+#include "oct-specfun.h"
+#include "quit.h"
 
 #include "defun.h"
 #include "errwarn.h"

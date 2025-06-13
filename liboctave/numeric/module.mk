@@ -53,6 +53,7 @@ NUMERIC_INC = \
   %reldir%/oct-fftw.h \
   %reldir%/oct-norm.h \
   %reldir%/oct-rand.h \
+  %reldir%/oct-specfun.h \
   %reldir%/oct-spparms.h \
   %reldir%/qr.h \
   %reldir%/qrp.h \

@@ -37,11 +37,11 @@
 
 #include "data-conv.h"
 #include "lo-ieee.h"
-#include "lo-specfun.h"
 #include "lo-mappers.h"
-#include "mx-base.h"
 #include "mach-info.h"
+#include "mx-base.h"
 #include "oct-locbuf.h"
+#include "oct-specfun.h"
 
 #include "errwarn.h"
 #include "mxarray.h"

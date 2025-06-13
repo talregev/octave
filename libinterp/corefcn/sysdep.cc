@@ -64,9 +64,9 @@
 #include "cmd-edit.h"
 #include "file-ops.h"
 #include "lo-mappers.h"
-#include "lo-sysinfo.h"
 #include "mach-info.h"
 #include "oct-env.h"
+#include "oct-sysinfo.h"
 #include "uniconv-wrappers.h"
 #include "unistd-wrappers.h"
 

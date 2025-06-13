@@ -32,9 +32,9 @@
 #include <ostream>
 #include <vector>
 
-#include "lo-specfun.h"
 #include "lo-mappers.h"
 #include "oct-locbuf.h"
+#include "oct-specfun.h"
 
 #include "mxarray.h"
 #include "errwarn.h"
