@@ -33,8 +33,8 @@
 #include "oct-inttypes-fwd.h"
 
 #include "data-conv.h"
-#include "lo-mappers.h"
 #include "mach-info.h"
+#include "mappers.h"
 #include "oct-specfun.h"
 
 #include "defun.h"

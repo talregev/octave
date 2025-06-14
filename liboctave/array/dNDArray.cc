@@ -35,7 +35,7 @@
 #include "dNDArray.h"
 #include "f77-fcn.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "mx-base.h"
 #include "mx-op-defs.h"
 #include "oct-error.h"

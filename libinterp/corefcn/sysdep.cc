@@ -63,8 +63,8 @@
 
 #include "cmd-edit.h"
 #include "file-ops.h"
-#include "lo-mappers.h"
 #include "mach-info.h"
+#include "mappers.h"
 #include "oct-env.h"
 #include "oct-sysinfo.h"
 #include "uniconv-wrappers.h"

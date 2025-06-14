@@ -37,8 +37,8 @@
 
 #include "data-conv.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
 #include "mach-info.h"
+#include "mappers.h"
 #include "mx-base.h"
 #include "oct-locbuf.h"
 #include "oct-specfun.h"

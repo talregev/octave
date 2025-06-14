@@ -30,7 +30,7 @@
 #include "CSparse.h"
 #include "PermMatrix.h"
 #include "dSparse.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-sparse.h"

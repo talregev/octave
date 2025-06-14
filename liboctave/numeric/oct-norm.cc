@@ -52,7 +52,7 @@
 #include "fMatrix.h"
 #include "fRowVector.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "mx-cm-s.h"
 #include "mx-fcm-fs.h"
 #include "mx-fs-fcm.h"

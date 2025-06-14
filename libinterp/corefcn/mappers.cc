@@ -30,7 +30,7 @@
 #include <cctype>
 
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-specfun.h"
 
 #include "defun.h"

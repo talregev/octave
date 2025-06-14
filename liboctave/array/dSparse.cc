@@ -35,7 +35,7 @@
 #include "dRowVector.h"
 #include "lapack-proto.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-locbuf.h"
 #include "quit.h"
 

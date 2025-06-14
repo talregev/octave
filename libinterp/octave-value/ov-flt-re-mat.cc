@@ -46,7 +46,7 @@
 
 #include "data-conv.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "lo-utils.h"
 #include "mach-info.h"
 #include "mx-base.h"

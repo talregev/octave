@@ -32,7 +32,7 @@
 #include <ostream>
 #include <vector>
 
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-locbuf.h"
 #include "oct-specfun.h"
 

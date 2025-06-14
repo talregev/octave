@@ -33,7 +33,7 @@
 #include <iosfwd>
 #include <string>
 
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "lo-utils.h"
 #include "mx-base.h"
 #include "str-vec.h"

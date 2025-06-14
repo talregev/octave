@@ -34,7 +34,7 @@
 #include <iosfwd>
 #include <limits>
 
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-inttypes-fwd.h"
 #include "oct-traits.h"
 

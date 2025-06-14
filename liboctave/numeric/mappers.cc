@@ -27,14 +27,14 @@
 #  include "config.h"
 #endif
 
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "math-wrappers.h"
 #include "oct-specfun.h"
 
 // FIXME: We used to have this situation:
 //
 //   Functions that forward to gnulib belong here so we can keep
-//   gnulib:: out of lo-mappers.h.
+//   gnulib:: out of mappers.h.
 //
 // but now we just use std:: and explicit wrappers in C++ code so maybe
 // some of the forwarding functions can be defined inline here.

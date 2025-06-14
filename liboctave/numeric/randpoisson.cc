@@ -35,7 +35,7 @@
 
 #include "f77-fcn.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "randmtzig.h"
 #include "randpoisson.h"

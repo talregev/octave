@@ -40,8 +40,8 @@
 
 #include "intprops-wrappers.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
 #include "lo-utils.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "oct-inttypes.h"
 

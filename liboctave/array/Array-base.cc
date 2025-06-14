@@ -35,7 +35,7 @@
 
 #include "Array-oct.h"
 #include "Array-util.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "oct-locbuf.h"
 

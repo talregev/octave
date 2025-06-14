@@ -49,6 +49,7 @@ NUMERIC_INC = \
   %reldir%/lo-slatec-proto.h \
   %reldir%/lo-specfun.h \
   %reldir%/lu.h \
+  %reldir%/mappers.h \
   %reldir%/oct-convn.h \
   %reldir%/oct-fftw.h \
   %reldir%/oct-norm.h \
@@ -86,9 +87,9 @@ NUMERIC_SRC = \
   %reldir%/fEIG.cc \
   %reldir%/gepbalance.cc \
   %reldir%/hess.cc \
-  %reldir%/lo-mappers.cc \
   %reldir%/lo-specfun.cc \
   %reldir%/lu.cc \
+  %reldir%/mappers.cc \
   %reldir%/oct-convn.cc \
   %reldir%/oct-fftw.cc \
   %reldir%/oct-norm.cc \

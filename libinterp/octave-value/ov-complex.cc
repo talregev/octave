@@ -32,7 +32,7 @@
 #include <sstream>
 
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-specfun.h"
 
 #include "mxarray.h"

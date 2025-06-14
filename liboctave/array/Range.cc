@@ -35,8 +35,8 @@
 
 #include "Array-util.h"
 #include "Range.h"
-#include "lo-mappers.h"
 #include "lo-utils.h"
+#include "mappers.h"
 #include "oct-error.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)

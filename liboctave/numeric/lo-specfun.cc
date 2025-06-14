@@ -49,7 +49,7 @@
 #include "fNDArray.h"
 #include "fRowVector.h"
 #include "lo-ieee.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "mx-inlines.cc"
 #include "oct-error.h"
 #include "oct-specfun.h"

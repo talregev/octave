@@ -46,7 +46,7 @@ Software Foundation, Inc.
 
 #include "cmd-hist.h"
 #include "file-ops.h"
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-env.h"
 #include "oct-sysdep.h"
 #include "oct-time.h"

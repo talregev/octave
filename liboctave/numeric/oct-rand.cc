@@ -32,8 +32,8 @@
 #include <limits>
 
 #include "lo-ieee.h"
-#include "lo-mappers.h"
 #include "mach-info.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-rand.h"

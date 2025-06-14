@@ -111,7 +111,7 @@
 #include <cstring>
 #include <stack>
 
-#include "lo-mappers.h"
+#include "mappers.h"
 #include "oct-error.h"
 #include "oct-locbuf.h"
 #include "oct-sort.h"
