@@ -70,17 +70,17 @@ UTIL_SRC = \
   %reldir%/glob-match.cc \
   %reldir%/kpse.cc \
   %reldir%/lo-array-errwarn.cc \
-  %reldir%/lo-hash.cc \
   %reldir%/lo-ieee.cc \
-  %reldir%/lo-regexp.cc \
   %reldir%/lo-utils.cc \
   %reldir%/quit.cc \
   %reldir%/oct-atomic.c \
   %reldir%/oct-base64.cc \
   %reldir%/oct-cmplx.cc \
   %reldir%/oct-glob.cc \
+  %reldir%/oct-hash.cc \
   %reldir%/oct-inttypes.cc \
   %reldir%/oct-mutex.cc \
+  %reldir%/oct-regexp.cc \
   %reldir%/oct-shlib.cc \
   %reldir%/oct-sparse.cc \
   %reldir%/oct-string.cc \

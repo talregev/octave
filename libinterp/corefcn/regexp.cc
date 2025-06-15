@@ -280,7 +280,7 @@ do_regexp_rep_string_escapes (const std::string& s)
             // Both dollar sign (for capture buffer) and backslash are
             // passed through with their escape backslash.  The processing
             // for these must occur during the actual replacement operation
-            // in lo-regexp.cc.
+            // in oct-regexp.cc.
             case '$':  // pass dollar sign through with escape
               retval[i] = '\\'; retval[++i] = '$';
               break;

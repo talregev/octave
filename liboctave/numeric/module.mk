@@ -87,13 +87,13 @@ NUMERIC_SRC = \
   %reldir%/fEIG.cc \
   %reldir%/gepbalance.cc \
   %reldir%/hess.cc \
-  %reldir%/lo-specfun.cc \
   %reldir%/lu.cc \
   %reldir%/mappers.cc \
   %reldir%/oct-convn.cc \
   %reldir%/oct-fftw.cc \
   %reldir%/oct-norm.cc \
   %reldir%/oct-rand.cc \
+  %reldir%/oct-specfun.cc \
   %reldir%/oct-spparms.cc \
   %reldir%/qr.cc \
   %reldir%/qrp.cc \

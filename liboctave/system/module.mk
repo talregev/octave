@@ -21,13 +21,13 @@ SYSTEM_SRC = \
   %reldir%/dir-ops.cc \
   %reldir%/file-ops.cc \
   %reldir%/file-stat.cc \
-  %reldir%/lo-sysdep.cc \
-  %reldir%/lo-sysinfo.cc \
   %reldir%/mach-info.cc \
   %reldir%/oct-env.cc \
   %reldir%/oct-group.cc \
   %reldir%/oct-password.cc \
   %reldir%/oct-syscalls.cc \
+  %reldir%/oct-sysdep.cc \
+  %reldir%/oct-sysinfo.cc \
   %reldir%/oct-time.cc \
   %reldir%/oct-uname.cc
 
