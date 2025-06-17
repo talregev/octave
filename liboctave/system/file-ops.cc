@@ -216,7 +216,6 @@ tilde_expand_word (const std::string& filename)
 }
 
 OCTAVE_BEGIN_NAMESPACE(sys)
-
 OCTAVE_BEGIN_NAMESPACE(file_ops)
 
 char dev_sep_char ()

@@ -42,7 +42,6 @@
 #include "qrp.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 // Specialization.

@@ -31,7 +31,6 @@
 #include <string>
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(crypto)
 
 typedef void *(hash_fptr) (const char *buffer, std::size_t len, void *res);

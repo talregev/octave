@@ -38,7 +38,6 @@
 #include "schur.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 // For real types.

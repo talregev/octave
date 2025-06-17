@@ -45,7 +45,6 @@
 #include "qrupdate-proto.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 // FIXME: PermMatrix::col_perm_vec returns Array<octave_idx_type>

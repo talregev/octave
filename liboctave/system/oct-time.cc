@@ -51,7 +51,6 @@
 #include "time-wrappers.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 time::time (double d)

@@ -51,7 +51,6 @@
 // which is not what we want...
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 bool

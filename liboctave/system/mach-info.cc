@@ -39,7 +39,6 @@ extern "C"
 }
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(mach_info)
 
 static float_format get_float_format ()

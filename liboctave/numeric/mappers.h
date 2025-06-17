@@ -37,7 +37,6 @@
 #include "oct-inttypes-fwd.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 extern OCTAVE_API bool isna (double x);

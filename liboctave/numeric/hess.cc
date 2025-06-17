@@ -37,7 +37,6 @@
 #include "oct-error.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 template <>

@@ -38,7 +38,6 @@
 #include "oct-locbuf.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(crypto)
 
 std::string

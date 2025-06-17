@@ -45,7 +45,6 @@
   nm ": not supported on this system"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 int

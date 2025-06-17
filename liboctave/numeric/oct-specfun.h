@@ -34,7 +34,6 @@
 #include "oct-cmplx.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 inline double acosh (double x) { return std::acosh (x); }

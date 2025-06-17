@@ -40,7 +40,6 @@
 // some of the forwarding functions can be defined inline here.
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 bool

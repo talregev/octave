@@ -40,7 +40,6 @@
 #include "sparse-qr.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 #if defined (HAVE_CXSPARSE)

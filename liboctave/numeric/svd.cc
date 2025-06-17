@@ -300,7 +300,6 @@ gejsv_lwork<T>::optimal (char& joba, char& jobu, char& jobv,
 }
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 template <typename T>

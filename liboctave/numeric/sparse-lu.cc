@@ -38,7 +38,6 @@
 #include "sparse-lu.h"
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(math)
 
 // Wrappers for SuiteSparse (formerly UMFPACK) functions that have

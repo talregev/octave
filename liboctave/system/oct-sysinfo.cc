@@ -39,7 +39,6 @@
 #define STRINGIZE(x) xSTRINGIZE(x)
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 std::string blas_version ()

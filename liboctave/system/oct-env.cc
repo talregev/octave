@@ -66,7 +66,6 @@ Free Software Foundation, Inc.
 #endif
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 env::env ()

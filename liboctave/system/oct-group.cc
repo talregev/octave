@@ -48,7 +48,6 @@ err_invalid ()
 }
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 std::string

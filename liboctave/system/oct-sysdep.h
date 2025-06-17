@@ -38,7 +38,6 @@
 class string_vector;
 
 OCTAVE_BEGIN_NAMESPACE(octave)
-
 OCTAVE_BEGIN_NAMESPACE(sys)
 
 extern OCTAVE_API int system (const std::string& cmd_str);
