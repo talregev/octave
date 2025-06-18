@@ -3248,7 +3248,7 @@ AC_DEFUN([OCTAVE_IEEE754_QNAN], [
           /* When cross-compiling, only test whether MIPS is the target
            * architecture.
            * FIXME: Add more conditions as needed.  */
-          #if defined (__mips__)
+          #if defined (__mips__) || defined (mips) || defined (__mips) || defined (__MIPS__)
           #  error "quiet NaN on MIPS is not conformant to IEEE 754-2008"
           #endif
         ]])],
