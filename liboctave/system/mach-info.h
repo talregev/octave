@@ -49,6 +49,8 @@ OCTAVE_API bool words_big_endian ();
 
 OCTAVE_API bool words_little_endian ();
 
+OCTAVE_API bool nan_with_payload ();
+
 OCTAVE_API float_format string_to_float_format (const std::string&);
 
 OCTAVE_API std::string float_format_as_string (float_format);

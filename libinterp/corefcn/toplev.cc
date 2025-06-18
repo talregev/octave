@@ -586,6 +586,9 @@ specified option.
       config.assign ("words_little_endian",
                      octave_value (mach_info::words_little_endian ()));
 
+      config.assign ("nan_with_payload",
+                     octave_value (mach_info::nan_with_payload ()));
+
       config.assign ("build_environment", octave_value (build_env));
 
       config.assign ("build_features", octave_value (build_features));

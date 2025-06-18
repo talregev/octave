@@ -86,6 +86,16 @@ words_little_endian ()
   return little_endian;
 }
 
+bool
+nan_with_payload ()
+{
+#if defined (HAVE_QNAN_WITH_PAYLOAD)
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 float_format
 string_to_float_format (const std::string& s)
 {
