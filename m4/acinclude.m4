@@ -3263,6 +3263,92 @@ AC_DEFUN([OCTAVE_IEEE754_QNAN], [
   fi
 ])
 dnl
+dnl Check if the payload of quiet NaN values is retained on arithmetic
+dnl operations.  That is needed for consistent NA handling.
+dnl
+AC_DEFUN([OCTAVE_QNAN_WITH_PAYLOAD], [
+  AC_CACHE_CHECK([whether quiet NaN values retain payload on arithmetic operations],
+    [octave_cv_qnan_with_payload],
+    [AC_LANG_PUSH(C)
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -O0"
+    AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+        #include <math.h>
+        #include <stdint.h>
+        #include <string.h>
+        ]], [[
+        /* Quiet NaNs retain the "payload" (i.e., the value of the mantissa)
+         * when performing arithmetic operations.  That is not the case for
+         * some architectures, e.g., MIPS or RISC-V.  */
+
+        #if defined (HAVE_IEEE754_QNAN)
+        #  define LO_IEEE_NA_HW 0x7FF840F4
+        #else
+        #  define LO_IEEE_NA_HW 0x7FF040F4
+        #endif
+        #define LO_IEEE_NA_LW 0x40000000
+        uint32_t word_NA[2];
+        double oct_NA;
+        uint64_t bits_NA;
+        uint64_t bits_NA_1;
+
+        /* Check whether platform is Big Endian */
+        union
+        {
+          long l;
+          char c[sizeof (long)];
+        } u;
+        u.l = 1;
+
+        /* value used as NA in Octave */
+        if (u.c[sizeof (long) - 1] == 1)
+          {
+            /* Big Endian */
+            word_NA[0] = LO_IEEE_NA_HW;
+            word_NA[1] = LO_IEEE_NA_LW;
+          }
+        else
+          {
+            /* Little Endian */
+            word_NA[1] = LO_IEEE_NA_HW;
+            word_NA[0] = LO_IEEE_NA_LW;
+          }
+
+        memcpy (&oct_NA, &word_NA, sizeof (oct_NA));
+
+        memcpy (&bits_NA, &oct_NA, sizeof (oct_NA));
+        oct_NA += 1.0;
+        memcpy (&bits_NA_1, &oct_NA, sizeof (oct_NA));
+        if (bits_NA == bits_NA_1)
+          /* payload of quiet NaN was retained */
+          return 0;
+        else
+          /* payload of quiet NaN was not retained */
+          return 1;
+      ]])],
+      octave_cv_qnan_with_payload=yes,
+      octave_cv_qnan_with_payload=no,
+      [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+          ]], [[
+          /* When cross-compiling, only test whether the target architecture is
+           * RISC-V.
+           * FIXME: Add more conditions as needed.  */
+          #if defined(__riscv)
+          #  error "quiet NaN values do not retain the payload on arithmetic operations"
+          #endif
+        ]])],
+        octave_cv_qnan_with_payload=yes,
+        octave_cv_qnan_with_payload=no)
+    ])
+    CFLAGS="$save_CFLAGS"
+    AC_LANG_POP(C)
+  ])
+  if test $octave_cv_qnan_with_payload = yes; then
+    AC_DEFINE(HAVE_QNAN_WITH_PAYLOAD, 1,
+      [Define to 1 if quiet NaN values retain their payload on arithmetic operations.])
+  fi
+])
+dnl
 dnl Check for ar.
 dnl
 AC_DEFUN([OCTAVE_PROG_AR], [

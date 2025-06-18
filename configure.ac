@@ -1230,6 +1230,9 @@ fi
 ## Check whether encoding of quiet NaN value is conformant to IEEE 754-2008
 OCTAVE_IEEE754_QNAN
 
+## Check whether quiet NaN values retain their payload on arithmetic operations
+OCTAVE_QNAN_WITH_PAYLOAD
+
 ### Checks for functions and variables.
 
 dnl The list of functions is short because we use gnulib to guarantee
