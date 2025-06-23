@@ -45,7 +45,6 @@
 ## @var{r} is the distance to the origin @w{(0, 0, 0)}.
 ##
 ## The coordinate transformation is computed using:
-##
 ## @tex
 ## $$ x = r \cos \phi  \cos \theta $$
 ## $$ y = r \cos \phi  \sin \theta $$

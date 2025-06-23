@@ -47,7 +47,6 @@
 ## @var{z}, if present, is unchanged by the transformation.
 ##
 ## The coordinate transformation is computed using:
-##
 ## @tex
 ## $$ x = r \cos \theta $$
 ## $$ y = r \sin \theta $$

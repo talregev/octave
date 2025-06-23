@@ -48,7 +48,6 @@
 ## @var{z}, if present, is unchanged by the transformation.
 ##
 ## The coordinate transformation is computed using:
-##
 ## @tex
 ## $$ \theta = \arctan \left ( {y \over x} \right ) $$
 ## $$ r = \sqrt{x^2 + y^2} $$
