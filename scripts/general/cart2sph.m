@@ -61,9 +61,6 @@
 ##
 ## @end ifnottex
 ##
-## @c FIXME: Remove this note in Octave 9.1 (two releases after 7.1).
-## Note: For @sc{matlab} compatibility, this function no longer returns a full
-## coordinate matrix when called with a single return argument.
 ## @seealso{sph2cart, cart2pol, pol2cart}
 ## @end deftypefn
 
