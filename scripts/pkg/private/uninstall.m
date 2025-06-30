@@ -35,7 +35,7 @@ function uninstall (pkgnames, handle_deps, verbose, local_list,
   [local_packages, global_packages] = installed_packages (local_list,
                                                           global_list);
   if (global_install)
-    installed_pkgs_lst = [local_packages, global_packages];
+    installed_pkgs_lst = global_packages;
   else
     installed_pkgs_lst = local_packages;
   endif
