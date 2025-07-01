@@ -159,6 +159,12 @@ public:
 
 private:
 
+  void loadobj (octave_map& arg, const bool custom_saveobj_ret_type);
+
+  octave_map saveobj (bool& custom_saveobj_ret_type);
+
+private:
+
   octave::cdef_object m_object;
 
   static int s_t_id;
