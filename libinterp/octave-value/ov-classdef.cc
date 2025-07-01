@@ -39,6 +39,7 @@
 #include "errwarn.h"
 #include "interpreter-private.h"
 #include "load-path.h"
+#include "ls-oct-text.h"
 #include "ov-classdef.h"
 #include "ov-fcn-handle.h"
 #include "ov-typeinfo.h"
@@ -160,6 +161,123 @@ octave_classdef::loadobj (octave_map& m, const bool custom_saveobj_ret_type)
               break;
             }
     }
+}
+
+bool
+octave_classdef::save_ascii (std::ostream& os)
+{
+  bool custom_saveobj_ret_type = false;
+  octave_map m = saveobj (custom_saveobj_ret_type);
+
+  os << "# metadata: ";
+  if (custom_saveobj_ret_type)
+    os << "saveobj_defined";
+  os << "\n";
+
+  const dim_vector dv = m_object.dims ();
+  os << "# ndims: " << dv.ndims () << "\n";
+
+  for (int i = 0; i < dv.ndims (); i++)
+    os << ' ' << dv(i);
+  os << "\n";
+
+
+  octave_idx_type nf = m.nfields ();
+
+  os << "# length: " << nf << "\n";
+
+  string_vector keys = m.fieldnames ();
+
+  for (octave_idx_type i = 0; i < nf; i++)
+    {
+      std::string key = keys(i);
+
+      // m is an octave_map, querying its values returns 'Cell' objects
+      octave_value val = m.contents (key);
+
+      if (val.numel () == 1) {
+        val = m.contents (key)(0, 0);
+      }
+
+      bool b = save_text_data (os, val, key, false, 0);
+
+      if (! b)
+        return ! os.fail ();
+
+    }
+
+  return true;
+}
+
+bool
+octave_classdef::load_ascii (std::istream& is)
+{
+  octave_idx_type len = 0;
+  dim_vector dv (1, 1);
+  bool success = true;
+
+  string_vector keywords (2);
+  keywords[0] = "ndims";
+  keywords[1] = "length";
+
+  std::string kw;
+
+  std::string metadata = extract_keyword (is, "metadata");
+
+  bool saveobj_defined = false;
+  size_t pos = metadata.find ("saveobj_defined");
+  if (pos != std::string::npos)
+    saveobj_defined = true;
+
+  if (extract_keyword (is, keywords, kw, len, true))
+    {
+      if (kw == keywords[0])
+        {
+          int mdims = std::max (static_cast<int> (len), 2);
+          dv.resize (mdims);
+          for (int i = 0; i < mdims; i++)
+            is >> dv(i);
+
+          success = extract_keyword (is, keywords[1], len);
+        }
+    }
+  else
+    success = false;
+
+  if (len < 0)
+    error ("load: failed to extract number of properties from classdef object");
+
+  if (! success)
+    error ("load: failed to extract keywords from classdef object");
+
+  octave_map m (dv);
+
+  for (octave_idx_type j = 0; j < len; j++)
+    {
+      octave_value t2;
+      bool dummy;
+
+      std::string nm = read_text_data (is, "", dummy, t2, j, false);
+
+      if (! is)
+        break;
+
+      Cell tcell = (t2.iscell () ? t2.xcell_value ("load: internal error loading struct elements") :
+                    Cell (t2));
+
+      if (m.dims () != tcell.dims ())
+        tcell = Cell (octave_value (tcell));
+
+      // Set the field in the octave_map
+      m.setfield (nm, tcell);
+    }
+
+  if (! is)
+      error ("load: failed to load classdef object");
+
+  loadobj (m, saveobj_defined);
+
+  return success;
 }
 
 static bool
