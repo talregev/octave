@@ -4,6 +4,7 @@ on:
   schedule:
     # Run job every Monday and Thursday at 16:30 UTC
     - cron: '30 16 * * 1,4'
+  workflow_dispatch:
 
 jobs:
   ubuntu:
@@ -68,7 +69,7 @@ jobs:
 
   windows:
     name: CodeQL analysis (Windows)
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     defaults:
       run:
