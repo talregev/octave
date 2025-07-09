@@ -118,9 +118,6 @@ classdef Map < handle
                               && strcmpi (varargin{3}, "UniformValues")))
         ## Get Map keys
         keys = varargin{1};
-        if (isempty (keys))
-          error ("containers.Map: empty keys are not allowed");
-        endif
         if (! iscell (keys))
           if (isnumeric (keys) || islogical (keys))
             keys = num2cell (keys);
@@ -650,6 +647,11 @@ endclassdef
 %! assert (numel (k), 6);
 %! assert (m.isKey({"One", "Four"; "Ten", "Five"}), [true,false; false,true]);
 
+## Test empty char array as key
+%!test <*67255>
+%! m = containers.Map ('', 3);
+%! assert (m(''), 3);
+
 ## Test numeric keys
 %!test
 %! key = [1, 2, 3, 4];
@@ -880,7 +882,7 @@ endclassdef
 ## Test input validation
 %!error containers.Map (1,2,3)
 %!error containers.Map (1,2,3,4,5)
-%!error <empty keys are not allowed> containers.Map ([], 1)
+%!error <the number of keys and values must match> containers.Map ([], 1)
 %!error <number of keys and values must match> containers.Map (1, {2, 3})
 %!error <keys must be real .* values> containers.Map ({{1}}, 2)
 %!error <keys must be .* scalar .* values> containers.Map ({magic(3)}, 2)
