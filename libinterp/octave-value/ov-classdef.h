@@ -123,7 +123,9 @@ public:
 
   string_vector map_keys () const { return m_object.map_keys (); }
 
-  octave_map map_value () const { return m_object.map_value (); }
+  octave_map map_value () const { return m_object.map_value (true); }
+
+  octave_map map_value (bool warn) const { return m_object.map_value (warn); }
 
   dim_vector dims () const { return m_object.dims (); }
 
