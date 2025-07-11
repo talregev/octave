@@ -148,9 +148,12 @@ octave_classdef::loadobj (octave_map& m, const bool custom_saveobj_ret_type)
     return;
 
   // FIXME: Add support for empty arrays of any dimensions.
-  // FIXME: Add support for N-D arrays.
   if (m.numel () > 0)
     {
+      octave_value_list clones (m.numel () - 1);
+      for (octave_idx_type n = 0; n < m.numel () - 1; n++)
+        clones(n) = clone ();
+
       string_vector fnames = m.fieldnames ();
       string_vector sv = map_keys ();
       for (octave_idx_type i = 0; i < m.nfields (); i++)
@@ -158,8 +161,29 @@ octave_classdef::loadobj (octave_map& m, const bool custom_saveobj_ret_type)
           if (sv[j] == fnames(i))
             {
               set_property (0, sv[j], m.contents (fnames(i)).xelem (0));
+              for (octave_idx_type n = 1; n < m.numel (); n++)
+                clones(n-1).classdef_object_value ()->set_property (0, sv[j], m.contents (fnames(i)).xelem (n));
               break;
             }
+
+      for (octave_idx_type n = 1; n < m.numel (); n++)
+        {
+          octave_value_list ovl_idx;
+          std::list<octave_value_list> idx_tmp;
+          ovl_idx(0) = n+1;
+          idx_tmp.push_back (ovl_idx);
+          octave_value tmp = subsasgn ("(", idx_tmp, clones(n-1));
+          // FIXME: Is this assignment only needed for value classes?
+          m_object = tmp.classdef_object_value ()->m_object;
+        }
+
+      // FIXME: Reshape to the correct dimensions.
+      if (m.dims () != dims ())
+        {
+          std::string orig_dim_str = m.dims ().str ();
+          warning ("load: loading classdef array of originally %s as row vector",
+                   orig_dim_str.c_str ());
+        }
     }
 }
 

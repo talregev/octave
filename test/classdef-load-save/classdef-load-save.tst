@@ -75,6 +75,41 @@
 %!   delete (savefile);
 %! end_unwind_protect
 
+## Vector of value class objects.
+%!test
+%! obj = regular_class;
+%! obj.a = 1;
+%! obj(2) = regular_class;
+%! obj(2).a = 2;
+%! savefile = tempname ();
+%! save ('-text', savefile, 'obj');
+%! unwind_protect
+%!   clear obj;
+%!   load (savefile);
+%!   assert (obj(1).a, 1);
+%!   assert (obj(2).a, 2);
+%! unwind_protect_cleanup
+%!   delete (savefile);
+%! end_unwind_protect
+
+## Matrix of value class objects.
+%!test <65179>
+%! obj = regular_class;
+%! obj.a = 1;
+%! obj(2,3) = regular_class;
+%! obj(2,3).a = 2;
+%! savefile = tempname ();
+%! save ('-text', savefile, 'obj');
+%! unwind_protect
+%!   clear obj;
+%!   load (savefile);
+%!   assert (obj(1).a, 1);
+%!   assert (obj(6).a, 2);
+%!   assert (size (obj), [2, 3]);
+%! unwind_protect_cleanup
+%!   delete (savefile);
+%! end_unwind_protect
+
 ## No constructor, ConstructOnLoad = false, saveobj return a struct, no loadobj
 %!test
 %! obj = saveobj_class ();
