@@ -210,24 +210,7 @@ group::group (void *p, std::string& msg)
 
       m_gid = gr->gr_gid;
 
-      // FIXME: Maybe there should be a string_vector constructor
-      //        that takes a NUL terminated list of C strings?
-
-      const char *const *tmp = gr->gr_mem;
-
-      int k = 0;
-      while (*tmp++)
-        k++;
-
-      if (k > 0)
-        {
-          tmp = gr->gr_mem;
-
-          m_mem.resize (k);
-
-          for (int i = 0; i < k; i++)
-            m_mem[i] = tmp[i];
-        }
+      m_mem = string_vector (gr->gr_mem);
 
       m_valid = true;
     }
