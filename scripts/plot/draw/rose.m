@@ -29,7 +29,7 @@
 ## @deftypefnx {} {} rose (@var{theta}, @var{bins})
 ## @deftypefnx {} {} rose (@var{hax}, @dots{})
 ## @deftypefnx {} {@var{h} =} rose (@dots{})
-## @deftypefnx {} {[@var{th} @var{r}] =} rose (@dots{})
+## @deftypefnx {} {[@var{th}, @var{r}] =} rose (@dots{})
 ## Plot an angular histogram.
 ##
 ## With one vector argument, @var{th}, plot the histogram with 20 angular bins.
@@ -71,7 +71,7 @@
 ## "mod (th, 2*pi)" changes any 2*pi values to 0, this last bin should always
 ## be zero and can be safely deleted.
 
-function [th, r] = rose (varargin)
+function [thout, rout] = rose (varargin)
 
   [hax, varargin, nargin] = __plt_get_axis_arg__ ("rose", varargin{:});
 
@@ -160,8 +160,11 @@ function [th, r] = rose (varargin)
     end_unwind_protect
 
     if (nargout > 0)
-      th = htmp;
+      thout = htmp;
     endif
+  else
+    thout = th;
+    rout = r;
   endif
 
 endfunction
