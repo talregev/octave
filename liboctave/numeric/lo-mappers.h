@@ -274,13 +274,13 @@ x_nint (T x)
 template <>
 inline double x_nint (double x)
 {
-  return (isfinite (x) ? std::floor (x + 0.5) : x);
+  return std::round (x);
 }
 
 template <>
 inline float x_nint (float x)
 {
-  return (isfinite (x) ? std::floor (x + 0.5f) : x);
+  return std::round (x);
 }
 
 extern OCTAVE_API octave_idx_type nint_big (double x);
