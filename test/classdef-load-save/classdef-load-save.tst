@@ -224,7 +224,7 @@
 %! end_unwind_protect
 
 ## Constructor, ConstructOnLoad = false, Transient property
-%!test <45833>
+%!test
 %! obj = transient_property_class ();
 %! obj.a = 1;
 %! obj.transient_property = 6;

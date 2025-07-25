@@ -129,6 +129,9 @@ public:
 
   octave_map map_value (bool warn) const { return m_object.map_value (warn); }
 
+  octave_map map_value (bool warn, bool for_save) const
+  { return m_object.map_value (warn, for_save); }
+
   dim_vector dims () const { return m_object.dims (); }
 
   void set_property (octave_idx_type idx, const std::string& name,

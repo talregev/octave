@@ -311,7 +311,8 @@ public:
 
   string_vector map_keys () const { return m_rep->map_keys (); }
 
-  OCTINTERP_API octave_map map_value (bool warn = true) const;
+  OCTINTERP_API octave_map
+  map_value (bool warn = true, bool for_save = false) const;
 
   const cdef_object_rep * get_rep () const { return m_rep; }
 

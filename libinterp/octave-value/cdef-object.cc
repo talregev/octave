@@ -134,7 +134,7 @@ cdef_object_rep::map_keys () const
 }
 
 octave_map
-cdef_object::map_value (bool warn) const
+cdef_object::map_value (bool warn, bool for_save) const
 {
   octave_map retval;
 
@@ -156,6 +156,11 @@ cdef_object::map_value (bool warn) const
       // FIXME: Why not const here?
       for (auto& prop_val : props)
         {
+          // Do not include properties that have the "Transient" attribute
+          // when creating the map for saving the object to a file.
+          if (for_save && prop_val.second.get ("Transient").bool_value ())
+            continue;
+
           if (is_array ())
             {
               Array<cdef_object> a_obj = array_value ();

@@ -76,7 +76,7 @@ octave_classdef::saveobj (bool& custom_saveobj_ret_type)
       //        nested handle classes that are self-referencing.
       if (! meth.ok () || meth.is_static ())
         // Default behaviour of saving is triggered if saveobj is static
-        m[n] = elem.classdef_object_value ()->map_value (false);
+        m[n] = elem.classdef_object_value ()->map_value (false, true);
       else
         {
           retval = (meth.execute (elem.classdef_object_value ()->get_object_ref (),
@@ -100,7 +100,7 @@ octave_classdef::saveobj (bool& custom_saveobj_ret_type)
           // FIXME: This could potentially lead to an infinite recursion for
           //        nested handle classes that are self-referencing.
           else if (retval.is_classdef_object ())
-            m[n] = retval.classdef_object_value ()->map_value (false);
+            m[n] = retval.classdef_object_value ()->map_value (false, true);
           else
             m[n] = retval.map_value ();
         }
