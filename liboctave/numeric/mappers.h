@@ -223,8 +223,14 @@ isinf (const std::complex<T>& x)
 // A large benchmark of std::round vs std::trunc showed that trunc was some
 // 3 times faster than round, taking some 1.4 nanoseconds for trunc and
 // some 4.1 nanoseconds for round.
-inline bool isinteger (double x) { return isfinite (x) && x == std::trunc (x); }
-inline bool isinteger (float x) { return isfinite (x) && x == std::trunc (x); }
+inline bool is_integer (double x) { return isfinite (x) && x == std::trunc (x); }
+inline bool is_integer (float x) { return isfinite (x) && x == std::trunc (x); }
+
+OCTAVE_DEPRECATED (11, "use octave::math::is_integer instead")
+inline bool isinteger (double x) { return is_integer (x); }
+
+OCTAVE_DEPRECATED (11, "use octave::math::is_integer instead")
+inline bool isinteger (float x) { return is_integer (x); }
 
 inline double
 signum (double x)
