@@ -261,11 +261,13 @@ signum (const std::complex<T>& x)
   return tmp == 0 ? 0.0 : x / tmp;
 }
 
+// FIXME: Deprecated in Octave 11.  Remove in Octave 13.
 // Convert X to the nearest integer value.  Should not pass NaN to
 // this function.
 
 // For integer types?  Hmm.  Need to be sure T is an integer type...
 template <typename T>
+OCTAVE_DEPRECATED (11, "use octave::math::round instead")
 T
 x_nint (T x)
 {
@@ -273,12 +275,14 @@ x_nint (T x)
 }
 
 template <>
+OCTAVE_DEPRECATED (11, "use octave::math::round instead")
 inline double x_nint (double x)
 {
   return round (x);
 }
 
 template <>
+OCTAVE_DEPRECATED (11, "use octave::math::round instead")
 inline float x_nint (float x)
 {
   return round (x);

@@ -71,6 +71,7 @@ major release after 11):
 
         Function               | Replacement
         -----------------------|------------------
+        octave::math::x_nint   | octave::math::round
 
 The following features were deprecated in Octave 9 and have been removed
 from Octave 11.
