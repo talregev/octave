@@ -119,6 +119,8 @@ public:
 
   OCTINTERP_API Matrix size ();
 
+  OCTINTERP_API octave_value reshape (const dim_vector& new_dims) const;
+
   OCTINTERP_API octave_idx_type xnumel (const octave_value_list&);
 
   string_vector map_keys () const { return m_object.map_keys (); }

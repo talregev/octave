@@ -590,6 +590,41 @@ octave_classdef::xnumel (const octave_value_list& idx)
   return retval;
 }
 
+octave_value
+octave_classdef::reshape (const dim_vector& new_dims) const
+{
+  octave_value retval;
+
+  octave::cdef_class cls = m_object.get_class ();
+
+  if (! in_class_method (cls) && ! called_from_builtin ())
+    {
+      octave::cdef_method meth = cls.find_method ("reshape");
+
+      if (meth.ok ())
+        {
+          octave_value_list args;
+
+          args(0) = octave::to_ov (m_object.clone ());
+          args(1) = new_dims.as_array ();
+
+          octave_value_list retlist;
+
+          retlist = meth.execute (args, 1, true, "reshape");
+
+          if (retlist.empty ())
+            error ("overloaded method 'reshape' did not return any value");
+
+          retval = retlist(0);
+        }
+    }
+
+  if (! retval.is_defined ())
+    retval = m_object.reshape (new_dims);
+
+  return retval;
+}
+
 void
 octave_classdef::print (std::ostream& os, bool)
 {

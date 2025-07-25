@@ -501,6 +501,14 @@ cdef_object_array::subsasgn (const std::string& type,
   return retval;
 }
 
+octave_value
+cdef_object_array::reshape (const dim_vector& new_dims) const
+{
+  cdef_object_array retval = cdef_object_array (*this);
+  retval.m_array = Array<cdef_object> (m_array, new_dims);
+  return to_ov (cdef_object (new cdef_object_array (retval)));
+}
+
 void
 cdef_object_array::fill_empty_values (Array<cdef_object>& arr)
 {
@@ -719,6 +727,19 @@ cdef_object_scalar::subsasgn (const std::string& type,
     }
 
   return retval;
+}
+
+octave_value
+cdef_object_scalar::reshape (const dim_vector& new_dims) const
+{
+  if (new_dims.numel () != 1)
+    {
+      std::string new_dims_str = new_dims.str ();
+      error ("reshape: cannot reshape scalar classdef object to %s array",
+             new_dims_str.c_str ());
+    }
+
+  return to_ov (cdef_object (clone()));
 }
 
 void

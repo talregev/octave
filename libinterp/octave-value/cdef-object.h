@@ -135,6 +135,11 @@ public:
     err_invalid_object ("subsasgn");
   }
 
+  virtual octave_value reshape (const dim_vector&) const
+  {
+    err_invalid_object ("reshape");
+  }
+
   virtual string_vector map_keys () const;
 
   virtual bool is_valid () const { return false; }
@@ -299,6 +304,11 @@ public:
     return m_rep->subsasgn (type, idx, rhs);
   }
 
+  octave_value reshape (const dim_vector& new_dims) const
+  {
+    return m_rep->reshape (new_dims);
+  }
+
   string_vector map_keys () const { return m_rep->map_keys (); }
 
   OCTINTERP_API octave_map map_value (bool warn = true) const;
@@ -418,6 +428,8 @@ public:
   subsasgn (const std::string& type, const std::list<octave_value_list>& idx,
             const octave_value& rhs);
 
+  OCTINTERP_API octave_value reshape (const dim_vector& new_dims) const;
+
   void set_property (octave_idx_type idx, const std::string& pname,
                      const octave_value& pval)
   {
@@ -503,6 +515,8 @@ public:
   OCTINTERP_API octave_value
   subsasgn (const std::string& type, const std::list<octave_value_list>& idx,
             const octave_value& rhs);
+
+  octave_value reshape (const dim_vector& new_dims) const;
 
   OCTINTERP_API void mark_for_construction (const cdef_class&);
 
