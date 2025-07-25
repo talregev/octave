@@ -93,7 +93,7 @@
 %! end_unwind_protect
 
 ## Matrix of value class objects.
-%!test <65179>
+%!test <*65179>
 %! obj = regular_class;
 %! obj.a = 1;
 %! obj(2,3) = regular_class;

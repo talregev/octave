@@ -185,12 +185,11 @@ octave_classdef::loadobj (std::vector<octave_map>& m, dim_vector& dv,
     }
 
 
-  // FIXME: Reshape to the correct dimensions.
+  // Reshape to the correct dimensions.
   if (dv != dims ())
     {
-      std::string orig_dim_str = dv.str ();
-      warning ("load: loading classdef array of originally %s as row vector",
-               orig_dim_str.c_str ());
+      octave_value ov_reshaped = reshape (dv);
+      m_object = ov_reshaped.classdef_object_value ()->m_object;
     }
 }
 
