@@ -188,24 +188,6 @@
 %! save ('-text', savefile, 'obj');
 %! delete (savefile);
 
-
-## The following tests are either known failure points, or the appropriate
-## functionality hasn't been implemented yet.
-
-%% Constructor, ConstructOnLoad = true, no loadobj/saveobj
-%!test <45833>
-%! obj = regular_class_construct_on_load ();
-%! obj.a = [];
-%! savefile = tempname ();
-%! save ('-text', savefile, 'obj');
-%! unwind_protect
-%!   clear obj;
-%!   load (savefile);
-%!   assert (obj.a, 1);
-%! unwind_protect_cleanup
-%!   delete (savefile);
-%! end_unwind_protect
-
 ## Handle class, no constructor, ConstructOnLoad = false, no loadobj/saveobj
 ## Note: File format for saving handle classes needs to save the appropriate metadata
 %!test <45833>
@@ -236,6 +218,22 @@
 %!   assert (obj.a, 1);
 %!   ## Transient property should not be saved and loaded
 %!   assert (obj.transient_property, []);
+%! unwind_protect_cleanup
+%!   delete (savefile);
+%! end_unwind_protect
+
+## Constructor, ConstructOnLoad = true, Transient property, no loadobj/saveobj
+%!test
+%! obj = regular_class_construct_on_load ();
+%! obj.a = 10;
+%! obj.f = 16;
+%! savefile = tempname ();
+%! save ('-text', savefile, 'obj');
+%! unwind_protect
+%!   clear obj;
+%!   load (savefile);
+%!   assert (obj.a, 10);
+%!   assert (obj.f, 6);
 %! unwind_protect_cleanup
 %!   delete (savefile);
 %! end_unwind_protect
