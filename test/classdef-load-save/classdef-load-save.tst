@@ -189,8 +189,7 @@
 %! delete (savefile);
 
 ## Handle class, no constructor, ConstructOnLoad = false, no loadobj/saveobj
-## Note: File format for saving handle classes needs to save the appropriate metadata
-%!test <45833>
+%!test
 %! obj1 = regular_handle_class ();
 %! obj2 = obj1;
 %! obj2.a = 1;
@@ -201,6 +200,48 @@
 %!   load (savefile);
 %!   obj2.b = 2;
 %!   assert (obj1.b, 2);
+%! unwind_protect_cleanup
+%!   delete (savefile);
+%! end_unwind_protect
+
+## Handle class, no constructor, ConstructOnLoad = false, no loadobj/saveobj, circular references
+%!test
+%! obj = regular_handle_class ();
+%! obj.a = regular_handle_class ();
+%! obj.c = 1;
+%! obj.a.b = obj;
+%! obj.a.d = 2;
+%! savefile = tempname ();
+%! save ('-text', savefile, 'obj');
+%! unwind_protect
+%!   clear obj;
+%!   load (savefile);
+%!   assert (obj.c, 1);
+%!   obj.c = 3;
+%!   assert (obj.a.b.c, 3);
+%!   assert (obj.a.d, 2);
+%!   obj.a.d = 4;
+%!   assert (obj.a.b.a.d, 4);
+%! unwind_protect_cleanup
+%!   delete (savefile);
+%! end_unwind_protect
+
+## Handle class, no constructor, ConstructOnLoad = false, no loadobj/saveobj, vector
+%!test
+%! obj = regular_handle_class ();
+%! obj(2) = regular_handle_class ();
+%! obj(3) = obj(1);
+%! obj(1).a = 1;
+%! obj(2).a = 2;
+%! savefile = tempname ();
+%! save ('-text', savefile, 'obj');
+%! unwind_protect
+%!   clear obj;
+%!   load (savefile);
+%!   assert (obj(1).a, 1);
+%!   assert (obj(2).a, 2);
+%!   obj(1).a = 3;
+%!   assert (obj(3).a, 3);
 %! unwind_protect_cleanup
 %!   delete (savefile);
 %! end_unwind_protect

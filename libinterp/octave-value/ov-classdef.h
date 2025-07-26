@@ -168,10 +168,20 @@ public:
 
 private:
 
-  void loadobj (std::vector<octave_map>& arg, dim_vector& dv,
-                const bool custom_saveobj_ret_type);
+  // Load an array of the size dv using a vector with
+  // * a map with the values of the class properties
+  // * a unique identifier of the object in the file
+  // * an indicator whether the object has a custom return type
+  OCTINTERP_API void
+  loadobj (std::vector<std::tuple<octave_map, uint32_t, bool>>& m,
+           dim_vector& dv);
 
-  std::vector<octave_map> saveobj (bool& custom_saveobj_ret_type);
+  // Return a vector for each element in the array containing:
+  // * a map with the values of the class properties
+  // * a unique identifier of the object in the file
+  // * an indicator whether the object has a custom return type
+  OCTINTERP_API std::vector<std::tuple<octave_map, uint32_t, bool>>
+  saveobj (std::vector<bool>& is_new);
 
 private:
 
