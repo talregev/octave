@@ -52,6 +52,10 @@ Summary of important user-visible changes for version 11 (yyyy-mm-dd):
 - The function `gradient` with a numeric input now only accepts type double
   or single.
 
+- The function `polyfit` now returns the highest powers possible and the
+  constant term when there is insufficient data to create all N terms of the
+  polynomial.
+
 ### Alphabetical list of new functions added in Octave 11
 
 * `corrcov`
@@ -66,6 +70,7 @@ major release after 11):
 
         Function               | Replacement
         -----------------------|------------------
+        polyfit output s.X     | polyfit output s.V
 
 - Core
 
