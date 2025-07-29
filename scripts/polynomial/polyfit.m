@@ -68,6 +68,9 @@
 ##
 ## @item normr
 ## The norm of the residuals.
+##
+## @item rsquared
+## Coefficient of determination, or R-squared.
 ## @end table
 ##
 ## The second output may be used by @code{polyval} to calculate the statistical
@@ -203,7 +206,9 @@ function [p, s, mu] = polyfit (x, y, n)
     endif
 
     s.df = max (0, nx - m - 1);
-    s.normr = norm (yf - y);
+    resid = sumsq (yf - y);
+    s.normr = sqrt (resid);
+    s.rsquared = 1 - resid / sumsq (y - mean (y));
   endif
 
   if (pad_output)
