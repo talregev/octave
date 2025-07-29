@@ -4,8 +4,8 @@ Summary of important user-visible changes for version 11 (yyyy-mm-dd):
 ### General improvements
 
 - The internal interface to Java has been updated to be more memory-efficient
-  (faster culling of unused objects).  As such building Octave from source with
-  Java support now requires the JDK 1.9 or newer. Distributed, precompiled
+  (faster culling of unused objects).  Building Octave from source code with
+  Java support now requires JDK 1.9 or newer.  Distributed, precompiled
   versions of Octave will run with any JVM.
 
 - The `pkg` command has these user-visible changes:
