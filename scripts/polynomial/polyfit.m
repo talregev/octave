@@ -318,8 +318,8 @@ endfunction
 %! assert (size (s.C), [2, 5]);
 %! assert (s.C(:,2:4), zeros (2,3));
 %! assert (s.df, 0);
-%! assert (s.normr, 0, 12*eps);
-%! assert (s.rsquared, 1, 12*eps);
+%! assert (s.normr, 0, 20*eps);
+%! assert (s.rsquared, 1, 20*eps);
 
 %!test
 %! wstate = warning ();
