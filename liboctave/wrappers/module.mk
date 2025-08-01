@@ -100,3 +100,5 @@ noinst_LTLIBRARIES += %reldir%/libwrappers.la
   -Ilibgnu -I$(srcdir)/libgnu
 
 liboctave_liboctave_la_LIBADD += %reldir%/libwrappers.la
+
+liboctave_liboctave_la_LDFLAGS += $(GNULIB_LINK_DEPS)
