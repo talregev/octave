@@ -2278,7 +2278,6 @@ AC_DEFUN([OCTAVE_CHECK_QT_VERSION], [AC_MSG_CHECKING([Qt version $1])
 
     if test $build_qt_gui = yes; then
       ## Retrieve Qt compilation and linker flags
-      ac_octave_save_QT_LIBS="$QT_LIBS"
       QT_CPPFLAGS="$($PKG_CONFIG --cflags-only-I $QT_MODULES | $SED -e 's/^ *$//')"
       QT_LDFLAGS="$($PKG_CONFIG --libs-only-L $QT_MODULES | $SED -e 's/^ *$//')"
       QT_LIBS="$($PKG_CONFIG --libs-only-l --libs-only-other $QT_MODULES | $SED -e 's/^ *$//')"
@@ -2286,8 +2285,8 @@ AC_DEFUN([OCTAVE_CHECK_QT_VERSION], [AC_MSG_CHECKING([Qt version $1])
       case $host_os in
         *darwin*)
           ## Qt might be installed in framework
-          ac_octave_QT_LIBS_only_l="$($PKG_CONFIG --libs-only-l $QT_MODULES | $SED -e 's/^ *$//')"
-          if test -z "$ac_octave_save_QT_LIBS" && test -z "$ac_octave_QT_LIBS_only_l"; then
+          QT_LIBS="$($PKG_CONFIG --libs-only-l $QT_MODULES | $SED -e 's/^ *$//')"
+          if test -z "$QT_LIBS"; then
             QT_LDFLAGS="`$PKG_CONFIG --libs-only-other $QT_MODULES | tr ' ' '\n' | $GREP -e '-F' | uniq | tr '\n' ' '`"
             QT_LIBS="`$PKG_CONFIG --libs-only-other $QT_MODULES | tr ' ' '\n' | $GREP -v -e '-F' | uniq | tr '\n' ' '`"
           fi
