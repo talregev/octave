@@ -2,6 +2,7 @@ name: make-macos
 on:
   workflow_dispatch:
   push:
+  pull_request:
 concurrency: ci-macos-${{ github.ref }}
 
 jobs:
