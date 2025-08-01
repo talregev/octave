@@ -981,7 +981,7 @@ AC_DEFUN([OCTAVE_CHECK_LIB], [
       if test -z "$m4_toupper(patsubst([$1], [-], [_]))_LDFLAGS"; then
         m4_toupper(patsubst([$1], [-], [_]))_LDFLAGS="$($PKG_CONFIG --libs-only-L m4_default([$9], [$1]) | $SED -e 's/^ *$//')"
       fi
-      m4_toupper(patsubst([$1], [-], [_]))_LIBS="$($PKG_CONFIG --libs-only-l m4_default([$9], [$1]) | $SED -e 's/^ *$//')"
+      m4_toupper(patsubst([$1], [-], [_]))_LIBS="$($PKG_CONFIG --libs-only-l --libs-only-other m4_default([$9], [$1]) | $SED -e 's/^ *$//')"
     ])
   fi
 
@@ -2280,7 +2280,7 @@ AC_DEFUN([OCTAVE_CHECK_QT_VERSION], [AC_MSG_CHECKING([Qt version $1])
       ## Retrieve Qt compilation and linker flags
       QT_CPPFLAGS="$($PKG_CONFIG --cflags-only-I $QT_MODULES | $SED -e 's/^ *$//')"
       QT_LDFLAGS="$($PKG_CONFIG --libs-only-L $QT_MODULES | $SED -e 's/^ *$//')"
-      QT_LIBS="$($PKG_CONFIG --libs-only-l $QT_MODULES | $SED -e 's/^ *$//')"
+      QT_LIBS="$($PKG_CONFIG --libs-only-l --libs-only-other $QT_MODULES | $SED -e 's/^ *$//')"
 
       case $host_os in
         *darwin*)
