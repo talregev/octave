@@ -1437,6 +1437,14 @@ else
 fi
 
 ### Check for Qhull library.
+PKG_CHECK_MODULES([QHULL], [qhull_r], [
+  qhull_pc_name=qhull_r
+], [
+  # Fallback to qhullstatic_r
+  PKG_CHECK_MODULES([QHULL], [qhullstatic_r], [
+    qhull_pc_name=qhullstatic_r
+  ], [])
+])
 
 QHULL_CPPFLAGS=
 QHULL_LDFLAGS=
@@ -1452,7 +1460,8 @@ OCTAVE_CHECK_LIB(qhull_r, QHull,
      QHULL_CPPFLAGS="$QHULL_R_CPPFLAGS"
      QHULL_LDFLAGS="$QHULL_R_LDFLAGS"
      QHULL_LIBS="$QHULL_R_LIBS"],
-    [warn_qhull_r="Qhull library found, but does not seem to work properly.  This will result in loss of functionality for some geometry functions.  Please try recompiling the library with -fno-strict-aliasing."])])
+    [warn_qhull_r="Qhull library found, but does not seem to work properly.  This will result in loss of functionality for some geometry functions.  Please try recompiling the library with -fno-strict-aliasing."])],
+    [$qhull_pc_name])
 AC_SUBST(QHULL_CPPFLAGS)
 AC_SUBST(QHULL_LDFLAGS)
 AC_SUBST(QHULL_LIBS)
