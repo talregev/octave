@@ -2,7 +2,12 @@ name: make-alpine
 on:
   workflow_dispatch:
   push:
-concurrency: ci-alpine-${{ github.ref }}
+    branches: [ default ]
+  pull_request:
+    branches: [ default ]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
 
