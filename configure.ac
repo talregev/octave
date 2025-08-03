@@ -1437,14 +1437,23 @@ else
 fi
 
 ### Check for Qhull library.
-PKG_CHECK_MODULES([QHULL], [qhull_r], [
-  qhull_pc_name=qhull_r
-], [
-  # Fallback to qhullstatic_r
-  PKG_CHECK_MODULES([QHULL], [qhullstatic_r], [
-    qhull_pc_name=qhullstatic_r
-  ], [])
-])
+AC_ARG_WITH([qhull_r-pkg-config],
+  [AS_HELP_STRING([--with-qhull_r-pkg-config=LIB],
+    [search the qhull library with pkg-config (options: qhull_r (default) or qhullstatic_r)])
+dnl Second help string must not be indented for correct alignment
+AS_HELP_STRING([--without-qhull_r-pkg-config], [don't search qhull_r library with pkg-config])],
+  [case $withval in
+     yes | "")
+       qhull_pc_name="qhull_r"
+     ;;
+     no)
+       qhull_pc_name=""
+     ;;
+     *)
+       qhull_pc_name="$withval"
+     ;;
+   esac],
+  [qhull_pc_name="qhull_r"])
 
 QHULL_CPPFLAGS=
 QHULL_LDFLAGS=
